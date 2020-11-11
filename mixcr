@@ -21,4 +21,12 @@ do
   mixcr align -p kaligner2 -s hs -r $name_alignmentReport.txt -OreadsLayout=Collinear -OvParameters.geneFeatureToAlign=VTranscript $i $name_alignments.vdjca
 done
 
+#########################################
+
+for i in *.fastq.gz
+do
+  name=$(echo $i | cut -f 1 -d '.')
+  mixcr analyze shotgun --species hs --starting-material rna --only-productive $i $name_CD4_analysis
+done
+
 
