@@ -1,0 +1,24 @@
+# batch script for mixcr
+
+#!/bin/bash
+#SBATCH --partition=batch
+#SBATCH --job-name=mixcr
+#SBATCH --nodes=1
+#SBATCH --mem=128G
+#SBATCH --time=07-00:00:00
+#SBATCH --output=%j_%x.out
+#SBATCH --error=%j_%x.err
+#SBATCH --mail-user=ling.felce@ndm.ox.ac.uk
+#SBATCH --mail-type=end
+
+cd /t1-data/user/lfelce/MiXCR/
+
+module load mixcr
+
+for i in *.fastq.gz
+do
+  name=$(echo $i | cut -f 1 -d '.')
+  mixcr analyze shotgun --species hs --starting-material rna --only-productive $i $name_CD4_analysis
+done
+
+# no option to specific output prefix? no option to specify single end reads?
