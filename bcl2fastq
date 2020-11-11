@@ -45,6 +45,8 @@ tar -xvzf <file name>
 
 # convert and demultiplex BCL files - run in appropriate folder
 
+# actually managed to get Ewan the cbrg facility manager to install bcl2fastq, so run from module instead.
+
 # submit as job script to slurm
 
 #!/bin/bash
