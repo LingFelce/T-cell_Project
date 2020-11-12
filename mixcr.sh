@@ -47,13 +47,13 @@ module load mixcr
 
 for index in /t1-data/user/lfelce/MiXCR/*.vdjca
 do
-  mixcr assemblePartial ${i} ${i}_rescued.vdjca
+  mixcr assemblePartial ${index} ${index}_rescued.vdjca
 done
 
 #########################
 
 for index in /t1-data/user/lfelce/MiXCR/*_rescued.vdjca
 do
-  mixcr assemblePartial ${i} ${i}_2.vdjca
+  mixcr assemblePartial ${index} ${index}_2.vdjca
 done
 
