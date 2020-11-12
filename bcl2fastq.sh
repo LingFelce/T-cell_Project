@@ -20,6 +20,7 @@ bs list runs
 # will download all files associated with run into current folder
 bs download run -i 197263145 -o ./
 
+###### used bcl2fastq module, see below #############
 # install bcl2fastq
 
 wget ftp://webdata2:webdata2@ussd-ftp.illumina.com/downloads/software/bcl2fastq/bcl2fastq2-v2-20-0-tar.zip
@@ -42,6 +43,8 @@ tar -xvzf <file name>
 
 # was getting a configuration error, realised that it was trying to use something in the conda environment tracer_env
 # removed tracer_env conda environment, seems to be working fine now.
+
+###############################################################
 
 # convert and demultiplex BCL files - run in appropriate folder
 
@@ -83,3 +86,4 @@ squeue
 sbatch ./<jobname>.sh
 
 # repeat with Dong_Pools_9-12
+# and repeated with Dong_Pools_1-4
