@@ -1,11 +1,13 @@
 ## below is script for mixcr. 
 
-## run the first one as it is, it will generate individual script files for each sample
+## create script folder in output directory
+
+## copy and paste below into command line, it will generate individual script files for each sample
 
 ## then run second script at bottom, which will run all individual script files wherever they are saved.
 
-cd /t1-data/user/lfelce/Dong_Pools_9-12/Data/Intensities/BaseCalls/merge/ #input directory
-DIR=/t1-data/user/nassisar/SamrtSeq_Ling/ # output directory
+cd /t1-data/user/lfelce/MiXCR/CD8_input/ #input directory
+DIR=/t1-data/user/lfelce/MiXCR/CD8_output/ # output directory
 
 for NAME in $(find . -name '*_R1_001.fastq.gz' -printf "%f\n" | sed 's/_R1_001.fastq.gz//'); do # remove common ending of name
  
@@ -17,7 +19,7 @@ echo -e '#!/bin/sh
 #$ -cwd
 #$ -q batchq
 module add mixcr
-cd /t1-data/user/lfelce/Dong_Pools_9-12/Data/Intensities/BaseCalls/merge/
+cd /t1-data/user/lfelce/MiXCR/CD8_input/
 
 mixcr align -p rna-seq -s hsa -OallowPartialAlignments=true' $NAME$p1 $DIR$NAME'.vdjca
 
@@ -32,10 +34,13 @@ mixcr exportClones' $DIR$NAME'.clns' $DIR$NAME'.txt' > $DIR'script/'$NAME'.sh'
 done
 
 #------------- run scripts on server - this should be separate script -------------------#
-# cd /t1-data/user/nassisar/SamrtSeq_Ling/script/
 
-# for line in $(ls *.sh); do
-# sbatch $line
-# done
+## copy and paste below into command line
 
-# squeue -u nassisar
+cd /t1-data/user/lfelce/MiXCR/CD8_output/script/
+
+for line in $(ls *.sh); do
+sbatch $line
+done
+
+squeue -u lfelce
