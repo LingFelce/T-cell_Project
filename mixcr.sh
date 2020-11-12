@@ -47,13 +47,35 @@ module load mixcr
 
 for index in /t1-data/user/lfelce/MiXCR/*.vdjca
 do
-  mixcr assemblePartial ${index} ${index}_rescued.vdjca
+  mixcr assemblePartial ${index} ${index}_rescue.vdjca
 done
 
 #########################
 
-for index in /t1-data/user/lfelce/MiXCR/*_rescued.vdjca
+for index in /t1-data/user/lfelce/MiXCR/*_rescue.vdjca
 do
   mixcr assemblePartial ${index} ${index}_2.vdjca
+done
+
+#############################
+
+#!/bin/bash
+#SBATCH --partition=batch
+#SBATCH --job-name=mixcrextend
+#SBATCH --nodes=1
+#SBATCH --mem=128G
+#SBATCH --time=07-00:00:00
+#SBATCH --output=%j_%x.out
+#SBATCH --error=%j_%x.err
+#SBATCH --mail-user=ling.felce@ndm.ox.ac.uk
+#SBATCH --mail-type=end
+
+cd /t1-data/user/lfelce/MiXCR/
+
+module load mixcr
+
+for index in /t1-data/user/lfelce/MiXCR/*_rescue_2.vdjca
+do
+  mixcr extendAlignments ${index} ${index}_extend.vdjca
 done
 
