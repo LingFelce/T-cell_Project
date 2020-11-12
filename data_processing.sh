@@ -24,3 +24,12 @@ find /t1-data/user/lfelce/Dong_Pools_9-12/Data/Intensities/BaseCalls/merge -name
 find /t1-data/user/lfelce/Dong_Pools_9-12/Data/Intensities/BaseCalls/merge -name "1504_*.fastq.gz" | xargs -I v_f ln -s v_f
 find /t1-data/user/lfelce/Dong_Pools_9-12/Data/Intensities/BaseCalls/merge -name "1493_*.fastq.gz" | xargs -I v_f ln -s v_f
 find /t1-data/user/lfelce/Dong_Pools_9-12/Data/Intensities/BaseCalls/merge -name "1525_*.fastq.gz" | xargs -I v_f ln -s v_f
+
+# CD8 samples
+find /t1-data/user/lfelce/Dong_Pools_5-8/Data/Intensities/BaseCalls/merge -name "1131-*.fastq.gz" | xargs -I v_f ln -s v_f
+find /t1-data/user/lfelce/Dong_Pools_5-8/Data/Intensities/BaseCalls/merge -name "1201-*.fastq.gz" | xargs -I v_f ln -s v_f
+
+find /t1-data/user/lfelce/Dong_Pools_1-4/Data/Intensities/BaseCalls/merge -name "005_*.fastq.gz" | xargs -I v_f ln -s v_f
+find /t1-data/user/lfelce/Dong_Pools_1-4/Data/Intensities/BaseCalls/merge -name "1153_*.fastq.gz" | xargs -I v_f ln -s v_f
+find /t1-data/user/lfelce/Dong_Pools_1-4/Data/Intensities/BaseCalls/merge -name "1131-*.fastq.gz" | xargs -I v_f ln -s v_f
+
