@@ -51,6 +51,5 @@ squeue -u lfelce
 
 # create soft links for .txt files and move into folder for R Studio analysis
 
-# find /t1-data/user/nassisar/SamrtSeq_Ling -name "*.txt" | xargs -I v_f ln -s v_f
 # find /t1-data/user/lfelce/MiXCR/CD4_output -name "*.txt" | xargs -I v_f ln -s v_f
 # find /t1-data/user/lfelce/MiXCR/CD8_output -name "*.txt" | xargs -I v_f ln -s v_f
