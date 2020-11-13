@@ -1,9 +1,12 @@
 library(tcR)
 
-#------------- First please let review the List of human of TCR and Ig gene segments
+#-------------  List of human of TCR and Ig gene segments
+
+# TCR sequence database
 
 data(genesegments)
 
+# TCR
 HUMAN_TRAV
 HUMAN_TRAJ
 HUMAN_TRBV
@@ -17,26 +20,27 @@ HUMAN_TRDV
 HUMAN_TRDD
 HUMAN_TRDJ
 
+# BCR
 HUMAN_IGHV
 HUMAN_IGHD
 HUMAN_IGHJ
 HUMAN_IGLV
 HUMAN_IGLJ
 
-# Sequence and CDR3.position of each gene segment
+# Nucleotide sequence and CDR3 position of each gene segment
 genesegments$TRBV[1:10,]
 
-#------------- MAINE ANALYSIS -------------
+#------------- MAIN ANALYSIS -------------
 
 #------------- Read one MiXCR output
 library(data.table)
 
 #------------- Parse folder with MiXCR files.
 
-setwd('/t1-data/user/nassisar/SamrtSeq_Ling/')
+setwd('/t1-data/user/lfelce/TCR_analysis/cd8/')
 listFiles = list.files()
 
-#revise the structure of input files
+# revise the structure of input files
 for(i in 1:length(listFiles))
 {
   DT = fread(listFiles[i])
@@ -44,7 +48,7 @@ for(i in 1:length(listFiles))
 }
 
 #read files
-mixcr <- parse.folder("/t1-data/user/nassisar/SamrtSeq_Ling/", 'mixcr')
+mixcr <- parse.folder("/t1-data/user/lfelce/TCR_analysis/cd8/", 'mixcr')
 
 metadata = fread('/home/fairfaxlab/nassisar/Desktop/SmartSeq/fastq_files_metaData.txt', stringsAsFactors = F)
 colnames(metadata)
