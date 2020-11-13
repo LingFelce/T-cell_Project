@@ -22,12 +22,15 @@ module add mixcr
 cd /t1-data/user/lfelce/MiXCR/CD8_input/
 
 mixcr align -p rna-seq -s hsa -OallowPartialAlignments=true' $NAME$p1 $DIR$NAME'.vdjca
+# option preserves partial alignments for further use in assemblePartial
 
 mixcr assemblePartial' $DIR$NAME'.vdjca' $DIR$NAME'_Rescued_it1.vdjca
 mixcr assemblePartial' $DIR$NAME'_Rescued_it1.vdjca' $DIR$NAME'_Rescued_it2.vdjca
 mixcr assemblePartial' $DIR$NAME'_Rescued_it2.vdjca' $DIR$NAME'_Rescued.vdjca
+# several iterations to obtain more reads containing full CDR3 sequence
 
 mixcr assemble -OaddReadsCountOnClustering=true -ObadQualityThreshold=15' $DIR$NAME'_Rescued.vdjca' $DIR$NAME'.clns
+# decrease input quality threshold to 15 for poor quality data
 
 mixcr exportClones' $DIR$NAME'.clns' $DIR$NAME'.txt' > $DIR'script/'$NAME'.sh'
 
