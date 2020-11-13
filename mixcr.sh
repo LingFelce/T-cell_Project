@@ -6,8 +6,8 @@
 
 ## then run second script at bottom, which will run all individual script files wherever they are saved.
 
-cd /t1-data/user/lfelce/MiXCR/CD8_input/ #input directory
-DIR=/t1-data/user/lfelce/MiXCR/CD8_output/ # output directory
+cd /t1-data/user/lfelce/MiXCR/CD4_input2/ #input directory
+DIR=/t1-data/user/lfelce/MiXCR/CD4_output/ # output directory
 
 for NAME in $(find . -name '*_R1_001.fastq.gz' -printf "%f\n" | sed 's/_R1_001.fastq.gz//'); do # remove common ending of name
  
@@ -19,7 +19,7 @@ echo -e '#!/bin/sh
 #$ -cwd
 #$ -q batchq
 module add mixcr
-cd /t1-data/user/lfelce/MiXCR/CD8_input/
+cd /t1-data/user/lfelce/MiXCR/CD4_input2/
 
 mixcr align -p rna-seq -s hsa -OallowPartialAlignments=true' $NAME$p1 $DIR$NAME'.vdjca
 # option preserves partial alignments for further use in assemblePartial
@@ -40,7 +40,7 @@ done
 
 ## copy and paste below into command line
 
-cd /t1-data/user/lfelce/MiXCR/CD8_output/script/
+cd /t1-data/user/lfelce/MiXCR/CD4_output/script/
 
 for line in $(ls *.sh); do
 sbatch $line
