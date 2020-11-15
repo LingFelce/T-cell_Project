@@ -50,13 +50,21 @@ for(i in 1:length(listFiles))
 #read files
 mixcr <- parse.folder("/t1-data/user/lfelce/TCR_analysis/cd8/", 'mixcr')
 
-metadata = fread('/home/fairfaxlab/nassisar/Desktop/SmartSeq/fastq_files_metaData.txt', stringsAsFactors = F)
+all_metadata = fread('/t1-data/user/lfelce/TCR_analysis/metadata_cd8.txt', stringsAsFactors = F)
 colnames(metadata)
 
-# remove sample PRISE3 [duplicated]
+# metadata has all samples - but not all samples have valid clones.
+
+# names of files in folder- 273 files
+name_list <- fread('/t1-data/user/lfelce/TCR_analysis/cd8_names.txt', stringsAsFactors = F, header=F)
+
+# select only file names which have valid clones
+metadata <- all_metadata[is.element(all_metadata$sample, name_list$V1),]
+
+
 # mixcr_backup = mixcr
 
-# replace file names with sample index
+# replace file names with patient index - should have 4 different patients
 names(mixcr) = metadata$patient[match(names(mixcr),metadata$sample)]
 length(unique(names(mixcr)))
 
