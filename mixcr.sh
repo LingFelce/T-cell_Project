@@ -53,3 +53,22 @@ squeue -u lfelce
 
 # find /t1-data/user/lfelce/MiXCR/CD4_output -name "*.txt" | xargs -I v_f ln -s v_f
 # find /t1-data/user/lfelce/MiXCR/CD8_output -name "*.txt" | xargs -I v_f ln -s v_f
+
+# check how many patient samples have valid clonotypes from mixcr output
+# sort .txt files by size, delete all files that are 412 bytes (no clonotypes)
+# copy and paste code below, it will print file names of remaining files in folder to console
+# copy and paste this into a .txt file
+
+for NAME in $(find . -name '*_R1_001.fastq.gz' -printf "%f\n" | sed 's/_R1_001.fastq.gz//'); do # remove common ending of name
+ 
+echo "$NAME"
+
+done
+
+# count how many occurrences of each patient ID in sample file name to work out how many cells have clonotypes from each patient (out of 96)
+grep -o -i 22 cd4_names.txt | wc -l
+grep -o -i 25 cd4_names.txt | wc -l
+grep -o -i 1062 cd4_names.txt | wc -l
+grep -o -i 1493 cd4_names.txt | wc -l
+grep -o -i 1504 cd4_names.txt | wc -l
+grep -o -i 1525 cd4_names.txt | wc -l
