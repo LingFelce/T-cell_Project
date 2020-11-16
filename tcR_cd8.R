@@ -51,7 +51,7 @@ for(i in 1:length(listFiles))
 mixcr <- parse.folder("/t1-data/user/lfelce/TCR_analysis/cd8/", 'mixcr')
 
 all_metadata = fread('/t1-data/user/lfelce/TCR_analysis/metadata_cd8.txt', stringsAsFactors = F)
-colnames(metadata)
+colnames(all_metadata)
 
 # metadata has all samples - but not all samples have valid clones.
 
@@ -97,13 +97,13 @@ top.proportion(mixcr_per_state, 10)
 
 vis.top.proportions(mixcr_per_state)
 
-setwd('/t1-data/data/fairfaxlab/transcriptomics/RNAseq/melanomaCohort/analysis/SmartSeq_project/sample_Results')
-pdf('top_proportions_per_state.pdf', width = 12, height = 8, useDingbats = FALSE)
+setwd('/t1-data/user/lfelce/TCR_analysis/results/')
+pdf('cd8_top_proportions_per_state.pdf', width = 12, height = 8, useDingbats = FALSE)
 vis.top.proportions(mixcr_per_state)
 dev.off()
 
-#------------- Clonal space homeostasis - identification of hyeperepanded clonotypes
-#Clonal space homeostasis is a useful statistics of how many space occupied by clonotypes with specific proportions.
+#------------- Clonal space homeostasis - identification of hyper-expanded clonotypes
+#Clonal space homeostasis is a useful statistic of how much space is occupied by clonotypes with specific proportions.
 
 mixcr.space <- clonal.space.homeostasis(mixcr_per_state)
 write.table(mixcr.space, 'mixcr_clonal_space_homeostasis_per_state.txt', quote = F, row.names = T, sep = '\t')
@@ -111,12 +111,12 @@ write.table(mixcr.space, 'mixcr_clonal_space_homeostasis_per_state.txt', quote =
 vis.clonal.space(mixcr.space)
 
 
-pdf('clonal.space_per_state.pdf', width = 12, height = 8, useDingbats = FALSE)
+pdf('cd8_clonal.space_per_state.pdf', width = 12, height = 8, useDingbats = FALSE)
 vis.clonal.space(mixcr.space)
 dev.off()
 
 
-pdf('clonal.space_High_Low_per_state.pdf', width = 12, height = 8, useDingbats = FALSE)
+pdf('cd8_clonal.space_high_low_per_state.pdf', width = 12, height = 8, useDingbats = FALSE)
 vis.clonal.space(clonal.space.homeostasis(mixcr_per_state, c(Low = .05, High = 1)))
 dev.off()
 
@@ -133,7 +133,7 @@ dev.off()
 #                   .verbose = F)
 # head(cmv.imm.ex)
 
-#------------- Plot gene usage.
+#------------- Plot gene usage - select whole section as part of for bit
 condition = names(mixcr_per_state)
 i=1
 for(i in condition)
@@ -149,6 +149,7 @@ for(i in condition)
   # dev.off()
    
   mixcr.jusage <- geneUsage(mixcr_subset, HUMAN_TRAV)
+  
   pdf(paste0(i,'_HUMAN_TRAV_mixcrJ-usage_dodge_per_state.pdf'), width = 12, height = 8, useDingbats = FALSE)
   print(vis.gene.usage(mixcr.jusage, .main = 'HUMAN_TRAV-usage', .dodge = T))
   dev.off()
@@ -227,27 +228,27 @@ write.table(count, 'shared_representation_percondition_per_state.txt', quote = F
 
 #------------- Principal Component Analysis (PCA)
 
-pdf(paste0('mixcr_PCA_HUMAN_TRAV.pdf'), width = 12, height = 8, useDingbats = FALSE)
+pdf(paste0('mixcr_CD8_PCA_HUMAN_TRAV.pdf'), width = 12, height = 8, useDingbats = FALSE)
 pca.segments(mixcr_per_state, .genes = HUMAN_TRAV, .text = T)  # Plot PCA results of V-segment usage.
 dev.off()
 
-pdf(paste0('mixcr_PCA_HUMAN_TRAJ.pdf'), width = 12, height = 8, useDingbats = FALSE)
+pdf(paste0('mixcr_CD8_PCA_HUMAN_TRAJ.pdf'), width = 12, height = 8, useDingbats = FALSE)
 pca.segments(mixcr_per_state, .genes = HUMAN_TRAJ, .text = T)  # Plot PCA results of V-segment usage.
 dev.off()
 
-pdf(paste0('mixcr_PCA_HUMAN_TRBV.pdf'), width = 12, height = 8, useDingbats = FALSE)
+pdf(paste0('mixcr_CD8_PCA_HUMAN_TRBV.pdf'), width = 12, height = 8, useDingbats = FALSE)
 pca.segments(mixcr_per_state, .genes = HUMAN_TRBV, .text = T)  # Plot PCA results of V-segment usage.
 dev.off()
 
-pdf(paste0('mixcr_PCA_HUMAN_TRBJ.pdf'), width = 12, height = 8, useDingbats = FALSE)
+pdf(paste0('mixcr_CD8_PCA_HUMAN_TRBJ.pdf'), width = 12, height = 8, useDingbats = FALSE)
 pca.segments(mixcr_per_state, .genes = HUMAN_TRBJ, .text = T)  # Plot PCA results of V-segment usage.
 dev.off()
 
-pdf(paste0('mixcr_PCA_HUMAN_IGHJ.pdf'), width = 12, height = 8, useDingbats = FALSE)
+pdf(paste0('mixcr_CD8_PCA_HUMAN_IGHJ.pdf'), width = 12, height = 8, useDingbats = FALSE)
 pca.segments(mixcr_per_state, .genes = HUMAN_IGHJ, .text = T)  # Plot PCA results of V-segment usage.
 dev.off()
 
-pdf(paste0('mixcr_PCA_HUMAN_IGHV.pdf'), width = 12, height = 8, useDingbats = FALSE)
+pdf(paste0('mixcr_PCA_CD8_HUMAN_IGHV.pdf'), width = 12, height = 8, useDingbats = FALSE)
 pca.segments(mixcr_per_state, .genes = HUMAN_IGHV, .text = T)  # Plot PCA results of V-segment usage.
 dev.off()
 
@@ -309,7 +310,10 @@ write.table(overlap, 'repOverlap_jaccard_CDR3.amino_acids.sequence.txt', quote =
 # `pca2euclid`
 
 ### Shared repertoire
-#To investigate a shared among a several repertoires clonotypes ("shared repertoire") the package provided the `shared.repertoire` function along with functions for computing the shared repertoire statistics. The `shared.representation` function computes the number of shared clonotypes for each repertoire for each degree of sharing (i.e., number of people, in which indicated amount of clones have been found). The function `shared.summary` is equivalent to `repOverlap(, 'exact')` but applies to the shared repertoire data frame. Measuring distances among repertoires using the cosine similarity on vector of counts of shared sequences is also possible with the `cosine.sharing` function.
+#To investigate a shared clonotype among several repertoires ("shared repertoire") the package provided the `shared.repertoire` function along with functions for computing the shared repertoire statistics. 
+#The `shared.representation` function computes the number of shared clonotypes for each repertoire for each degree of sharing (i.e., number of people, in which indicated amount of clones have been found). 
+#The function `shared.summary` is equivalent to `repOverlap(, 'exact')` but applies to the shared repertoire data frame. 
+#Measuring distances among repertoires using the cosine similarity on vector of counts of shared sequences is also possible with the `cosine.sharing` function.
 # Compute shared repertoire of amino acid CDR3 sequences and V genes
 # which has been found in two or more people and return the Read.count column
 # of such clonotypes from each data frame in the input list.
@@ -321,7 +325,11 @@ write.table(imm.shared, 'SharedRepertoire_per_state.txt', quote = F, row.names =
 
 
 ## Diversity evaluation
-#For assessing the distribution of clonotypes in the given repertoire, *tcR* provides functions for evaluating the diversity (functions `diversity` and `inverse.simpson`) and the skewness of the clonal distribution (functions `gini` and `gini.simpson`), and a general interface to all of this functions `repDiversity`, which user should use to estimate the diversity of clonesets. Function `diversity` (`repDiversity(your_clonesets, "div")`) computes the ecological diversity index (with parameter `.q` for penalties for clones with large count). Function `inverse.simpson` (`repDiversity(your_clonesets, "inv.simp")`) computes the Inverse Simpson Index (i.e., inverse probability of choosing two similar clonotypes). Function `gini` (`repDiversity(your_clonesets, "gini")`) computes the economical Gini index of clonal distribution. Function `gini.simpson` (`repDiversity(your_clonesets, "gini.simp")`) computes the Gini-Simpson index. Function `chao1` (`repDiversity(your_clonesets, "chao1")`) computes the Chao1 index, its SD and two 95 perc CI. Function `repDiversity` accepts single clonesets as well as a list of clonesets. Parameter `.quant` specifies which column to use for computing the diversity (print `?repDiversity` to see more information about input arguments).
+#For assessing the distribution of clonotypes in the given repertoire, *tcR* provides functions for evaluating the diversity (functions `diversity` and `inverse.simpson`) and the skewness of the clonal distribution (functions `gini` and `gini.simpson`), and a general interface to all of this functions `repDiversity`, which user should use to estimate the diversity of clonesets. 
+#Function `diversity` (`repDiversity(your_clonesets, "div")`) computes the ecological diversity index (with parameter `.q` for penalties for clones with large count). 
+#Function `inverse.simpson` (`repDiversity(your_clonesets, "inv.simp")`) computes the Inverse Simpson Index (i.e., inverse probability of choosing two similar clonotypes). 
+#Function `gini` (`repDiversity(your_clonesets, "gini")`) computes the economical Gini index of clonal distribution. Function `gini.simpson` (`repDiversity(your_clonesets, "gini.simp")`) computes the Gini-Simpson index. 
+#Function `chao1` (`repDiversity(your_clonesets, "chao1")`) computes the Chao1 index, its SD and two 95 perc CI. Function `repDiversity` accepts single clonesets as well as a list of clonesets. Parameter `.quant` specifies which column to use for computing the diversity (print `?repDiversity` to see more information about input arguments).
 # Evaluate the diversity of clones by the ecological diversity index.
 repDiversity(mixcr, 'div', 'read.count')
 sapply(mixcr, function (x) diversity(x$Read.count))
