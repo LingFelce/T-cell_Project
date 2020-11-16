@@ -346,6 +346,8 @@ sapply(mixcr, function (x) gini.simpson(x$Read.proportion))
 repDiversity(mixcr, 'chao1', 'read.count')
 sapply(mixcr, function (x) chao1(x$Read.count))
 
+# output of diversity evaluation?
+
 #------------- Mutation networks
 #Mutation network (or a mutation graph) is a graph with vertices representing nucleotide or in-frame amino acid sequences (out-of-frame amino acid sequences will be automatically filtered out by *tcR* functions for mutation network creating) and edges which connecting pairs of sequences with hamming distance (parameter *.method* = 'hamm') or edit distance (parameter *.method* = 'lev') between them no more than specified in the *.max.errors* function parameter of the `mutation.network` function. To create a mutation network first what you need is to make a shared repertoires and then apply the `mutation.network` function to this shared repertoire:
 
