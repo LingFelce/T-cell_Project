@@ -52,6 +52,7 @@ mixcr <- parse.folder("/t1-data/user/lfelce/TCR_analysis/cd4/", 'mixcr')
 
 all_metadata = fread('/t1-data/user/lfelce/TCR_analysis/metadata_cd4.txt', stringsAsFactors = F)
 colnames(all_metadata)
+all_metadata$patient <- as.character(all_metadata$patient)
 
 # rename patients 022 and 025
 i=1
