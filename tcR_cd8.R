@@ -53,6 +53,9 @@ mixcr <- parse.folder("/t1-data/user/lfelce/TCR_analysis/cd8/", 'mixcr')
 all_metadata = fread('/t1-data/user/lfelce/TCR_analysis/metadata_cd8.txt', stringsAsFactors = F)
 colnames(all_metadata)
 
+# change 5 to 005
+for (i in (1:192)) {all_metadata[i,2] <- "005"}
+
 # metadata has all samples - but not all samples have valid clones.
 
 # names of files in folder- 273 files
@@ -105,19 +108,19 @@ dev.off()
 #------------- Clonal space homeostasis - identification of hyper-expanded clonotypes
 #Clonal space homeostasis is a useful statistic of how much space is occupied by clonotypes with specific proportions.
 
-mixcr.space <- clonal.space.homeostasis(mixcr_per_state)
-write.table(mixcr.space, 'mixcr_clonal_space_homeostasis_per_state.txt', quote = F, row.names = T, sep = '\t')
+#mixcr.space <- clonal.space.homeostasis(mixcr_per_state, c(Low = .001, High = 1))
+#write.table(mixcr.space, 'mixcr_clonal_space_homeostasis_per_state.txt', quote = F, row.names = T, sep = '\t')
 
-vis.clonal.space(mixcr.space)
+#vis.clonal.space(mixcr.space)
 
 
-pdf('cd8_clonal.space_per_state.pdf', width = 12, height = 8, useDingbats = FALSE)
-vis.clonal.space(mixcr.space)
-dev.off()
+#pdf('cd8_clonal.space_per_state.pdf', width = 12, height = 8, useDingbats = FALSE)
+#vis.clonal.space(mixcr.space)
+#dev.off()
 
 
 pdf('cd8_clonal.space_high_low_per_state.pdf', width = 12, height = 8, useDingbats = FALSE)
-vis.clonal.space(clonal.space.homeostasis(mixcr_per_state, c(Low = .05, High = 1)))
+vis.clonal.space(clonal.space.homeostasis(mixcr_per_state, c(Low = .5, High = 1)))
 dev.off()
 
 
