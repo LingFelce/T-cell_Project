@@ -352,3 +352,35 @@ sapply(mixcr, function (x) chao1(x$Read.count))
 #Mutation network (or a mutation graph) is a graph with vertices representing nucleotide or in-frame amino acid sequences (out-of-frame amino acid sequences will be automatically filtered out by *tcR* functions for mutation network creating) and edges which connecting pairs of sequences with hamming distance (parameter *.method* = 'hamm') or edit distance (parameter *.method* = 'lev') between them no more than specified in the *.max.errors* function parameter of the `mutation.network` function. To create a mutation network first what you need is to make a shared repertoires and then apply the `mutation.network` function to this shared repertoire:
 
 ## End
+
+#-------------- try to redo gene usage plots to have all 6 samples in one plot ----
+
+pdf('HUMAN_TRAJ.pdf', width = 16, height = 8, useDingbats = FALSE)
+print(vis.gene.usage(mixcr_per_state, HUMAN_TRAJ, .main = 'TRAJ-usage', .dodge = T))
+dev.off()
+
+pdf('HUMAN_TRAV.pdf', width = 16, height = 8, useDingbats = FALSE)
+print(vis.gene.usage(mixcr_per_state, HUMAN_TRAV, .main = 'TRAV-usage', .dodge = T))
+dev.off()
+
+pdf('HUMAN_TRBJ.pdf', width = 16, height = 8, useDingbats = FALSE)
+print(vis.gene.usage(mixcr_per_state, HUMAN_TRBJ, .main = 'TRBJ-usage', .dodge = T))
+dev.off()
+
+pdf('HUMAN_TRBV.pdf', width = 16, height = 8, useDingbats = FALSE)
+print(vis.gene.usage(mixcr_per_state, HUMAN_TRBV, .main = 'TRBV-usage', .dodge = T))
+dev.off()
+
+pdf('HUMAN_TRBD.pdf', width = 16, height = 8, useDingbats = FALSE)
+print(vis.gene.usage(mixcr_per_state, HUMAN_TRBD, .main = 'TRBD-usage', .dodge = T))
+dev.off()
+
+vis.gene.usage(mixcr_per_state, HUMAN_TRAJ, .main = 'TRAJ-usage', .dodge = T)
+vis.gene.usage(mixcr_per_state, HUMAN_TRAV, .main = 'TRAV-usage', .dodge = T)
+vis.gene.usage(mixcr_per_state, HUMAN_TRBJ, .main = 'TRBJ-usage', .dodge = T)
+vis.gene.usage(mixcr_per_state, HUMAN_TRBV, .main = 'TRBV-usage', .dodge = T)
+vis.gene.usage(mixcr_per_state, HUMAN_TRBD, .main = 'TRBD-usage', .dodge = T)
+
+
+
+
