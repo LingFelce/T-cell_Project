@@ -53,6 +53,12 @@ mixcr <- parse.folder("/t1-data/user/lfelce/TCR_analysis/cd4/", 'mixcr')
 all_metadata = fread('/t1-data/user/lfelce/TCR_analysis/metadata_cd4.txt', stringsAsFactors = F)
 colnames(all_metadata)
 
+# rename patients 022 and 025
+i=1
+for (i in (1:96)) {all_metadata[i,2] <- "022"}
+for (i in (193:288)) {all_metadata[i,2] <- "025"}
+
+
 # metadata has all samples - but not all samples have valid clones.
 
 # names of files in folder- 398 files
@@ -105,19 +111,19 @@ dev.off()
 #------------- Clonal space homeostasis - identification of hyper-expanded clonotypes
 #Clonal space homeostasis is a useful statistic of how much space is occupied by clonotypes with specific proportions.
 
-mixcr.space <- clonal.space.homeostasis(mixcr_per_state)
-write.table(mixcr.space, 'mixcr_clonal_space_homeostasis_per_state.txt', quote = F, row.names = T, sep = '\t')
+#mixcr.space <- clonal.space.homeostasis(mixcr_per_state)
+#write.table(mixcr.space, 'mixcr_clonal_space_homeostasis_per_state.txt', quote = F, row.names = T, sep = '\t')
 
-vis.clonal.space(mixcr.space)
+#vis.clonal.space(mixcr.space)
 
 
-pdf('clonal.space_per_state.pdf', width = 12, height = 8, useDingbats = FALSE)
-vis.clonal.space(mixcr.space)
-dev.off()
+#pdf('clonal.space_per_state.pdf', width = 12, height = 8, useDingbats = FALSE)
+#vis.clonal.space(mixcr.space)
+#dev.off()
 
 
 pdf('clonal.space_high_low_per_state.pdf', width = 12, height = 8, useDingbats = FALSE)
-vis.clonal.space(clonal.space.homeostasis(mixcr_per_state, c(Low = .05, High = 1)))
+vis.clonal.space(clonal.space.homeostasis(mixcr_per_state, c(Low = .5, High = 1)))
 dev.off()
 
 
@@ -147,7 +153,7 @@ for(i in condition)
   # pdf(paste0(i,'_mixcr_Topcross_per_state.pdf'), width = 25, height = 10, useDingbats = FALSE)
   # print(top.cross.plot(mixcr.top))
   # dev.off()
-   
+  
   mixcr.jusage <- geneUsage(mixcr_subset, HUMAN_TRAV)
   
   pdf(paste0(i,'_HUMAN_TRAV_mixcrJ-usage_dodge_per_state.pdf'), width = 12, height = 8, useDingbats = FALSE)
@@ -380,7 +386,3 @@ vis.gene.usage(mixcr_per_state, HUMAN_TRAV, .main = 'TRAV-usage', .dodge = T)
 vis.gene.usage(mixcr_per_state, HUMAN_TRBJ, .main = 'TRBJ-usage', .dodge = T)
 vis.gene.usage(mixcr_per_state, HUMAN_TRBV, .main = 'TRBV-usage', .dodge = T)
 vis.gene.usage(mixcr_per_state, HUMAN_TRBD, .main = 'TRBD-usage', .dodge = T)
-
-
-
-
