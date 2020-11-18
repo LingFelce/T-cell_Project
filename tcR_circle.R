@@ -147,6 +147,91 @@ setwd('/t1-data/user/lfelce/TCR_analysis')
 write.csv(cd8_df, file="all_cd8_tcr.csv", row.names=FALSE)
 
 
-#---------------------Circular plot
+#---------------------Circular plot - CD4
 
 library(circlize)
+setwd('/t1-data/user/lfelce/TCR_analysis')
+
+# separate S34 and M24 samples
+
+cd4_s34 <- rbind(cd4_df[c(1:134,282:400),])
+
+cd4_m24 <- rbind(cd4_df[c(135:281,401:555, 710:852),])
+
+
+# need to plot table with variable genes as rows and junction genes as columns
+
+
+install.packages("remotes")
+remotes::install_github("mjdufort/TCRtools")
+library(TCRtools)
+
+# S34
+match_j <- match_TCR_chains(cd4_s34, id_col="sample", junction_col="J.start", V_gene_col="V.gene", J_gene_col="J.gene")
+match_v <- match_TCR_chains(cd4_s34, id_col="sample", junction_col="V.end", V_gene_col="V.gene", J_gene_col="J.gene")
+
+
+match_j_table <- as.data.frame.matrix(table(match_j$V.gene, match_j$J.gene))
+
+match_j_table <- as.matrix(match_j_table)
+class(match_j_table)
+
+circos.clear()
+circos.par(gap.after = c(rep(5, nrow(match_j_table)-1), 10, rep(5, ncol(match_j_table)-1), 5))
+chordDiagram(match_j_table)
+
+match_v_table <- as.data.frame.matrix(table(match_v$V.gene, match_v$J.gene))
+
+match_v_table <- as.matrix(match_v_table)
+class(match_v_table)
+
+pdf('cd4_s34_chorddiagram.pdf', width = 12, height = 8, useDingbats = FALSE)
+circos.clear()
+set.seed(999)
+circos.par(gap.after = c(rep(5, nrow(match_v_table)-1), 15, rep(5, ncol(match_v_table)-1), 5))
+chordDiagram(match_v_table, link.sort = TRUE, link.decreasing = TRUE)
+dev.off()
+
+pdf('cd4_s34_chorddiagram_scale.pdf', width = 12, height = 8, useDingbats = FALSE)
+circos.clear()
+set.seed(999)
+circos.par(gap.after = c(rep(5, nrow(match_v_table)-1), 15, rep(5, ncol(match_v_table)-1), 5))
+chordDiagram(match_v_table, link.sort = TRUE, link.decreasing = TRUE, scale=TRUE)
+dev.off()
+
+# M24
+
+match_j <- match_TCR_chains(cd4_m24, id_col="sample", junction_col="J.start", V_gene_col="V.gene", J_gene_col="J.gene")
+match_v <- match_TCR_chains(cd4_m24, id_col="sample", junction_col="V.end", V_gene_col="V.gene", J_gene_col="J.gene")
+
+
+match_j_table <- as.data.frame.matrix(table(match_j$V.gene, match_j$J.gene))
+
+match_j_table <- as.matrix(match_j_table)
+class(match_j_table)
+
+circos.clear()
+circos.par(gap.after = c(rep(5, nrow(match_j_table)-1), 10, rep(5, ncol(match_j_table)-1), 5))
+chordDiagram(match_j_table)
+
+match_v_table <- as.data.frame.matrix(table(match_v$V.gene, match_v$J.gene))
+
+match_v_table <- as.matrix(match_v_table)
+class(match_v_table)
+
+pdf('cd4_m24_chorddiagram.pdf', width = 12, height = 8, useDingbats = FALSE)
+circos.clear()
+set.seed(999)
+circos.par(gap.after = c(rep(5, nrow(match_v_table)-1), 15, rep(5, ncol(match_v_table)-1), 5))
+chordDiagram(match_v_table, link.sort = TRUE, link.decreasing = TRUE)
+dev.off()
+
+pdf('cd4_m24_chorddiagram_scale.pdf', width = 12, height = 8, useDingbats = FALSE)
+circos.clear()
+set.seed(999)
+circos.par(gap.after = c(rep(5, nrow(match_v_table)-1), 15, rep(5, ncol(match_v_table)-1), 5))
+chordDiagram(match_v_table, link.sort = TRUE, link.decreasing = TRUE, scale=TRUE)
+dev.off()
+
+
+
