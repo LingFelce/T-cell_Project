@@ -1,0 +1,152 @@
+# combining mixcr parsed files into single dataframe 
+# each row name is cell (some cells have multiple rows)
+
+#---------------- CD4 TCR ---------------------------
+
+library(tcR)
+
+# TCR sequence database
+
+data(genesegments)
+
+# TCR
+HUMAN_TRAV
+HUMAN_TRAJ
+HUMAN_TRBV
+HUMAN_TRBD
+HUMAN_TRBJ
+HUMAN_TRBV_MITCR
+HUMAN_TRBV_ALS
+HUMAN_TRGV
+HUMAN_TRGJ
+HUMAN_TRDV
+HUMAN_TRDD
+HUMAN_TRDJ
+
+# BCR
+HUMAN_IGHV
+HUMAN_IGHD
+HUMAN_IGHJ
+HUMAN_IGLV
+HUMAN_IGLJ
+
+# Nucleotide sequence and CDR3 position of each gene segment
+genesegments$TRBV[1:10,]
+
+library(data.table)
+
+
+setwd('/t1-data/user/lfelce/TCR_analysis/cd4/')
+listFiles = list.files()
+
+# revise the structure of input files
+for(i in 1:length(listFiles))
+{
+  DT = fread(listFiles[i])
+  write.table(DT,listFiles[i],quote = F, row.names = F, sep = '\t')
+}
+
+#read files
+mixcr <- parse.folder("/t1-data/user/lfelce/TCR_analysis/cd4/", 'mixcr')
+
+all_metadata = fread('/t1-data/user/lfelce/TCR_analysis/metadata_cd4.txt', stringsAsFactors = F)
+colnames(all_metadata)
+all_metadata$patient <- as.character(all_metadata$patient)
+
+# rename patients 022 and 025
+i=1
+for (i in (1:96)) {all_metadata[i,2] <- "022"}
+for (i in (193:288)) {all_metadata[i,2] <- "025"}
+
+
+# metadata has all samples - but not all samples have valid clones.
+
+# names of files in folder- 398 files
+name_list <- fread('/t1-data/user/lfelce/TCR_analysis/cd4_names.txt', stringsAsFactors = F, header=F)
+
+# select only file names which have valid clones
+metadata <- all_metadata[is.element(all_metadata$sample, name_list$V1),]names(mixcr)
+
+mixcr_ordered = mixcr[order(names(mixcr))]
+names(mixcr_ordered)
+
+class(mixcr)
+
+cd4_df <- do.call(rbind.data.frame, mixcr)
+
+dim(cd4_df)
+
+# new column for sample name
+
+cd4_df$sample <- rownames(cd4_df)
+
+# move sample name to 1st column
+
+cd4_df <- cd4_df[,c(17, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)]
+
+# convert so can write data frame as .csv file
+
+cd4_df <- apply(cd4_df,2,as.character)
+
+# set working directory to export .csv
+
+setwd('/t1-data/user/lfelce/TCR_analysis')
+
+write.csv(cd4_df, file="all_cd4_tcr.csv", row.names=FALSE)
+
+
+
+#----------------------- CD8 TCR
+
+setwd('/t1-data/user/lfelce/TCR_analysis/cd8/')
+listFiles = list.files()
+
+# revise the structure of input files
+for(i in 1:length(listFiles))
+{
+  DT = fread(listFiles[i])
+  write.table(DT,listFiles[i],quote = F, row.names = F, sep = '\t')
+}
+
+#read files
+mixcr <- parse.folder("/t1-data/user/lfelce/TCR_analysis/cd8/", 'mixcr')
+
+all_metadata = fread('/t1-data/user/lfelce/TCR_analysis/metadata_cd8.txt', stringsAsFactors = F)
+colnames(all_metadata)
+
+# change 5 to 005
+for (i in (1:192)) {all_metadata[i,2] <- "005"}
+
+# metadata has all samples - but not all samples have valid clones.
+
+# names of files in folder- 273 files
+name_list <- fread('/t1-data/user/lfelce/TCR_analysis/cd8_names.txt', stringsAsFactors = F, header=F)
+
+# select only file names which have valid clones
+metadata <- all_metadata[is.element(all_metadata$sample, name_list$V1),]
+
+cd8_df <- do.call(rbind.data.frame, mixcr)
+dim(cd8_df)
+
+# new column for sample name
+
+cd8_df$sample <- rownames(cd8_df)
+
+# move sample name to 1st column
+
+cd8_df <- cd8_df[,c(17, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)]
+
+# convert so can write data frame as .csv file
+
+cd8_df <- apply(cd8_df,2,as.character)
+
+# set working directory to export .csv
+
+setwd('/t1-data/user/lfelce/TCR_analysis')
+
+write.csv(cd8_df, file="all_cd8_tcr.csv", row.names=FALSE)
+
+
+#---------------------Circular plot
+
+library(circlize)
