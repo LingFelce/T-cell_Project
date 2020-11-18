@@ -166,10 +166,27 @@ cd4_m24_severe <- as.data.frame(rbind(cd4_df[c(1556:852),]))
 cd4_s34_table <- as.data.frame.matrix(table(cd4_s34$V.gene, cd4_s34$J.gene))
 cd4_s34_table <- as.matrix(cd4_s34_table[-1,-1])
 
-pdf('cd4_s34_chorddiagram.pdf', width = 12, height = 8, useDingbats = FALSE)
+# alpha chain
+cd4_s34_table_a <- as.data.frame.matrix(rbind(cd4_s34_table[c(1:31),]))
+cd4_s34_table_a <- as.data.frame.matrix(cbind(cd4_s34_table_a[,c(1:36)]))
+cd4_s34_table_a <- as.matrix(cd4_s34_table_a)
+
+pdf('cd4_s34_a_chorddiagram.pdf', width = 12, height = 8, useDingbats = FALSE)
 circos.clear()
 set.seed(999)
-chordDiagram(cd4_s34_table)
+chordDiagram(cd4_s34_table_a)
 dev.off()
+
+# beta chain
+cd4_s34_table_b <- as.data.frame.matrix(rbind(cd4_s34_table[c(32:72),]))
+cd4_s34_table_b <- as.data.frame.matrix(cbind(cd4_s34_table_b[,c(37:47)]))
+cd4_s34_table_b <- as.matrix(cd4_s34_table_b)
+
+pdf('cd4_s34_b_chorddiagram.pdf', width = 12, height = 8, useDingbats = FALSE)
+circos.clear()
+set.seed(999)
+chordDiagram(cd4_s34_table_b)
+dev.off()
+
 
 
