@@ -174,7 +174,14 @@ cd4_s34_table_a <- as.matrix(cd4_s34_table_a)
 pdf('cd4_s34_a_chorddiagram.pdf', width = 12, height = 8, useDingbats = FALSE)
 circos.clear()
 set.seed(999)
-chordDiagram(cd4_s34_table_a)
+chordDiagram(cd4_s34_table_a, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
 dev.off()
 
 # beta chain
@@ -185,8 +192,15 @@ cd4_s34_table_b <- as.matrix(cd4_s34_table_b)
 pdf('cd4_s34_b_chorddiagram.pdf', width = 12, height = 8, useDingbats = FALSE)
 circos.clear()
 set.seed(999)
-chordDiagram(cd4_s34_table_b)
+chordDiagram(cd4_s34_table_b, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+
+circos.info()
 dev.off()
-
-
 
