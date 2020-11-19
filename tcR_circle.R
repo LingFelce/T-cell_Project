@@ -286,4 +286,181 @@ circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
 
 dev.off()
 
+#-----------------------Separate by patient
+
+# CD8 005
+
+cd8_005 <- cd8_df[1:170,]
+cd8_005_table <- as.data.frame.matrix(table(cd8_005$V.gene, cd8_005$J.gene))
+cd8_005_table <- as.matrix(cd8_005_table)
+circos.clear()
+set.seed(999)
+chordDiagram(cd8_005_table, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+
+
+# CD8 1131TP1
+cd8_1131TP1 <- cd8_df[171:175,]
+cd8_1131TP1_table <- as.data.frame.matrix(table(cd8_1131TP1$V.gene, cd8_1131TP1$J.gene))
+cd8_1131TP1_table <- as.matrix(cd8_1131TP1_table)
+circos.clear()
+set.seed(999)
+chordDiagram(cd8_1131TP1_table, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+
+# CD8 1131TP2
+cd8_1131TP2 <- cd8_df[176:298,]
+cd8_1131TP2_table <- as.data.frame.matrix(table(cd8_1131TP2$V.gene, cd8_1131TP2$J.gene))
+cd8_1131TP2_table <- as.matrix(cd8_1131TP2_table)
+circos.clear()
+set.seed(999)
+chordDiagram(cd8_1131TP2_table, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+
+# CD8 1153
+cd8_1153 <- cd8_df[299:407,]
+cd8_1153_table <- as.data.frame.matrix(table(cd8_1153$V.gene, cd8_1153$J.gene))
+cd8_1153_table <- as.matrix(cd8_1153_table)
+circos.clear()
+set.seed(999)
+chordDiagram(cd8_1153_table, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+
+# CD8 1201
+cd8_1201 <- cd8_df[408:563,]
+cd8_1201_table <- as.data.frame.matrix(table(cd8_1201$V.gene, cd8_1201$J.gene))
+cd8_1201_table <- as.matrix(cd8_1201_table)
+circos.clear()
+set.seed(999)
+chordDiagram(cd8_1201_table, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+
+# CD4 022
+cd4_022 <- cd4_df[1:134,]
+cd4_022_table <- as.data.frame.matrix(table(cd4_022$V.gene, cd4_022$J.gene))
+cd4_022_table <- as.matrix(cd4_022_table)
+circos.clear()
+set.seed(999)
+chordDiagram(cd4_022_table, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+
+# CD4 025
+cd4_025 <- cd4_df[135:281,]
+cd4_025_table <- as.data.frame.matrix(table(cd4_025$V.gene, cd4_025$J.gene))
+cd4_025_table <- as.matrix(cd4_025_table)
+circos.clear()
+set.seed(999)
+chordDiagram(cd4_025_table, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+
+# CD4 1062
+cd4_1062 <- cd4_df[282:400,]
+cd4_1062_table <- as.data.frame.matrix(table(cd4_1062$V.gene, cd4_1062$J.gene))
+cd4_1062_table <- as.matrix(cd4_1062_table)
+circos.clear()
+set.seed(999)
+chordDiagram(cd4_1062_table, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+
+# CD4 1493
+cd4_1493 <- cd4_df[401:555,]
+cd4_1493_table <- as.data.frame.matrix(table(cd4_1493$V.gene, cd4_1493$J.gene))
+cd4_1493_table <- as.matrix(cd4_1493_table)
+# if not clear from chord diagram, then view table and search for numbers like 2, 3, 4, etc to see highest hits
+circos.clear()
+set.seed(999)
+chordDiagram(cd4_1493_table, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+
+# CD4 1504
+cd4_1504 <- cd4_df[556:709,]
+cd4_1504_table <- as.data.frame.matrix(table(cd4_1504$V.gene, cd4_1504$J.gene))
+cd4_1504_table <- as.matrix(cd4_1504_table)
+# if not clear from chord diagram, then view table and search for numbers like 2, 3, 4, etc to see highest hits
+# copy and paste into Excel as can freeze 1st column to see V genes better
+# and can do conditional formatting
+circos.clear()
+set.seed(999)
+chordDiagram(cd4_1504_table, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+
+# CD4 1525
+cd4_1525 <- cd4_df[710:852,]
+cd4_1525_table <- as.data.frame.matrix(table(cd4_1525$V.gene, cd4_1525$J.gene))
+cd4_1525_table <- as.matrix(cd4_1525_table)
+# if not clear from chord diagram, then view table and search for numbers like 2, 3, 4, etc to see highest hits
+# copy and paste into Excel as can freeze 1st column to see V genes better
+# and can do conditional formatting
+circos.clear()
+set.seed(999)
+chordDiagram(cd4_1525_table, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+
+
 
