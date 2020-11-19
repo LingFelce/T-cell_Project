@@ -383,3 +383,12 @@ vis.gene.usage(mixcr_per_state, HUMAN_TRAV, .main = 'TRAV-usage', .dodge = T)
 vis.gene.usage(mixcr_per_state, HUMAN_TRBJ, .main = 'TRBJ-usage', .dodge = T)
 vis.gene.usage(mixcr_per_state, HUMAN_TRBV, .main = 'TRBV-usage', .dodge = T)
 vis.gene.usage(mixcr_per_state, HUMAN_TRBD, .main = 'TRBD-usage', .dodge = T)
+       
+#--------- Find dominant clonotype for each patient
+
+# print to console
+
+names(which.max(table(mixcr_per_state$`005`$J.gene)))
+names(which.max(table(mixcr_per_state$`005`$V.gene)))
+
+# or just look at gene usage plots and note down which gene has highest bar!
