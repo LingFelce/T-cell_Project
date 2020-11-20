@@ -56,10 +56,10 @@ squeue -u lfelce
 
 # check how many patient samples have valid clonotypes from mixcr output
 # sort .txt files by size, delete all files that are 412 bytes (no clonotypes)
-# copy and paste code below, it will print file names of remaining files in folder to console
+# copy and paste code below, it will print file names of remaining files in folder to console (without .txt extension)
 # copy and paste this into a .txt file
 
-for NAME in $(find . -name '*_R1_001.fastq.gz' -printf "%f\n" | sed 's/_R1_001.fastq.gz//'); do # remove common ending of name
+for NAME in $(find . -name '*.txt' -printf "%f\n" | sed 's/.txt//'); do # remove common ending of name
  
 echo "$NAME"
 
