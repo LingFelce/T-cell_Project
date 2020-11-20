@@ -96,7 +96,7 @@ write.csv(cd4_df, file="all_cd4_tcr.csv", row.names=FALSE)
 
 
 
-#----------------------- CD8 TCR
+#----------------------- CD8 TCR ---------------------------
 
 setwd('/t1-data/user/lfelce/TCR_analysis/cd8/')
 listFiles = list.files()
@@ -147,7 +147,57 @@ setwd('/t1-data/user/lfelce/TCR_analysis')
 write.csv(cd8_df, file="all_cd8_tcr.csv", row.names=FALSE)
 
 
-#---------------------Circular plot - CD4
+#--------------------CD8-ORF samples------------------------
+
+setwd('/t1-data/user/lfelce/TCR_analysis/cd8_orf/')
+listFiles = list.files()
+
+# revise the structure of input files
+for(i in 1:length(listFiles))
+{
+  DT = fread(listFiles[i])
+  write.table(DT,listFiles[i],quote = F, row.names = F, sep = '\t')
+}
+
+#read files
+mixcr <- parse.folder("/t1-data/user/lfelce/TCR_analysis/cd8_orf/", 'mixcr')
+
+all_metadata = fread('/t1-data/user/lfelce/TCR_analysis/metadata_cd8.txt', stringsAsFactors = F)
+colnames(all_metadata)
+
+# change 5 to 005
+for (i in (1:192)) {all_metadata[i,2] <- "005"}
+
+# metadata has all samples - but not all samples have valid clones.
+
+# names of files in folder- 312 files
+name_list <- fread('/t1-data/user/lfelce/TCR_analysis/cd8_orf_names.txt', stringsAsFactors = F, header=F)
+
+# select only file names which have valid clones
+metadata <- all_metadata[is.element(all_metadata$sample, name_list$V1),]
+
+cd8_orf_df <- do.call(rbind.data.frame, mixcr)
+dim(cd8_orf_df)
+
+# new column for sample name
+
+cd8_orf_df$sample <- rownames(cd8_orf_df)
+
+# move sample name to 1st column
+
+cd8_orf_df <- cd8_orf_df[,c(17, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)]
+
+# convert so can write data frame as .csv file
+
+cd8_orf_df <- apply(cd8_orf_df,2,as.character)
+
+# set working directory to export .csv
+
+setwd('/t1-data/user/lfelce/TCR_analysis')
+
+write.csv(cd8_orf_df, file="all_cd8_orf_tcr.csv", row.names=FALSE)
+
+#---------------------Circular plot - CD4 ----------------------------------
 
 library(circlize)
 setwd('/t1-data/user/lfelce/TCR_analysis')
@@ -244,7 +294,7 @@ circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
 
 dev.off()
 
-# cd8 tabulate and separate alpha and beta
+#------------------- Circular plot CD8 tabulate and separate alpha and beta ------------------
 
 cd8_df <- as.data.frame(cd8_df)
 cd8_table <- as.data.frame.matrix(table(cd8_df$V.gene, cd8_df$J.gene))
@@ -286,7 +336,50 @@ circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
 
 dev.off()
 
-#-----------------------Separate by patient
+#----------------- Circular plot CD8 ORF --------------------------
+
+cd8_orf_df <- as.data.frame(cd8_orf_df)
+cd8_orf_table <- as.data.frame.matrix(table(cd8_orf_df$V.gene, cd8_orf_df$J.gene))
+cd8_orf_table <- as.matrix(cd8_orf_table[-1,-1])
+
+# alpha chain
+cd8_orf_table_a <- as.data.frame.matrix(rbind(cd8_orf_table[c(1:48),]))
+cd8_orf_table_a <- as.data.frame.matrix(cbind(cd8_orf_table_a[,c(1:48)]))
+cd8_orf_table_a <- as.matrix(cd8_orf_table_a)
+
+pdf('cd8_orf_a_chorddiagram.pdf', width = 12, height = 8, useDingbats = FALSE)
+circos.clear()
+set.seed(999)
+chordDiagram(cd8_orf_table_a, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+dev.off()
+
+# beta chain
+cd8_orf_table_b <- as.data.frame.matrix(rbind(cd8_orf_table[c(49:160),]))
+cd8_orf_table_b <- as.data.frame.matrix(cbind(cd8_orf_table_b[,c(49:64)]))
+cd8_orf_table_b <- as.matrix(cd8_orf_table_b)
+
+pdf('cd8_orf_b_chorddiagram.pdf', width = 12, height = 8, useDingbats = FALSE)
+circos.clear()
+set.seed(999)
+chordDiagram(cd8_orf_table_b, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+
+dev.off()
+
+#-----------------------Separate by patient ------------------------
 
 # CD8 005
 
@@ -463,4 +556,16 @@ circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
 }, bg.border = NA)
 
 
+
+
+
+
+
+#------------------------- Finding alpha and beta dominant pair for each patient --------------------
+
+table(mixcr$`005_CD8_B7_SPR_P1_A1_S1`$V.gene, mixcr$`005_CD8_B7_SPR_P1_A1_S1`$J.gene)
+table(mixcr$`005_CD8_B7_SPR_P1_A2_S3`$V.gene, mixcr$`005_CD8_B7_SPR_P1_A2_S3`$J.gene)
+
+
+test_table <- cd8_df[,c(1, 8, 9)]
 
