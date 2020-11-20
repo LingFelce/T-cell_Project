@@ -562,10 +562,139 @@ circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
 
 
 #------------------------- Finding alpha and beta dominant pair for each patient --------------------
+library(dplyr)
 
-table(mixcr$`005_CD8_B7_SPR_P1_A1_S1`$V.gene, mixcr$`005_CD8_B7_SPR_P1_A1_S1`$J.gene)
-table(mixcr$`005_CD8_B7_SPR_P1_A2_S3`$V.gene, mixcr$`005_CD8_B7_SPR_P1_A2_S3`$J.gene)
+## C8 NP-16 patients
+# 005
+datalist = list()
 
+for (i in (1:91)) {
+  # ... make some data
+  dat <- data.frame(c(mixcr[[i]][7], mixcr[[i]][8]))
+  dat$i <- i # maybe you want to keep track of which iteration produced it?
+  datalist[[i]] <- dat # add it to your list
+}
 
-test_table <- cd8_df[,c(1, 8, 9)]
+big_data = do.call(rbind, datalist)
+big_data1 <- big_data %>% group_by(i) %>% filter(n() >= 2)
 
+big_data2 <- mutate(big_data1, VJ = paste(V.gene, J.gene))
+# copy and paste into Excel, sort manually into Alpha and Beta columns
+# copy into Notepad, copy into cluster Excel and save as .csv
+
+pairs_005 <- read.csv("pairs_005.csv")
+pairs_005_table <- as.data.frame.matrix(table(pairs_005$Beta, pairs_005$Alpha))
+pairs_005_table <- as.matrix(pairs_005_table)
+
+circos.clear()
+set.seed(999)
+chordDiagram(pairs_005_table, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+
+# 1131-TP-1 - only 1 suitable pairing, so can just check table by eye!
+datalist = list()
+
+for (i in (92:95)) {
+  # ... make some data
+  dat <- data.frame(c(mixcr[[i]][7], mixcr[[i]][8]))
+  dat$i <- i # maybe you want to keep track of which iteration produced it?
+  datalist[[i]] <- dat # add it to your list
+}
+
+big_data = do.call(rbind, datalist)
+
+# 1131-TP-2
+datalist = list()
+
+for (i in (96:155)) {
+  # ... make some data
+  dat <- data.frame(c(mixcr[[i]][7], mixcr[[i]][8]))
+  dat$i <- i # maybe you want to keep track of which iteration produced it?
+  datalist[[i]] <- dat # add it to your list
+}
+
+big_data = do.call(rbind, datalist)
+big_data1 <- big_data %>% group_by(i) %>% filter(n() >= 2)
+
+big_data2 <- mutate(big_data1, VJ = paste(V.gene, J.gene))
+
+pairs <- read.csv("pairs_1131-TP-2.csv")
+pairs_table <- as.data.frame.matrix(table(pairs$Beta, pairs$Alpha))
+pairs_table <- as.matrix(pairs_table)
+
+circos.clear()
+set.seed(999)
+chordDiagram(pairs_table, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+
+# 1153
+datalist = list()
+
+for (i in (156:206)) {
+  # ... make some data
+  dat <- data.frame(c(mixcr[[i]][7], mixcr[[i]][8]))
+  dat$i <- i # maybe you want to keep track of which iteration produced it?
+  datalist[[i]] <- dat # add it to your list
+}
+
+big_data = do.call(rbind, datalist)
+big_data1 <- big_data %>% group_by(i) %>% filter(n() >= 2)
+
+big_data2 <- mutate(big_data1, VJ = paste(V.gene, J.gene))
+
+pairs <- read.csv("pairs_1153.csv")
+pairs_table <- as.data.frame.matrix(table(pairs$Beta, pairs$Alpha))
+pairs_table <- as.matrix(pairs_table)
+
+circos.clear()
+set.seed(999)
+chordDiagram(pairs_table, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+
+# 1201-TP-2
+datalist = list()
+
+for (i in (207:273)) {
+  # ... make some data
+  dat <- data.frame(c(mixcr[[i]][7], mixcr[[i]][8]))
+  dat$i <- i # maybe you want to keep track of which iteration produced it?
+  datalist[[i]] <- dat # add it to your list
+}
+
+big_data = do.call(rbind, datalist)
+big_data1 <- big_data %>% group_by(i) %>% filter(n() >= 2)
+
+big_data2 <- mutate(big_data1, VJ = paste(V.gene, J.gene))
+
+pairs <- read.csv("pairs_1201-TP-2.csv")
+pairs_table <- as.data.frame.matrix(table(pairs$Beta, pairs$Alpha))
+pairs_table <- as.matrix(pairs_table)
+
+circos.clear()
+set.seed(999)
+chordDiagram(pairs_table, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
