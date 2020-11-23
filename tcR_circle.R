@@ -564,7 +564,7 @@ circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
 #------------------------- Finding alpha and beta dominant pair for each patient --------------------
 library(dplyr)
 
-## C8 NP-16 patients
+## CD8 NP-16 patients
 # 005
 datalist = list()
 
@@ -576,15 +576,14 @@ for (i in (1:91)) {
 }
 
 big_data = do.call(rbind, datalist)
-big_data1 <- big_data %>% group_by(i) %>% filter(n() >= 2)
+big_data1 <- big_data %>% group_by(i) %>% filter(n() == 2)
 
-big_data2 <- mutate(big_data1, VJ = paste(V.gene, J.gene))
-# copy and paste into Excel, sort manually into Alpha and Beta columns
-# copy into Notepad, copy into cluster Excel and save as .csv
+big_data2 <- group_by(big_data1, i) %>%
+  summarise_each(funs(paste(., collapse = "-")))
 
-pairs_005 <- read.csv("pairs_005.csv")
-pairs_005_table <- as.data.frame.matrix(table(pairs_005$Beta, pairs_005$Alpha))
-pairs_005_table <- as.matrix(pairs_005_table)
+pairs_table <- as.data.frame.matrix(table(big_data2$V.gene, big_data2$J.gene))
+pairs_table <- as.matrix(pairs_table)
+
 
 circos.clear()
 set.seed(999)
@@ -698,3 +697,67 @@ circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
   circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
   circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
 }, bg.border = NA)
+
+
+
+#---------------------- testing --------------------------
+
+test <-  as.data.frame(c(mixcr[[1]][7], mixcr[[1]][8]))
+
+test1 <- group_by(test, V.gene) %>% across(funs(paste(., collapse="")))
+
+byHand <- group_by(data, hand_id) %>%
+  summarise_each(funs(paste(., collapse = "-")))
+
+test1 <- aggregate(x=test, by=list(test$V.gene, test$J.gene), min)
+
+test%>% group_by(V.gene, J.gene) %>% summarise_all(funs(max(as.character(.))))
+
+test$alpha <- 1
+A.rows <- !grepl("TRB", test[ ,"V.gene"])
+test[A.rows, ] <- cbind(NA, test[A.rows, "V.gene"])
+
+datalist = list()
+
+for (i in (1:91)) {
+  # ... make some data
+  dat <- data.frame(c(mixcr[[i]][7], mixcr[[i]][8]))
+  dat$i <- i # maybe you want to keep track of which iteration produced it?
+  datalist[[i]] <- dat # add it to your list
+}
+
+big_data = do.call(rbind, datalist)
+big_data1 <- big_data %>% group_by(i) %>% filter(n() == 2)
+
+big_data2 <- group_by(big_data1, i) %>%
+  summarise_each(funs(paste(., collapse = "-")))
+
+pairs_table <- as.data.frame.matrix(table(big_data2$V.gene, big_data2$J.gene))
+pairs_table <- as.matrix(pairs_table)
+
+circos.clear()
+set.seed(999)
+chordDiagram(pairs_table, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+
+########
+
+
+
+big_data1$AV <- "AV"
+big_data1$AJ <- "AJ"
+
+big_data1[grepl(HUMAN_TRAV, "AV")] <- HUMAN_TRAV
+
+# big_data2 <- mutate(big_data1, VJ = paste(V.gene, J.gene))
+
+big_data2$alpha <- "A"
+
+A.rows <- grep("TRA", big_data2[ ,"VJ"])
+big_data2[A.rows, ] <- cbind(NA, big_data2[A.rows, "alpha"])
