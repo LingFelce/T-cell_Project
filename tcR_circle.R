@@ -47,7 +47,7 @@ for(i in 1:length(listFiles))
 }
 
 #read files
-mixcr <- parse.folder("/t1-data/user/lfelce/TCR_analysis/cd4/", 'mixcr')
+mixcr_cd4 <- parse.folder("/t1-data/user/lfelce/TCR_analysis/cd4/", 'mixcr')
 
 all_metadata = fread('/t1-data/user/lfelce/TCR_analysis/metadata_cd4.txt', stringsAsFactors = F)
 colnames(all_metadata)
@@ -65,7 +65,9 @@ for (i in (193:288)) {all_metadata[i,2] <- "025"}
 name_list <- fread('/t1-data/user/lfelce/TCR_analysis/cd4_names.txt', stringsAsFactors = F, header=F)
 
 # select only file names which have valid clones
-metadata <- all_metadata[is.element(all_metadata$sample, name_list$V1),]names(mixcr)
+metadata <- all_metadata[is.element(all_metadata$sample, name_list$V1),]
+
+names(mixcr)
 
 mixcr_ordered = mixcr[order(names(mixcr))]
 names(mixcr_ordered)
@@ -583,6 +585,134 @@ pairs_1525TP2 <- as.data.frame.matrix(table(big_data2$V.gene, big_data2$J.gene))
 pairs_1525TP2 <- as.matrix(pairs_1525TP2)
 
 
+####### CD4 patients ####### 
+# 022
+datalist = list()
+for (i in (1:62)) {
+  dat <- data.frame(c(mixcr_cd4[[i]][7], mixcr_cd4[[i]][8]))
+  dat$i <- i # maybe you want to keep track of which iteration produced it?
+  datalist[[i]] <- dat # add it to your list
+}
+# combine columns for each cell, select only cells with 2 rows 
+big_data = do.call(rbind, datalist)
+big_data1 <- big_data %>% group_by(i) %>% filter(n() == 2)
+# combine rows to combine aVbV and aJbJ in 2 columns
+big_data2 <- group_by(big_data1, i) %>%
+  summarise_each(funs(paste(., collapse = "-")))
+# create table
+pairs_022 <- as.data.frame.matrix(table(big_data2$V.gene, big_data2$J.gene))
+pairs_022 <- as.matrix(pairs_022)
+
+# 025
+datalist = list()
+for (i in (120:185)) {
+  dat <- data.frame(c(mixcr_cd4[[i]][7], mixcr_cd4[[i]][8]))
+  dat$i <- i # maybe you want to keep track of which iteration produced it?
+  datalist[[i]] <- dat # add it to your list
+}
+# combine columns for each cell, select only cells with 2 rows 
+big_data = do.call(rbind, datalist)
+big_data1 <- big_data %>% group_by(i) %>% filter(n() == 2)
+# combine rows to combine aVbV and aJbJ in 2 columns
+big_data2 <- group_by(big_data1, i) %>%
+  summarise_each(funs(paste(., collapse = "-")))
+# create table
+pairs_025 <- as.data.frame.matrix(table(big_data2$V.gene, big_data2$J.gene))
+pairs_025 <- as.matrix(pairs_025)
+
+# 1062
+datalist = list()
+for (i in (63:119)) {
+  dat <- data.frame(c(mixcr_cd4[[i]][7], mixcr_cd4[[i]][8]))
+  dat$i <- i # maybe you want to keep track of which iteration produced it?
+  datalist[[i]] <- dat # add it to your list
+}
+# combine columns for each cell, select only cells with 2 rows 
+big_data = do.call(rbind, datalist)
+big_data1 <- big_data %>% group_by(i) %>% filter(n() == 2)
+# combine rows to combine aVbV and aJbJ in 2 columns
+big_data2 <- group_by(big_data1, i) %>%
+  summarise_each(funs(paste(., collapse = "-")))
+# create table
+pairs_1062 <- as.data.frame.matrix(table(big_data2$V.gene, big_data2$J.gene))
+pairs_1062 <- as.matrix(pairs_1062)
+
+# 1493
+datalist = list()
+for (i in (186:258)) {
+  dat <- data.frame(c(mixcr_cd4[[i]][7], mixcr_cd4[[i]][8]))
+  dat$i <- i # maybe you want to keep track of which iteration produced it?
+  datalist[[i]] <- dat # add it to your list
+}
+# combine columns for each cell, select only cells with 2 rows 
+big_data = do.call(rbind, datalist)
+big_data1 <- big_data %>% group_by(i) %>% filter(n() == 2)
+# combine rows to combine aVbV and aJbJ in 2 columns
+big_data2 <- group_by(big_data1, i) %>%
+  summarise_each(funs(paste(., collapse = "-")))
+# create table
+pairs_1493 <- as.data.frame.matrix(table(big_data2$V.gene, big_data2$J.gene))
+pairs_1493 <- as.matrix(pairs_1493)
+
+# 1504
+datalist = list()
+for (i in (259:327)) {
+  dat <- data.frame(c(mixcr_cd4[[i]][7], mixcr_cd4[[i]][8]))
+  dat$i <- i # maybe you want to keep track of which iteration produced it?
+  datalist[[i]] <- dat # add it to your list
+}
+# combine columns for each cell, select only cells with 2 rows 
+big_data = do.call(rbind, datalist)
+big_data1 <- big_data %>% group_by(i) %>% filter(n() == 2)
+# combine rows to combine aVbV and aJbJ in 2 columns
+big_data2 <- group_by(big_data1, i) %>%
+  summarise_each(funs(paste(., collapse = "-")))
+# create table
+pairs_1504 <- as.data.frame.matrix(table(big_data2$V.gene, big_data2$J.gene))
+pairs_1504 <- as.matrix(pairs_1504)
+
+# 1525
+datalist = list()
+for (i in (328:398)) {
+  dat <- data.frame(c(mixcr_cd4[[i]][7], mixcr_cd4[[i]][8]))
+  dat$i <- i # maybe you want to keep track of which iteration produced it?
+  datalist[[i]] <- dat # add it to your list
+}
+# combine columns for each cell, select only cells with 2 rows 
+big_data = do.call(rbind, datalist)
+big_data1 <- big_data %>% group_by(i) %>% filter(n() == 2)
+# combine rows to combine aVbV and aJbJ in 2 columns
+big_data2 <- group_by(big_data1, i) %>%
+  summarise_each(funs(paste(., collapse = "-")))
+# create table
+pairs_1525 <- as.data.frame.matrix(table(big_data2$V.gene, big_data2$J.gene))
+pairs_1525 <- as.matrix(pairs_1525)
+
+# no clear dominant alpha-beta pair - plot chord diagrams instead
+
+list <- c("022", "025", "1062", "1493", "1504", "1525")
+
+for(i in (list))
+{
+  
+  pdf(paste0(i,'_cd4_chorddiagram_ab_pairs.pdf'), width = 12, height = 8, useDingbats = FALSE)
+  name <- paste("pairs", i, sep = "_")
+  name <- as.matrix(name)
+  circos.clear()
+  set.seed(999)
+  chordDiagram(pairs_022, annotationTrack = "grid", preAllocateTracks = 1)
+  circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+    xlim = get.cell.meta.data("xlim")
+    ylim = get.cell.meta.data("ylim")
+    sector.name = get.cell.meta.data("sector.index")
+    circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+    circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+  }, bg.border = NA)
+  
+  dev.off()
+
+}
+
 #-----------------------Separate by patient CD8 NP16 (old code) ------------------------
 
 # CD8 005
@@ -758,5 +888,4 @@ circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
   circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
   circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
 }, bg.border = NA)
-
 
