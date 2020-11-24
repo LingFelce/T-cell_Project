@@ -209,111 +209,68 @@ cd4_s34_table <- as.data.frame.matrix(table(cd4_s34$V.gene, cd4_s34$J.gene))
 cd4_s34_table <- as.matrix(cd4_s34_table[-1,-1])
 
 # alpha chain
-cd4_s34_table_a <- as.data.frame.matrix(rbind(cd4_s34_table[c(1:31),]))
-cd4_s34_table_a <- as.data.frame.matrix(cbind(cd4_s34_table_a[,c(1:36)]))
-cd4_s34_table_a <- as.matrix(cd4_s34_table_a)
-
-pdf('cd4_s34_a_chorddiagram.pdf', width = 12, height = 8, useDingbats = FALSE)
-circos.clear()
-set.seed(999)
-chordDiagram(cd4_s34_table_a, annotationTrack = "grid", preAllocateTracks = 1)
-circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
-  xlim = get.cell.meta.data("xlim")
-  ylim = get.cell.meta.data("ylim")
-  sector.name = get.cell.meta.data("sector.index")
-  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
-  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
-}, bg.border = NA)
-dev.off()
+cd4_s34_a_table <- as.data.frame.matrix(rbind(cd4_s34_table[c(1:31),]))
+cd4_s34_a_table <- as.data.frame.matrix(cbind(cd4_s34_a_table[,c(1:36)]))
+cd4_s34_a_table <- as.matrix(cd4_s34_a_table)
 
 # beta chain
-cd4_s34_table_b <- as.data.frame.matrix(rbind(cd4_s34_table[c(32:72),]))
-cd4_s34_table_b <- as.data.frame.matrix(cbind(cd4_s34_table_b[,c(37:47)]))
+cd4_s34_b_table <- as.data.frame.matrix(rbind(cd4_s34_table[c(32:72),]))
+cd4_s34_b_table <- as.data.frame.matrix(cbind(cd4_s34_b_table[,c(37:47)]))
 # remove rows and colums with multiple genes (dual receptor T cells?)
-
-cd4_s34_table_b <- cd4_s34_table_b[-c(6,8,23, 24, 26, 27, 29, 32, 33, 35, 37,41),]
-cd4_s34_table_b <- cd4_s34_table_b[,-11]
-cd4_s34_table_b <- as.matrix(cd4_s34_table_b)
-
-pdf('cd4_s34_b_chorddiagram.pdf', width = 12, height = 8, useDingbats = FALSE)
-circos.clear()
-set.seed(999)
-chordDiagram(cd4_s34_table_b, annotationTrack = "grid", preAllocateTracks = 1)
-circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
-  xlim = get.cell.meta.data("xlim")
-  ylim = get.cell.meta.data("ylim")
-  sector.name = get.cell.meta.data("sector.index")
-  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
-  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
-}, bg.border = NA)
-
-dev.off()
+cd4_s34_b_table <- cd4_s34_b_table[-c(6,8,23, 24, 26, 27, 29, 32, 33, 35, 37,41),]
+cd4_s34_b_table <- cd4_s34_b_table[,-11]
+cd4_s34_b_table <- as.matrix(cd4_s34_b_table)
 
 
 # need to plot table with variable genes as rows and junction genes as columns
-
 cd4_m24_table <- as.data.frame.matrix(table(cd4_m24$V.gene, cd4_m24$J.gene))
 cd4_m24_table <- as.matrix(cd4_m24_table[-1,-1])
 
 # alpha chain
-cd4_m24_table_a <- as.data.frame.matrix(rbind(cd4_m24_table[c(1:46),]))
-cd4_m24_table_a <- as.data.frame.matrix(cbind(cd4_m24_table_a[,c(1:49)]))
-cd4_m24_table_a <- as.matrix(cd4_m24_table_a)
-
-pdf('cd4_m24_a_chorddiagram.pdf', width = 12, height = 8, useDingbats = FALSE)
-circos.clear()
-set.seed(999)
-chordDiagram(cd4_m24_table_a, annotationTrack = "grid", preAllocateTracks = 1)
-circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
-  xlim = get.cell.meta.data("xlim")
-  ylim = get.cell.meta.data("ylim")
-  sector.name = get.cell.meta.data("sector.index")
-  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
-  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
-}, bg.border = NA)
-dev.off()
+cd4_m24_a_table <- as.data.frame.matrix(rbind(cd4_m24_table[c(1:46),]))
+cd4_m24_a_table_a <- as.data.frame.matrix(cbind(cd4_m24_a_table[,c(1:49)]))
+cd4_m24_a_table <- cd4_m24_a_table[-c(7,24,41,42,45),]
+cd4_m24_a_table <- as.matrix(cd4_m24_a_table)
 
 # beta chain
-cd4_m24_table_b <- as.data.frame.matrix(rbind(cd4_m24_table[c(47:110),]))
-cd4_m24_table_b <- as.data.frame.matrix(cbind(cd4_m24_table_b[,c(50:63)]))
-cd4_m24_table_b <- as.matrix(cd4_m24_table_b)
+cd4_m24_b_table <- as.data.frame.matrix(rbind(cd4_m24_table[c(47:110),]))
+cd4_m24_b_table <- as.data.frame.matrix(cbind(cd4_m24_b_table[,c(50:63)]))
+cd4_m24_b_table <- cd4_m24_b_table[-c(3,5,8,9,11,12,19,27,28,31,33,34,36:38,40,42:49,51,52,54,56,61),]
+cd4_m24_b_table <- as.matrix(cd4_m24_b_table)
 
-pdf('cd4_m24_b_chorddiagram.pdf', width = 12, height = 8, useDingbats = FALSE)
-circos.clear()
-set.seed(999)
-chordDiagram(cd4_m24_table_b, annotationTrack = "grid", preAllocateTracks = 1)
-circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
-  xlim = get.cell.meta.data("xlim")
-  ylim = get.cell.meta.data("ylim")
-  sector.name = get.cell.meta.data("sector.index")
-  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
-  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
-}, bg.border = NA)
+setwd("/t1-data/user/lfelce/TCR_analysis/updated_chorddiagrams/")
 
-dev.off()
+list <- c("cd4_s34_a_table", "cd4_s34_b_table", "cd4_m24_a_table", "cd4_m24_b_table")
 
-#------------------- Circular plot CD8 NP16 tabulate and separate alpha and beta ------------------
+for (i in 1:length(list)) {
+  circos.clear()
+  set.seed(999)
+  pdf(paste((list[i]), "_chorddiagram.pdf", sep=""), width = 12, height = 8, useDingbats = FALSE)
+  chordDiagram(get(list[i]), annotationTrack = "grid", preAllocateTracks = 1)
+  circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+    xlim = get.cell.meta.data("xlim")
+    ylim = get.cell.meta.data("ylim")
+    sector.name = get.cell.meta.data("sector.index")
+    circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+    circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+  }, bg.border = NA)
+  dev.off()
+}
 
+
+
+#------------------- Circular plot CD8   ------------------
+setwd("/t1-data/user/lfelce/TCR_analysis/updated_chorddiagrams")
+
+# NP16
 cd8_df <- as.data.frame(cd8_df)
-cd8_table <- as.data.frame.matrix(table(cd8_df$V.gene, cd8_df$J.gene))
+cd8_np16<- as.data.frame.matrix(table(cd8_df$V.gene, cd8_df$J.gene))
 
 # alpha chain
-cd8_table_a <- as.data.frame.matrix(rbind(cd8_table[c(1:41),]))
-cd8_table_a <- as.data.frame.matrix(cbind(cd8_table_a[,c(1:37)]))
-cd8_table_a <- as.matrix(cd8_table_a)
-
-pdf('cd8_a_chorddiagram.pdf', width = 12, height = 8, useDingbats = FALSE)
-circos.clear()
-set.seed(999)
-chordDiagram(cd8_table_a, annotationTrack = "grid", preAllocateTracks = 1)
-circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
-  xlim = get.cell.meta.data("xlim")
-  ylim = get.cell.meta.data("ylim")
-  sector.name = get.cell.meta.data("sector.index")
-  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
-  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
-}, bg.border = NA)
-dev.off()
+cd8_np16_a <- as.data.frame.matrix(rbind(cd8_np16[c(1:41),]))
+cd8_np16_a <- as.data.frame.matrix(cbind(cd8_np16_a[,c(1:37)]))
+cd8_np16_a <- cd8_np16_a[-c(2,6,8,33,34,35,37,38,40),]
+cd8_np16_a <- as.matrix(cd8_np16_a)
 
 # beta chain
 cd8_table_b <- as.data.frame.matrix(rbind(cd8_table[c(42:91),]))
@@ -884,4 +841,7 @@ circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
   circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
   circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
 }, bg.border = NA)
+
+
+################################### Miscellaneous
 
