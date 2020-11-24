@@ -1,0 +1,19 @@
+Summary of tcR circle file (and finding dominant genes/pairings)
+
+1. Dominant genes (individual AV, AJ, BV, BJ)
+Looked at bar charts from tcR.R output
+
+2. Dominant AVAJ and BVBJ pairings
+Parsed MiXCR produces list of dataframes. Unlist and convert to dataframe format.
+Divided into patient and tabulated V.gene v J.gene - generated individual chord diagrams for each patient to look at pairings
+Chord diagram (loop) for all CD4 and CD8
+
+3. Dominant AB pairings
+Used MiXCR list of dataframes.
+Noted down row numbers in metadata for each patient - this dictates order of dataframes in list.
+Used loop to pull out dataframes specific for each patient - only V.gene and J.gene columns, to create a new dataframe for each patient.
+Each row also had cell number - ideally, each cell would have 2 rows in each column, one for B and one for A
+Filtered to only select cells that had 2 rows (discarding those that had 1 A or B, or multiple A/B - dual receptor T cells?)
+Used group_by and summarise_each to combine AVBV and AJBJ into one cell, so now each cell has 1 row across 2 columns
+Tabulate V.gene v J.gene, can either look at table to see dominant pair or do chord diagram
+Chord diagram (loop) only from CD4 as unclear looking at table which ones dominant pair(s)
