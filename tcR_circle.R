@@ -67,14 +67,7 @@ name_list <- fread('/t1-data/user/lfelce/TCR_analysis/cd4_names.txt', stringsAsF
 # select only file names which have valid clones
 metadata <- all_metadata[is.element(all_metadata$sample, name_list$V1),]
 
-names(mixcr)
-
-mixcr_ordered = mixcr[order(names(mixcr))]
-names(mixcr_ordered)
-
-class(mixcr)
-
-cd4_df <- do.call(rbind.data.frame, mixcr)
+cd4_df <- do.call(rbind.data.frame, mixcr_cd4)
 
 dim(cd4_df)
 
@@ -95,7 +88,6 @@ cd4_df <- apply(cd4_df,2,as.character)
 setwd('/t1-data/user/lfelce/TCR_analysis')
 
 write.csv(cd4_df, file="all_cd4_tcr.csv", row.names=FALSE)
-
 
 
 #----------------------- CD8 NP16 TCR ---------------------------
@@ -237,6 +229,10 @@ dev.off()
 # beta chain
 cd4_s34_table_b <- as.data.frame.matrix(rbind(cd4_s34_table[c(32:72),]))
 cd4_s34_table_b <- as.data.frame.matrix(cbind(cd4_s34_table_b[,c(37:47)]))
+# remove rows and colums with multiple genes (dual receptor T cells?)
+
+cd4_s34_table_b <- cd4_s34_table_b[-c(6,8,23, 24, 26, 27, 29, 32, 33, 35, 37,41),]
+cd4_s34_table_b <- cd4_s34_table_b[,-11]
 cd4_s34_table_b <- as.matrix(cd4_s34_table_b)
 
 pdf('cd4_s34_b_chorddiagram.pdf', width = 12, height = 8, useDingbats = FALSE)
