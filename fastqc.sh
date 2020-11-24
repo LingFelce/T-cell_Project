@@ -18,3 +18,8 @@ for i in /t1-data/user/lfelce/MiXCR/CD4_input/*.fastq.gz
 do
   fastqc -q -t 12 --nogroup ${i} --outdir fastqc
 done
+
+
+# run in terminal in fastqc folder
+
+multiqc .
