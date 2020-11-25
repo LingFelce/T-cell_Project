@@ -33,10 +33,16 @@ squeue -u lfelce
 ################### preparing files for R Studio analysis ###################
 
 # soft link to /t1-data/user/lfelce/TCR_analysis/cd8_np16_new/
+find /t1-data/user/lfelce/MiXCR/CD8_output_new -name "*.txt" | xargs -I v_f ln -s v_f
+
 # sorted files by size and removed empty output files 412 bytes - 590 files remaining
 # need to read in .TRA.txt and .TRB.txt files separately
 
 for NAME in $(find . -name '*TRA.txt'); do
+echo "$NAME"
+done
+
+for NAME in $(find . -name '*TRB.txt'); do
 echo "$NAME"
 done
 
