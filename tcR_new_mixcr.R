@@ -159,3 +159,124 @@ for (i in 1:length(list)) {
   }, bg.border = NA)
   dev.off()
 }
+
+#------------- CD8 ORF3a-28 -------------------------
+
+setwd('/t1-data/user/lfelce/TCR_analysis/cd8_orf_new/')
+listFiles = list.files()
+
+# revise the structure of input files
+for(i in 1:length(listFiles))
+{
+  DT = fread(listFiles[i])
+  write.table(DT,listFiles[i],quote = F, row.names = F, sep = '\t')
+}
+
+library(stringr)
+
+# read in TRA names and convert to list
+tra_names <- fread('/t1-data/user/lfelce/TCR_analysis/cd8_orf_tra_names.txt', stringsAsFactors = F, header=F)
+
+tra_names <- as.list(as.data.frame(t(tra_names)))
+
+# remove ./ at start of name and replace with file path
+tra_names <- tra_names %>% str_replace("./*", "")
+
+tra_names <- paste("/t1-data/user/lfelce/TCR_analysis/cd8_orf_new/", tra_names, sep="")
+
+# read in TRB names and convert to list
+trb_names <- fread('/t1-data/user/lfelce/TCR_analysis/cd8_orf_trb_names.txt', stringsAsFactors = F, header=F)
+
+trb_names <- as.list(as.data.frame(t(trb_names)))
+
+# remove ./ at start of name and replace with file path
+trb_names <- trb_names %>% str_replace("./*", "")
+
+trb_names <- paste("/t1-data/user/lfelce/TCR_analysis/cd8_orf_new/", trb_names, sep="")
+
+# parse mixcr files
+mixcr_a <- parse.file.list(tra_names, "mixcr")
+mixcr_b <- parse.file.list(trb_names, "mixcr")
+
+# sort alphabetically
+mixcr_a <- mixcr_a[order(names(mixcr_a))]
+mixcr_b <- mixcr_b[order(names(mixcr_b))]
+
+# convert mixcr lists to dataframe with just V.gene and J.gene info
+
+# mixcr_a
+mixcr_a_names <- as.data.frame(names(mixcr_a))
+
+datalist = list()
+for (i in (1:(length(mixcr_a)))) {
+  dat <- data.frame(c(mixcr_a[[i]][7], mixcr_a[[i]][8]))
+  dat$i <- i # maybe you want to keep track of which iteration produced it?
+  datalist[[i]] <- dat # add it to your list
+}
+# combine columns for each cell, select only cells with only 1 row
+big_data = do.call(rbind, datalist)
+tra <- big_data %>% group_by(i) %>% filter(n() == 1)
+colnames(tra) <- c("TRAV", "TRAJ", "cell_number")
+
+# mixcr_b
+mixcr_b_names <- as.data.frame(names(mixcr_b))
+
+datalist = list()
+for (i in (1:(length(mixcr_b)))) {
+  dat <- data.frame(c(mixcr_b[[i]][7], mixcr_b[[i]][8]))
+  dat$i <- i # maybe you want to keep track of which iteration produced it?
+  datalist[[i]] <- dat # add it to your list
+}
+# combine columns for each cell, select only cells with only 1 row
+big_data = do.call(rbind, datalist)
+trb <- big_data %>% group_by(i) %>% filter(n() == 1)
+colnames(trb) <- c("TRBV", "TRBJ", "cell_number")
+
+# combine TRA and TRB dataframes
+cd8_orf <- merge(tra,trb, by="cell_number")
+
+# create list of cell numbers and cell names
+mixcr_a_names <-tibble::rownames_to_column(mixcr_a_names, "cell_number")
+mixcr_b_names <- tibble::rownames_to_column(mixcr_b_names, "cell_number")
+
+# merge names with main dataframe
+cd8_orf <- merge(cd8_orf, mixcr_b_names, by="cell_number")
+
+cd8_orf <- mutate(cd8_orf, alpha=paste(TRAV, TRAJ, sep="_"))
+
+cd8_orf <- mutate(cd8_orf, beta=paste(TRBV, TRBJ, sep="_"))
+
+# tabulate to get dominant alpha-beta pairing
+# 1105 rows 1:28
+# 1134-TP-2 29:57
+# 1525-TP-1 58:67
+
+library(circlize)
+
+patient_1105 <- cd8_orf[1:28,]
+cd8_orf_1105 <- as.matrix(as.data.frame.matrix(table(patient_1105$alpha, patient_1105$beta)))
+
+patient_1134 <- cd8_orf[29:57,]
+cd8_orf_1134 <- as.matrix(as.data.frame.matrix(table(patient_1134$alpha, patient_1134$beta)))
+
+patient_1525 <- cd8_orf[58:67,]
+cd8_orf_1525 <- as.matrix(as.data.frame.matrix(table(patient_1525$alpha, patient_1525$beta)))
+
+setwd("/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/")
+
+list <- c("cd8_orf_1105","cd8_orf_1134", "cd8_orf_1525")
+
+for (i in 1:length(list)) {
+  circos.clear()
+  set.seed(999)
+  pdf(paste((list[i]), "_chorddiagram.pdf", sep=""), width = 12, height = 8, useDingbats = FALSE)
+  chordDiagram(get(list[i]), annotationTrack = "grid", preAllocateTracks = 1)
+  circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+    xlim = get.cell.meta.data("xlim")
+    ylim = get.cell.meta.data("ylim")
+    sector.name = get.cell.meta.data("sector.index")
+    circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+    circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+  }, bg.border = NA)
+  dev.off()
+}
