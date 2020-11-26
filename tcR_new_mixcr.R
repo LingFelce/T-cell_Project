@@ -77,32 +77,40 @@ mixcr_b <- parse.file.list(trb_names, "mixcr")
 mixcr_a <- mixcr_a[order(names(mixcr_a))]
 mixcr_b <- mixcr_b[order(names(mixcr_b))]
 
+# create list of cell numbers and cell names
+# different lengths so same cell will be different number in a or b
+mixcr_a_names <- as.data.frame(names(mixcr_a))
+mixcr_b_names <- as.data.frame(names(mixcr_b))
+
+mixcr_a_names <-tibble::rownames_to_column(mixcr_a_names, "cell_number")
+mixcr_b_names <- tibble::rownames_to_column(mixcr_b_names, "cell_number")
+
+# rename columns
+colnames(mixcr_a_names) <- c("cell_number", "cell_name")
+colnames(mixcr_b_names) <- c("cell_number", "cell_name")
+
 # convert mixcr lists to dataframe with just V.gene and J.gene info
 
 # mixcr_a
-mixcr_a_names <- as.data.frame(names(mixcr_a))
-
 datalist = list()
-for (i in (1:180)) {
+for (i in (1:length(mixcr_a))) {
   dat <- data.frame(c(mixcr_a[[i]][7], mixcr_a[[i]][8]))
-  dat$i <- i # maybe you want to keep track of which iteration produced it?
-  datalist[[i]] <- dat # add it to your list
+  dat$i <- i # keep track of which iteration produced it
+  datalist[[i]] <- dat # add it to list
 }
-# combine columns for each cell, select only cells with only 1 row
+# combine columns for each cell, select only cells with only 2 rows (dual alpha)
 big_data = do.call(rbind, datalist)
-tra <- big_data %>% group_by(i) %>% filter(n() == 1)
+tra <- big_data %>% group_by(i) %>% filter(n() <= 2)
 colnames(tra) <- c("TRAV", "TRAJ", "cell_number")
 
 # mixcr_b
-mixcr_b_names <- as.data.frame(names(mixcr_b))
-
 datalist = list()
-for (i in (1:221)) {
+for (i in (1:length(mixcr_b))) {
   dat <- data.frame(c(mixcr_b[[i]][7], mixcr_b[[i]][8]))
-  dat$i <- i # maybe you want to keep track of which iteration produced it?
-  datalist[[i]] <- dat # add it to your list
+  dat$i <- i # keep track of which iteration produced it
+  datalist[[i]] <- dat # add it to list
 }
-# combine columns for each cell, select only cells with only 1 row
+# combine columns for each cell, select only cells with only 1 row (single beta)
 big_data = do.call(rbind, datalist)
 trb <- big_data %>% group_by(i) %>% filter(n() == 1)
 colnames(trb) <- c("TRBV", "TRBJ", "cell_number")
@@ -122,23 +130,23 @@ cd8_np16 <- mutate(cd8_np16, alpha=paste(TRAV, TRAJ, sep="_"))
 cd8_np16 <- mutate(cd8_np16, beta=paste(TRBV, TRBJ, sep="_"))
 
 # tabulate to get dominant alpha-beta pairing
-# 005 rows 1:29
-# 1131-TP-1 none
-# 1131-TP-2 30:51
-# 1153 52:59
-# 1201-TP-2 60:65
+# 005 
+# 1131-TP-1 - no results
+# 1131-TP-2 
+# 1153 
+# 1201-TP-2 
 library(circlize)
 
-patient_005 <- cd8_np16[1:29,]
+patient_005 <- cd8_np16[cd8_np16$`names(mixcr_b)` %like% "005",]
 cd8_np16_005 <- as.matrix(as.data.frame.matrix(table(patient_005$alpha, patient_005$beta)))
 
-patient_1131 <- cd8_np16[30:51,]
+patient_1131 <- cd8_np16[cd8_np16$`names(mixcr_b)` %like% "1131-TP-2",]
 cd8_np16_1131 <- as.matrix(as.data.frame.matrix(table(patient_1131$alpha, patient_1131$beta)))
 
-patient_1153 <- cd8_np16[52:59,]
+patient_1153 <- cd8_np16[cd8_np16$`names(mixcr_b)` %like% "1153",]
 cd8_np16_1153 <- as.matrix(as.data.frame.matrix(table(patient_1153$alpha, patient_1153$beta)))
 
-patient_1201 <- cd8_np16[60:65,]
+patient_1201 <- cd8_np16[cd8_np16$`names(mixcr_b)` %like% "1201-TP-2",]
 cd8_np16_1201 <- as.matrix(as.data.frame.matrix(table(patient_1201$alpha, patient_1201$beta)))
 
 setwd("/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/")
@@ -202,42 +210,50 @@ mixcr_b <- parse.file.list(trb_names, "mixcr")
 mixcr_a <- mixcr_a[order(names(mixcr_a))]
 mixcr_b <- mixcr_b[order(names(mixcr_b))]
 
+# create list of cell numbers and cell names
+# different lengths so same cell will be different number in a or b
+mixcr_a_names <- as.data.frame(names(mixcr_a))
+mixcr_b_names <- as.data.frame(names(mixcr_b))
+
+mixcr_a_names <-tibble::rownames_to_column(mixcr_a_names, "cell_number")
+mixcr_b_names <- tibble::rownames_to_column(mixcr_b_names, "cell_number")
+
+# rename columns
+colnames(mixcr_a_names) <- c("cell_number", "cell_name")
+colnames(mixcr_b_names) <- c("cell_number", "cell_name")
+
 # convert mixcr lists to dataframe with just V.gene and J.gene info
 
 # mixcr_a
-mixcr_a_names <- as.data.frame(names(mixcr_a))
-
 datalist = list()
 for (i in (1:(length(mixcr_a)))) {
   dat <- data.frame(c(mixcr_a[[i]][7], mixcr_a[[i]][8]))
-  dat$i <- i # maybe you want to keep track of which iteration produced it?
-  datalist[[i]] <- dat # add it to your list
+  dat$i <- i # keep track of which iteration produced it
+  datalist[[i]] <- dat # add it to list
 }
-# combine columns for each cell, select only cells with only 1 row
+# combine columns for each cell, select only cells with only 2 rows (dual receptor)
 big_data = do.call(rbind, datalist)
-tra <- big_data %>% group_by(i) %>% filter(n() == 1)
+tra <- big_data %>% group_by(i) %>% filter(n() <= 2)
 colnames(tra) <- c("TRAV", "TRAJ", "cell_number")
+tra <- merge(tra, mixcr_a_names, by="cell_number")
+
 
 # mixcr_b
-mixcr_b_names <- as.data.frame(names(mixcr_b))
-
 datalist = list()
 for (i in (1:(length(mixcr_b)))) {
   dat <- data.frame(c(mixcr_b[[i]][7], mixcr_b[[i]][8]))
-  dat$i <- i # maybe you want to keep track of which iteration produced it?
-  datalist[[i]] <- dat # add it to your list
+  dat$i <- i # keep track of which iteration produced it
+  datalist[[i]] <- dat # add it to list
 }
-# combine columns for each cell, select only cells with only 1 row
+# combine columns for each cell, select only cells with only 1 row (single receptor)
 big_data = do.call(rbind, datalist)
 trb <- big_data %>% group_by(i) %>% filter(n() == 1)
 colnames(trb) <- c("TRBV", "TRBJ", "cell_number")
+trb <- merge(trb, mixcr_b_names, by="cell_number")
 
 # combine TRA and TRB dataframes
-cd8_orf <- merge(tra,trb, by="cell_number")
+cd8_orf <- merge(tra,trb, by="cell_name")
 
-# create list of cell numbers and cell names
-mixcr_a_names <-tibble::rownames_to_column(mixcr_a_names, "cell_number")
-mixcr_b_names <- tibble::rownames_to_column(mixcr_b_names, "cell_number")
 
 # merge names with main dataframe
 cd8_orf <- merge(cd8_orf, mixcr_b_names, by="cell_number")
@@ -247,24 +263,28 @@ cd8_orf <- mutate(cd8_orf, alpha=paste(TRAV, TRAJ, sep="_"))
 cd8_orf <- mutate(cd8_orf, beta=paste(TRBV, TRBJ, sep="_"))
 
 # tabulate to get dominant alpha-beta pairing
-# 1105 rows 1:28
-# 1134-TP-2 29:57
-# 1525-TP-1 58:67
+# 1105 rows 
+# 1134-TP-2 
+# 1525-TP-1 
+# 1525-TP-2
 
 library(circlize)
 
-patient_1105 <- cd8_orf[1:28,]
+patient_1105 <- cd8_orf[cd8_orf$cell_name %like% "1105", ]
 cd8_orf_1105 <- as.matrix(as.data.frame.matrix(table(patient_1105$alpha, patient_1105$beta)))
 
-patient_1134 <- cd8_orf[29:57,]
+patient_1134 <- cd8_orf[cd8_orf$cell_name %like% "1134-TP-2", ]
 cd8_orf_1134 <- as.matrix(as.data.frame.matrix(table(patient_1134$alpha, patient_1134$beta)))
 
-patient_1525 <- cd8_orf[58:67,]
-cd8_orf_1525 <- as.matrix(as.data.frame.matrix(table(patient_1525$alpha, patient_1525$beta)))
+patient_1525TP1 <- cd8_orf[cd8_orf$cell_name %like% "1525-TP-1", ]
+cd8_orf_1525TP1 <- as.matrix(as.data.frame.matrix(table(patient_1525TP1$alpha, patient_1525TP1$beta)))
+
+patient_1525TP2 <- cd8_orf[cd8_orf$cell_name %like% "1525-TP-2", ]
+cd8_orf_1525TP2 <- as.matrix(as.data.frame.matrix(table(patient_1525TP2$alpha, patient_1525TP2$beta)))
 
 setwd("/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/")
 
-list <- c("cd8_orf_1105","cd8_orf_1134", "cd8_orf_1525")
+list <- c("cd8_orf_1105","cd8_orf_1134", "cd8_orf_1525TP1", "cd8_orf_1525TP2")
 
 for (i in 1:length(list)) {
   circos.clear()
@@ -331,12 +351,12 @@ mixcr_a_names <- as.data.frame(names(mixcr_a))
 datalist = list()
 for (i in (1:(length(mixcr_a)))) {
   dat <- data.frame(c(mixcr_a[[i]][7], mixcr_a[[i]][8]))
-  dat$i <- i # maybe you want to keep track of which iteration produced it?
-  datalist[[i]] <- dat # add it to your list
+  dat$i <- i # keep track of which iteration produced it
+  datalist[[i]] <- dat # add it to list
 }
-# combine columns for each cell, select only cells with only 1 row
+# combine columns for each cell, select only cells with only 2 rows (dual alpha)
 big_data = do.call(rbind, datalist)
-tra <- big_data %>% group_by(i) %>% filter(n() == 1)
+tra <- big_data %>% group_by(i) %>% filter(n() <= 2)
 colnames(tra) <- c("TRAV", "TRAJ", "cell_number")
 
 # mixcr_b
@@ -345,10 +365,10 @@ mixcr_b_names <- as.data.frame(names(mixcr_b))
 datalist = list()
 for (i in (1:(length(mixcr_b)))) {
   dat <- data.frame(c(mixcr_b[[i]][7], mixcr_b[[i]][8]))
-  dat$i <- i # maybe you want to keep track of which iteration produced it?
-  datalist[[i]] <- dat # add it to your list
+  dat$i <- i # keep track of which iteration produced it
+  datalist[[i]] <- dat # add it to list
 }
-# combine columns for each cell, select only cells with only 1 row
+# combine columns for each cell, select only cells with only 1 row (single beta)
 big_data = do.call(rbind, datalist)
 trb <- big_data %>% group_by(i) %>% filter(n() == 1)
 colnames(trb) <- c("TRBV", "TRBJ", "cell_number")
@@ -377,22 +397,22 @@ cd4 <- mutate(cd4, beta=paste(TRBV, TRBJ, sep="_"))
 
 library(circlize)
 
-patient_022 <- cd4[1:25,]
+patient_022 <- cd4[cd4$`names(mixcr_b)` %like% "022", ]
 cd4_s34_022 <- as.matrix(as.data.frame.matrix(table(patient_022$alpha, patient_022$beta)))
 
-patient_025 <- cd4[26:60,]
+patient_025 <- cd4[cd4$`names(mixcr_b)` %like% "025", ]
 cd4_m24_025 <- as.matrix(as.data.frame.matrix(table(patient_025$alpha, patient_025$beta)))
 
-patient_1062 <- cd4[61:78,]
+patient_1062 <- cd4[cd4$`names(mixcr_b)` %like% "1062", ]
 cd4_s34_1062 <- as.matrix(as.data.frame.matrix(table(patient_1062$alpha, patient_1062$beta)))
 
-patient_1493 <- cd4[79:103,]
+patient_1493 <- cd4[cd4$`names(mixcr_b)` %like% "1493", ]
 cd4_m24_1493 <- as.matrix(as.data.frame.matrix(table(patient_1493$alpha, patient_1493$beta)))
 
-patient_1504 <- cd4[104:118,]
+patient_1504 <- cd4[cd4$`names(mixcr_b)` %like% "1504", ]
 cd4_m24_1504 <- as.matrix(as.data.frame.matrix(table(patient_1504$alpha, patient_1504$beta)))
 
-patient_1525 <- cd4[119:122,]
+patient_1525 <- cd4[cd4$`names(mixcr_b)` %like% "1525", ]
 cd4_m24_1525 <- as.matrix(as.data.frame.matrix(table(patient_1525$alpha, patient_1525$beta)))
 
 setwd("/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/")
