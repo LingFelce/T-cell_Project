@@ -102,6 +102,7 @@ for (i in (1:length(mixcr_a))) {
 big_data = do.call(rbind, datalist)
 tra <- big_data %>% group_by(i) %>% filter(n() <= 2)
 colnames(tra) <- c("TRAV", "TRAJ", "cell_number")
+tra <- merge(tra, mixcr_a_names, by="cell_number")
 
 # mixcr_b
 datalist = list()
@@ -114,16 +115,10 @@ for (i in (1:length(mixcr_b))) {
 big_data = do.call(rbind, datalist)
 trb <- big_data %>% group_by(i) %>% filter(n() == 1)
 colnames(trb) <- c("TRBV", "TRBJ", "cell_number")
+trb <- merge(trb, mixcr_b_names, by="cell_number")
 
 # combine TRA and TRB dataframes
-cd8_np16 <- merge(tra,trb, by="cell_number")
-
-# create list of cell numbers and cell names
-mixcr_a_names <-tibble::rownames_to_column(mixcr_a_names, "cell_number")
-mixcr_b_names <- tibble::rownames_to_column(mixcr_b_names, "cell_number")
-
-# merge names with main dataframe
-cd8_np16 <- merge(cd8_np16, mixcr_b_names, by="cell_number")
+cd8_np16 <- merge(tra,trb, by="cell_name")
 
 cd8_np16 <- mutate(cd8_np16, alpha=paste(TRAV, TRAJ, sep="_"))
 
@@ -131,22 +126,22 @@ cd8_np16 <- mutate(cd8_np16, beta=paste(TRBV, TRBJ, sep="_"))
 
 # tabulate to get dominant alpha-beta pairing
 # 005 
-# 1131-TP-1 - no results
+# 1131-TP-1
 # 1131-TP-2 
 # 1153 
 # 1201-TP-2 
 library(circlize)
 
-patient_005 <- cd8_np16[cd8_np16$`names(mixcr_b)` %like% "005",]
+patient_005 <- cd8_np16[cd8_np16$cell_name %like% "005",]
 cd8_np16_005 <- as.matrix(as.data.frame.matrix(table(patient_005$alpha, patient_005$beta)))
 
-patient_1131 <- cd8_np16[cd8_np16$`names(mixcr_b)` %like% "1131-TP-2",]
+patient_1131 <- cd8_np16[cd8_np16$cell_name %like% "1131-TP-2",]
 cd8_np16_1131 <- as.matrix(as.data.frame.matrix(table(patient_1131$alpha, patient_1131$beta)))
 
-patient_1153 <- cd8_np16[cd8_np16$`names(mixcr_b)` %like% "1153",]
+patient_1153 <- cd8_np16[cd8_np16$cell_name %like% "1153",]
 cd8_np16_1153 <- as.matrix(as.data.frame.matrix(table(patient_1153$alpha, patient_1153$beta)))
 
-patient_1201 <- cd8_np16[cd8_np16$`names(mixcr_b)` %like% "1201-TP-2",]
+patient_1201 <- cd8_np16[cd8_np16$cell_name %like% "1201-TP-2",]
 cd8_np16_1201 <- as.matrix(as.data.frame.matrix(table(patient_1201$alpha, patient_1201$beta)))
 
 setwd("/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/")
@@ -237,7 +232,6 @@ tra <- big_data %>% group_by(i) %>% filter(n() <= 2)
 colnames(tra) <- c("TRAV", "TRAJ", "cell_number")
 tra <- merge(tra, mixcr_a_names, by="cell_number")
 
-
 # mixcr_b
 datalist = list()
 for (i in (1:(length(mixcr_b)))) {
@@ -253,10 +247,6 @@ trb <- merge(trb, mixcr_b_names, by="cell_number")
 
 # combine TRA and TRB dataframes
 cd8_orf <- merge(tra,trb, by="cell_name")
-
-
-# merge names with main dataframe
-cd8_orf <- merge(cd8_orf, mixcr_b_names, by="cell_number")
 
 cd8_orf <- mutate(cd8_orf, alpha=paste(TRAV, TRAJ, sep="_"))
 
@@ -343,11 +333,21 @@ mixcr_b <- parse.file.list(trb_names, "mixcr")
 mixcr_a <- mixcr_a[order(names(mixcr_a))]
 mixcr_b <- mixcr_b[order(names(mixcr_b))]
 
+# create list of cell numbers and cell names
+# different lengths so same cell will be different number in a or b
+mixcr_a_names <- as.data.frame(names(mixcr_a))
+mixcr_b_names <- as.data.frame(names(mixcr_b))
+
+mixcr_a_names <-tibble::rownames_to_column(mixcr_a_names, "cell_number")
+mixcr_b_names <- tibble::rownames_to_column(mixcr_b_names, "cell_number")
+
+# rename columns
+colnames(mixcr_a_names) <- c("cell_number", "cell_name")
+colnames(mixcr_b_names) <- c("cell_number", "cell_name")
+
 # convert mixcr lists to dataframe with just V.gene and J.gene info
 
 # mixcr_a
-mixcr_a_names <- as.data.frame(names(mixcr_a))
-
 datalist = list()
 for (i in (1:(length(mixcr_a)))) {
   dat <- data.frame(c(mixcr_a[[i]][7], mixcr_a[[i]][8]))
@@ -358,10 +358,9 @@ for (i in (1:(length(mixcr_a)))) {
 big_data = do.call(rbind, datalist)
 tra <- big_data %>% group_by(i) %>% filter(n() <= 2)
 colnames(tra) <- c("TRAV", "TRAJ", "cell_number")
+tra <- merge(tra, mixcr_a_names, by="cell_number")
 
 # mixcr_b
-mixcr_b_names <- as.data.frame(names(mixcr_b))
-
 datalist = list()
 for (i in (1:(length(mixcr_b)))) {
   dat <- data.frame(c(mixcr_b[[i]][7], mixcr_b[[i]][8]))
@@ -372,16 +371,10 @@ for (i in (1:(length(mixcr_b)))) {
 big_data = do.call(rbind, datalist)
 trb <- big_data %>% group_by(i) %>% filter(n() == 1)
 colnames(trb) <- c("TRBV", "TRBJ", "cell_number")
+trb <- merge(trb, mixcr_b_names, by="cell_number")
 
 # combine TRA and TRB dataframes
-cd4 <- merge(tra,trb, by="cell_number")
-
-# create list of cell numbers and cell names
-mixcr_a_names <-tibble::rownames_to_column(mixcr_a_names, "cell_number")
-mixcr_b_names <- tibble::rownames_to_column(mixcr_b_names, "cell_number")
-
-# merge names with main dataframe
-cd4 <- merge(cd4, mixcr_b_names, by="cell_number")
+cd4 <- merge(tra,trb, by="cell_name")
 
 cd4 <- mutate(cd4, alpha=paste(TRAV, TRAJ, sep="_"))
 
@@ -397,22 +390,22 @@ cd4 <- mutate(cd4, beta=paste(TRBV, TRBJ, sep="_"))
 
 library(circlize)
 
-patient_022 <- cd4[cd4$`names(mixcr_b)` %like% "022", ]
+patient_022 <- cd4[cd4$cell_name %like% "022", ]
 cd4_s34_022 <- as.matrix(as.data.frame.matrix(table(patient_022$alpha, patient_022$beta)))
 
-patient_025 <- cd4[cd4$`names(mixcr_b)` %like% "025", ]
+patient_025 <- cd4[cd4$cell_name %like% "025", ]
 cd4_m24_025 <- as.matrix(as.data.frame.matrix(table(patient_025$alpha, patient_025$beta)))
 
-patient_1062 <- cd4[cd4$`names(mixcr_b)` %like% "1062", ]
+patient_1062 <- cd4[cd4$cell_name %like% "1062", ]
 cd4_s34_1062 <- as.matrix(as.data.frame.matrix(table(patient_1062$alpha, patient_1062$beta)))
 
-patient_1493 <- cd4[cd4$`names(mixcr_b)` %like% "1493", ]
+patient_1493 <- cd4[cd4$cell_name %like% "1493", ]
 cd4_m24_1493 <- as.matrix(as.data.frame.matrix(table(patient_1493$alpha, patient_1493$beta)))
 
-patient_1504 <- cd4[cd4$`names(mixcr_b)` %like% "1504", ]
+patient_1504 <- cd4[cd4$cell_name %like% "1504", ]
 cd4_m24_1504 <- as.matrix(as.data.frame.matrix(table(patient_1504$alpha, patient_1504$beta)))
 
-patient_1525 <- cd4[cd4$`names(mixcr_b)` %like% "1525", ]
+patient_1525 <- cd4[cd4$cell_name %like% "1525", ]
 cd4_m24_1525 <- as.matrix(as.data.frame.matrix(table(patient_1525$alpha, patient_1525$beta)))
 
 setwd("/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/")
