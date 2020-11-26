@@ -126,7 +126,7 @@ cd8_np16 <- mutate(cd8_np16, beta=paste(TRBV, TRBJ, sep="_"))
 
 # tabulate to get dominant alpha-beta pairing
 # 005 
-# 1131-TP-1
+# 1131-TP-1 - no results
 # 1131-TP-2 
 # 1153 
 # 1201-TP-2 
@@ -426,3 +426,27 @@ for (i in 1:length(list)) {
   }, bg.border = NA)
   dev.off()
 }
+
+#--------------------------- CD M24 patients ----------------------
+
+# individually CD4 M24 patients don't appear to have dominant alpha-beta pair
+# look at CD4 M24 patients altogether and see if when combined there appears to be a dominant pair
+
+cd4_m24 <- cd4[-c(1:23, 61:79),]
+cd4_m24_freq <- as.data.frame(table(cd4_m24$alpha, cd4_m24$beta))
+cd4_m24_all <- as.matrix(as.data.frame.matrix(table(cd4_m24$alpha, cd4_m24$beta)))
+
+setwd('/t1-data/user/lfelce/TCR_analysis/new_mixcr_results')
+
+circos.clear()
+set.seed(999)
+pdf('cd4_m24_all_chorddiagram.pdf', width = 16, height = 12, useDingbats = FALSE)
+chordDiagram(cd4_m24_all, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+dev.off()
