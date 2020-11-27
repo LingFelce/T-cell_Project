@@ -450,3 +450,40 @@ circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
   circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
 }, bg.border = NA)
 dev.off()
+
+# separate by mild and severe
+
+cd4_m24_mild <- cd4_m24[1:61,]
+cd4_m24_mild_freq <- as.data.frame(table(cd4_m24_mild$alpha, cd4_m24_mild$beta))
+cd4_m24_mild_table <- as.matrix(as.data.frame.matrix(table(cd4_m24_mild$alpha, cd4_m24_mild$beta)))
+
+circos.clear()
+set.seed(999)
+pdf('cd4_m24_mild_chorddiagram.pdf', width = 16, height = 12, useDingbats = FALSE)
+chordDiagram(cd4_m24_mild_table, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+dev.off()
+
+
+cd4_m24_severe <- cd4_m24[62:95,]
+cd4_m24_severe_freq <- as.data.frame(table(cd4_m24_severe$alpha, cd4_m24_severe$beta))
+cd4_m24_severe_table <- as.matrix(as.data.frame.matrix(table(cd4_m24_severe$alpha, cd4_m24_severe$beta)))
+
+circos.clear()
+set.seed(999)
+pdf('cd4_m24_severe_chorddiagram.pdf', width = 16, height = 12, useDingbats = FALSE)
+chordDiagram(cd4_m24_severe_table, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+dev.off()
