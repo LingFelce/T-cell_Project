@@ -38,11 +38,13 @@ find /t1-data/user/lfelce/MiXCR/CD4_input -name "*.fastq.gz" | xargs -I v_f ln -
 module load STAR/2.6/1d
 cd /t1-data/user/lfelce/STAR/
 
-for index in /t1-data/user/lfelce/STAR/*.fastq.gz
+for NAME in $(find /t1-data/user/lfelce/STAR/ -name '*_R1_001.fastq.gz' -printf "%f\n" | sed 's/_R1_001.fastq.gz//'); do # remove common ending of name
 
-do
+echo "$NAME"
 
-STAR --runThreadN 8 --genomeDir /databank/indices/star/hg19 --readFilesCommand gunzip -c ${index} --outFileNamePrefix results/ --outSAMtype BAM SortedByCoordinate
+p1='_R1_001.fastq.gz'
+
+STAR --runThreadN 10 --genomeDir /databank/indices/star/hg19 --readFilesCommand gunzip -c /t1-data/user/lfelce/STAR/'$NAME$p1' --outFileNamePrefix results/'$NAME' --outSAMtype BAM SortedByCoordinate
 
 done
 
