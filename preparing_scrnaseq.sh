@@ -26,41 +26,25 @@ fastqc -o fastqc_results <input file>
 # softlink .fastq.gz files from MiXCR input folders to STAR folder
 find /t1-data/user/lfelce/MiXCR/CD4_input -name "*.fastq.gz" | xargs -I v_f ln -s v_f
 
+#!/bin/bash
+#SBATCH --partition=batch
+#SBATCH --job-name=star_map
+#SBATCH --nodes=1
+#SBATCH --mem=128G
+#SBATCH --time=07-00:00:00
+#SBATCH --output=%j_%x.out
+#SBATCH --error=%j_%x.err
 
-# run as separate script for each file?
-
-########## Isar's modified script for MiXCR ##############
-# copy and paste below into command line. 
-# then when have generated scripts, copy and paste second bit into command line
-
+module load STAR/2.6/1d
 cd /t1-data/user/lfelce/STAR/
-DIR=/t1-data/user/lfelce/STAR/results/
 
-for NAME in $(find . -name '*_R1_001.fastq.gz' -printf "%f\n" | sed 's/_R1_001.fastq.gz//'); do
- 
-echo "$NAME"
+for index in /t1-data/user/lfelce/STAR/*.fastq.gz
 
-p1='_R1_001.fastq.gz' 
+do
 
-echo -e '#!/bin/sh
-#$ -cwd
-#$ -q batchq
-module load STAR/2.7.3a
-cd /t1-data/user/lfelce/STAR
-STAR --runThreadN 8 --genomeDir /databank/indices/star/hg19/ --readFilesCommand gunzip -c /t1-data/user/lfelce/STAR/'$NAME$p1 ' --outFileNamePrefix results/ --outSAMtype BAM SortedByCoordinate > $DIR'script/'$NAME'.sh'; 
+STAR --runThreadN 8 --genomeDir /databank/indices/star/hg19 --readFilesCommand gunzip -c ${index} --outFileNamePrefix results/ --outSAMtype BAM SortedByCoordinate
 
 done
-
-#------------- run scripts on server
-cd /t1-data/user/lfelce/MiXCR/CD8_output_new/script/
-
-for line in $(ls *.sh); do
-sbatch $line
-done
-
-squeue -u lfelce
-
-
 
 
 # mapping quality control - multiqc
