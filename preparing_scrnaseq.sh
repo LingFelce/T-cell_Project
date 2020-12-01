@@ -4,28 +4,64 @@
 
 # check if have appropriate modules installed
 
-# .fastq.gz quality control
+# .fastq.gz quality control - see separate script as send to queue, module available
 
 mkdir fastqc_results
 fastqc -o fastqc_results <input file>
 
+# multiqc installed on conda so have to run locally, but doesn't take very long
+
 # trimming - necessary? if so, use trim_galore
+# no adapter content, so don't need to trim
 
 # find reference transcriptome to for STAR - reference genome sequences (FASTA) and annotations (GTF) - produce genome index
 
-mkdir indices
-mkdir indices/STAR
-STAR --runThreadN 4 --runMode genomeGenerate --genomeDir indices/STAR --genomeFastaFiles <fastafile> --sjdbGTFfile <GTFfile>
+# don't need to make genome index, already have on cbrg cluster /databank/indices/star/hg19
 
 # mapping using STAR - output directly as BAM
 # read files are compressed --readFilesCommand zcat or --readFilesCommand gunzip -c
 # map multiple samples at same time - use commas to separate single-end reads with no space 
 # output as BAM so don't need to convert SAM files to BAM - check if need unsorted or sorted by coordinates (as input for featureCounts)
 
-mkdir results
-mkdir results/STAR
+# softlink .fastq.gz files from MiXCR input folders to STAR folder
+find /t1-data/user/lfelce/MiXCR/CD4_input -name "*.fastq.gz" | xargs -I v_f ln -s v_f
 
-STAR --runThreadN 4 --genomeDir indices/STAR --readFilesIn <fastqfile1>,<fastqfile2>,<fastqfile3> --outFileNamePrefix results/STAR/prefix
+
+# run as separate script for each file?
+
+########## Isar's modified script for MiXCR ##############
+# copy and paste below into command line. 
+# then when have generated scripts, copy and paste second bit into command line
+
+cd /t1-data/user/lfelce/STAR/
+DIR=/t1-data/user/lfelce/STAR/results/
+
+for NAME in $(find . -name '*_R1_001.fastq.gz' -printf "%f\n" | sed 's/_R1_001.fastq.gz//'); do
+ 
+echo "$NAME"
+
+p1='_R1_001.fastq.gz' 
+
+echo -e '#!/bin/sh
+#$ -cwd
+#$ -q batchq
+module load STAR/2.7.3a
+cd /t1-data/user/lfelce/STAR
+STAR --runThreadN 8 --genomeDir /databank/indices/star/hg19/ --readFilesCommand gunzip -c /t1-data/user/lfelce/STAR/'$NAME$p1 ' --outFileNamePrefix results/ --outSAMtype BAM SortedByCoordinate > $DIR'script/'$NAME'.sh'; 
+
+done
+
+#------------- run scripts on server
+cd /t1-data/user/lfelce/MiXCR/CD8_output_new/script/
+
+for line in $(ls *.sh); do
+sbatch $line
+done
+
+squeue -u lfelce
+
+
+
 
 # mapping quality control - multiqc
 
