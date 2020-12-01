@@ -35,16 +35,14 @@ find /t1-data/user/lfelce/MiXCR/CD4_input -name "*.fastq.gz" | xargs -I v_f ln -
 #SBATCH --output=%j_%x.out
 #SBATCH --error=%j_%x.err
 
-module load STAR/2.6/1d
+module load STAR/2.6.1d
 cd /t1-data/user/lfelce/STAR/
 
-for NAME in $(find /t1-data/user/lfelce/STAR/ -name '*_R1_001.fastq.gz' -printf "%f\n" | sed 's/_R1_001.fastq.gz//'); do # remove common ending of name
+for i in ./*_R1_001.fastq.gz
 
-echo "$NAME"
+do
 
-p1='_R1_001.fastq.gz'
-
-STAR --runThreadN 10 --genomeDir /databank/indices/star/hg19 --readFilesCommand gunzip -c /t1-data/user/lfelce/STAR/'$NAME$p1' --outFileNamePrefix /t1-data/user/lfelce/STAR/results/'$NAME' --outSAMtype BAM SortedByCoordinate
+STAR --runThreadN 10 --readFilesCommand gunzip -c --outSAMtype BAM SortedByCoordinate --genomeDir /databank/indices/star/hg19 --readFilesIn $i --outFileNamePrefix ./results/${i%_R1_001.fastq.gz}_
 
 done
 
@@ -54,9 +52,12 @@ done
 # use featureCounts to quantify reads 
 # featureCounts is part of subreads package
 # exclude multimapping (10x Cell Ranger by default exludes mutimapping, so must be ok!)
+
 <featureCounts_path>/featureCounts -Q 30 -p -a genome.gtf -o outputfile input.bam
 
-featureCounts -t exon -g gene_id -a <GTF> -o counts.txt <bam1> <bam2> <bam3>
+featureCounts -t exon -g gene_id -a <GTF> -o counts.txt <bam1> <bam2> <bam3> #-t and -g are default, -Q minimum mapping score 0 is default
+
+
 
 # once have counts matrix, can analyse in R - use R on cluster?
 
