@@ -44,20 +44,16 @@ echo "$NAME"
 
 p1='_R1_001.fastq.gz'
 
-STAR --runThreadN 10 --genomeDir /databank/indices/star/hg19 --readFilesCommand gunzip -c /t1-data/user/lfelce/STAR/'$NAME$p1' --outFileNamePrefix results/'$NAME' --outSAMtype BAM SortedByCoordinate
+STAR --runThreadN 10 --genomeDir /databank/indices/star/hg19 --readFilesCommand gunzip -c /t1-data/user/lfelce/STAR/'$NAME$p1' --outFileNamePrefix /t1-data/user/lfelce/STAR/results/'$NAME' --outSAMtype BAM SortedByCoordinate
 
 done
 
 
 # mapping quality control - multiqc
 
-# use featureCounts to quantify reads (check what multimapping is again!)
+# use featureCounts to quantify reads 
 # featureCounts is part of subreads package
-
-# include multimapping
-<featureCounts_path>/featureCounts -O -M -Q 30 -p -a genome.gtf -o outputfile input.bam
-
-# exclude multimapping
+# exclude multimapping (10x Cell Ranger by default exludes mutimapping, so must be ok!)
 <featureCounts_path>/featureCounts -Q 30 -p -a genome.gtf -o outputfile input.bam
 
 featureCounts -t exon -g gene_id -a <GTF> -o counts.txt <bam1> <bam2> <bam3>
