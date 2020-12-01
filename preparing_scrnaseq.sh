@@ -26,6 +26,7 @@ fastqc -o fastqc_results <input file>
 # softlink .fastq.gz files from MiXCR input folders to STAR folder
 find /t1-data/user/lfelce/MiXCR/CD4_input -name "*.fastq.gz" | xargs -I v_f ln -s v_f
 
+# run all files in 1 script - very slow!
 #!/bin/bash
 #SBATCH --partition=batch
 #SBATCH --job-name=star_map
@@ -34,20 +35,46 @@ find /t1-data/user/lfelce/MiXCR/CD4_input -name "*.fastq.gz" | xargs -I v_f ln -
 #SBATCH --time=07-00:00:00
 #SBATCH --output=%j_%x.out
 #SBATCH --error=%j_%x.err
+module load STAR/2.6.1d
+cd /t1-data/user/lfelce/STAR/
+for i in ./*_R1_001.fastq.gz
+do
+STAR --runThreadN 10 --readFilesCommand gunzip -c --outSAMtype BAM SortedByCoordinate --genomeDir /databank/indices/star/hg19 --readFilesIn $i --outFileNamePrefix ./results/${i%_R1_001.fastq.gz}_
+done
 
+# run each file as single script
+# copy and paste below into command line. 
+# then when have generated scripts, copy and paste second bit into command line
+
+cd /t1-data/user/lfelce/STAR/
+DIR=/t1-data/user/lfelce/STAR/results/
+
+for i in ./*_R1_001.fastq.gz
+do
+
+echo -e '#!/bin/sh
+#$ -cwd
+#$ -q batchq
 module load STAR/2.6.1d
 cd /t1-data/user/lfelce/STAR/
 
-for i in ./*_R1_001.fastq.gz
-
-do
-
-STAR --runThreadN 10 --readFilesCommand gunzip -c --outSAMtype BAM SortedByCoordinate --genomeDir /databank/indices/star/hg19 --readFilesIn $i --outFileNamePrefix ./results/${i%_R1_001.fastq.gz}_
+STAR --runThreadN 10 --readFilesCommand gunzip -c --outSAMtype BAM SortedByCoordinate --genomeDir /databank/indices/star/hg19 --readFilesIn '$i' --outFileNamePrefix '${i%_R1_001.fastq.gz}_ > $DIR'script/'${i%_R1_001.fastq.gz}'.sh'
 
 done
 
+###### send by patient batch
+
+cd /t1-data/user/lfelce/STAR/results/script
+
+for line in $(ls ./005_*.sh); do
+sbatch $line
+done
+
+squeue -u lfelce
 
 # mapping quality control - multiqc
+
+# rename files? otherwise file names will be used as sample names in downstream analysis?
 
 # use featureCounts to quantify reads 
 # featureCounts is part of subreads package
@@ -57,9 +84,16 @@ done
 
 featureCounts -t exon -g gene_id -a <GTF> -o counts.txt <bam1> <bam2> <bam3> #-t and -g are default, -Q minimum mapping score 0 is default
 
+###### for batch script ########
+
+module load subread/2.0.0 
+
+cd /t1-data/user/lfelce/STAR/results/
+
+featureCounts -a /databank/igenomes/Homo_sapiens/UCSC/hg19/Annotation/Genes/genes.gtf -o ./counts.txt ./*.bam
 
 
-# once have counts matrix, can analyse in R - use R on cluster?
+# once have counts matrix, can analyse in R Studio using Seurat or Jupyter Notebook using Scanpy
 
 # modules available
 alicevision/2.2.0              bowtie2/2.3.4.3                 fastqc/0.11.9            java/7u80                         python-cbrg/202008            seqtk/20201102          
