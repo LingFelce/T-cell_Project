@@ -2,7 +2,7 @@
 # Isar modified MiXCR script so that .txt output for each cell is TRA.txt, TRB.txt, TRD.txt, TRG.txt file
 library(tcR)
 
-#-------------  List of human of TCR and Ig gene segments
+#-------------  List of human of TCR and Ig gene segments ----------------------
 
 # TCR sequence database
 
@@ -381,14 +381,62 @@ cd4 <- mutate(cd4, alpha=paste(TRAV, TRAJ, sep="_"))
 cd4 <- mutate(cd4, beta=paste(TRBV, TRBJ, sep="_"))
 
 # tabulate to get dominant alpha-beta pairing
-# 022 rows 
+library(circlize)
+
+# combined cd4 patients
+
+cd4_freq <- as.data.frame(table(cd4$alpha, cd4$beta))
+cd4_all <- as.matrix(as.data.frame.matrix(table(cd4$alpha, cd4$beta)))
+
+setwd('/t1-data/user/lfelce/TCR_analysis/new_mixcr_results')
+
+circos.clear()
+set.seed(999)
+pdf('cd4_all_chorddiagram.pdf', width = 18, height = 14, useDingbats = FALSE)
+chordDiagram(cd4_all, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+dev.off()
+
+# combine only non-unique pairings for all cd4
+
+combined_cd4 <- merge(cd4_s34_freq, cd4_m24_freq, by=c("Var1", "Var2"), all=T)
+combined_cd4 <- na.omit(combined_cd4)
+
+# look at alpha and beta chains separately - alpha chain first
+tra_s34 <- tra[c(1:53, 113:159),]
+tra_m24 <- tra[-c(1:53, 113:159),]
+
+tra_s34_freq <- as.data.frame(table(tra_s34$TRAV, tra_s34$TRAJ))
+tra_m24_freq <- as.data.frame(table(tra_m24$TRAV, tra_m24$TRAJ))
+
+combined_tra <- merge(tra_s34_freq, tra_m24_freq, by=c("Var1", "Var2"), all = T)
+combined_tra[combined_tra == 0] <- NA
+combined_tra <- na.omit(combined_tra)
+
+# look at alpha and beta chains separately - beta chain next
+trb_s34 <- trb[c(1:29, 73:93),]
+trb_m24 <- trb[-c(1:29, 73:93),]
+
+trb_s34_freq <- as.data.frame(table(trb_s34$TRBV, trb_s34$TRBJ))
+trb_m24_freq <- as.data.frame(table(trb_m24$TRBV, trb_m24$TRBJ))
+
+combined_trb <- merge(trb_s34_freq, trb_m24_freq, by=c("Var1", "Var2"), all = T)
+combined_trb[combined_trb == 0] <- NA
+combined_trb <- na.omit(combined_trb)
+
+# separate circle plots for each patient
+# 022  
 # 025
 # 1062
 # 1493
 # 1504
 # 1525
-
-library(circlize)
 
 patient_022 <- cd4[cd4$cell_name %like% "022", ]
 cd4_s34_022 <- as.matrix(as.data.frame.matrix(table(patient_022$alpha, patient_022$beta)))
@@ -427,7 +475,31 @@ for (i in 1:length(list)) {
   dev.off()
 }
 
-#--------------------------- CD M24 patients ----------------------
+
+#-------------------------- CD4 S34 patients -----------------------
+
+cd4_s34 <- cd4[c(1:23, 61:79),]
+
+cd4_s34_freq <- as.data.frame(table(cd4_s34$alpha, cd4_s34$beta))
+cd4_s34_all <- as.matrix(as.data.frame.matrix(table(cd4_s34$alpha, cd4_s34$beta)))
+
+setwd('/t1-data/user/lfelce/TCR_analysis/new_mixcr_results')
+
+circos.clear()
+set.seed(999)
+pdf('cd4_s34_all_chorddiagram.pdf', width = 18, height = 14, useDingbats = FALSE)
+chordDiagram(cd4_s34_all, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+dev.off()
+
+
+#--------------------------- CD4 M24 patients ----------------------
 
 # individually CD4 M24 patients don't appear to have dominant alpha-beta pair
 # look at CD4 M24 patients altogether and see if when combined there appears to be a dominant pair
