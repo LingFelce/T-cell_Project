@@ -53,8 +53,10 @@ for i in ./*_R1_001.fastq.gz
 do
 
 echo -e '#!/bin/sh
-#$ -cwd
-#$ -q batchq
+#SBATCH --partition=batch
+#SBATCH --nodes=1
+#SBATCH --mem=128G
+#SBATCH --time=07-00:00:00
 module load STAR/2.6.1d
 cd /t1-data/user/lfelce/STAR/
 
