@@ -1,4 +1,6 @@
 Summary of tcR circle file (and finding dominant genes/pairings)
+Using default output from MiXCR
+- new MiXCR output from Isar's code separates alpha and beta into separate .txt files, need to be parsed separately into R then combined by cell name
 
 1. Dominant genes (individual AV, AJ, BV, BJ)
 Looked at bar charts from tcR.R output
