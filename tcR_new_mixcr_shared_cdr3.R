@@ -100,6 +100,12 @@ for (i in (1:192)) {all_metadata[i,2] <- "005"}
 metadata_a <- all_metadata[is.element(all_metadata$sample, mixcr_a_names$cell_name),]
 metadata_b <- all_metadata[is.element(all_metadata$sample, mixcr_b_names$cell_name),]
 
+# rename column to cell_name
+
+colnames(metadata_a)[1]<- "cell_name"
+colnames(metadata_b)[1]<- "cell_name"
+
+
 ## alpha chain ##
 
 # replace file names with patient index 
@@ -129,7 +135,7 @@ length(mixcr_per_state)
 df <- do.call(rbind.data.frame, mixcr_per_state)
 dim(df)
 
-# shared CDR3 sequences
+# shared CDR3 sequences 
 
 setwd('/t1-data/user/lfelce/TCR_analysis/new_mixcr_results')
 
@@ -176,6 +182,74 @@ imm.shared <- shared.repertoire(.data = mixcr_per_state, .type = 'avrc', .min.pp
 head(imm.shared)
 
 write.table(imm.shared, 'shared_repertoire_per_patient_beta.txt', quote = F, row.names = F, sep = '\t')
+
+## table of CDR3 sequences and frequency
+# alpha
+datalist = list()
+for (i in (1:length(mixcr_a))) {
+  dat <- data.frame(c(mixcr_a[[i]][6],mixcr_a[[i]][7], mixcr_a[[i]][8]))
+  dat$i <- i # keep track of which iteration produced it
+  datalist[[i]] <- dat # add it to list
+}
+# combine columns for each cell, select only cells with only 2 rows (dual alpha)
+big_data = do.call(rbind, datalist)
+tra <- big_data %>% group_by(i) %>% filter(n() <= 2)
+# rename columns
+colnames(tra) <- c("CDR3a", "TRAV", "TRAJ", "cell_number")
+# get cell name by merging by cell number
+tra <- merge(tra, mixcr_a_names, by="cell_number")
+# get patient overall id by merging by cell name
+tra <- merge(tra, metadata_a, by="cell_name")
+
+# beta
+datalist = list()
+for (i in (1:length(mixcr_b))) {
+  dat <- data.frame(c(mixcr_b[[i]][6],mixcr_b[[i]][7], mixcr_b[[i]][8]))
+  dat$i <- i # keep track of which iteration produced it
+  datalist[[i]] <- dat # add it to list
+}
+# combine columns for each cell, select only cells with only 1 row (single beta)
+big_data = do.call(rbind, datalist)
+trb <- big_data %>% group_by(i) %>% filter(n() <= 1)
+# rename columns
+colnames(trb) <- c("CDR3b", "TRBV", "TRBJ", "cell_number")
+# get cell name by merging by cell number
+trb <- merge(trb, mixcr_b_names, by="cell_number")
+# get patient overall id by merging by cell name
+trb <- merge(trb, metadata_b, by="cell_name")
+
+# merge alpha and beta by cell name
+cd8_np16 <- merge (tra, trb, by="cell_name")
+
+cd8_np16_005 <- cd8_np16[1:26,]
+cd8_np16_005_cdr3 <- as.data.frame(table(cd8_np16_005$CDR3a, cd8_np16_005$CDR3b))
+names(cd8_np16_005_cdr3) <- c("CDR3a", "CDR3b", "Frequency")
+cd8_np16_005_freq <- merge(cd8_np16_005, cd8_np16_005_cdr3, by=c("CDR3a", "CDR3b"))
+final_cd8_np16_005_cdr3 <- cd8_np16_005_freq[,c(2, 10, 11, 1, 5, 6, 7, 14)]
+colnames(final_cd8_np16_005_cdr3)[7] <- "Patient"
+
+cd8_np16_1131tp2 <- cd8_np16[27:45,]
+cd8_np16_1131tp2_cdr3 <- as.data.frame(table(cd8_np16_1131tp2$CDR3a, cd8_np16_1131tp2$CDR3b))
+names(cd8_np16_1131tp2_cdr3) <- c("CDR3a", "CDR3b", "Frequency")
+cd8_np16_1131tp2_freq <- merge(cd8_np16_1131tp2, cd8_np16_1131tp2_cdr3, by=c("CDR3a", "CDR3b"))
+final_cd8_np16_1131tp2_cdr3 <- cd8_np16_1131tp2_freq[,c(2, 10, 11, 1, 5, 6, 7, 14)]
+colnames(final_cd8_np16_1131tp2_cdr3)[7] <- "Patient"
+
+cd8_np16_1153 <- cd8_np16[46:63,]
+cd8_np16_1153_cdr3 <- as.data.frame(table(cd8_np16_1153$CDR3a, cd8_np16_1153$CDR3b))
+names(cd8_np16_1153_cdr3) <- c("CDR3a", "CDR3b", "Frequency")
+cd8_np16_1153_freq <- merge(cd8_np16_1153, cd8_np16_1153_cdr3, by=c("CDR3a", "CDR3b"))
+final_cd8_np16_1153_cdr3 <- cd8_np16_1153_freq[,c(2, 10, 11, 1, 5, 6, 7, 14)]
+colnames(final_cd8_np16_1153_cdr3)[7] <- "Patient"
+
+cd8_np16_1201tp2 <- cd8_np16[64:92,]
+cd8_np16_1201tp2_cdr3 <- as.data.frame(table(cd8_np16_1201tp2$CDR3a, cd8_np16_1201tp2$CDR3b))
+names(cd8_np16_1201tp2_cdr3) <- c("CDR3a", "CDR3b", "Frequency")
+cd8_np16_1201tp2_freq <- merge(cd8_np16_1201tp2, cd8_np16_1201tp2_cdr3, by=c("CDR3a", "CDR3b"))
+final_cd8_np16_1201tp2_cdr3 <- cd8_np16_1201tp2_freq[,c(2, 10, 11, 1, 5, 6, 7, 14)]
+colnames(final_cd8_np16_1201tp2_cdr3)[7] <- "Patient"
+
+final_cd8_np16_cdr3 <- rbind(final_cd8_np16_005_cdr3, final_cd8_np16_1131tp2_cdr3, final_cd8_np16_1153_cdr3, final_cd8_np16_1201tp2_cdr3)
 
 
 #------------- CD 0RF3a-28 ------------------------
@@ -274,6 +348,9 @@ length(mixcr_per_state)
 df <- do.call(rbind.data.frame, mixcr_per_state)
 dim(df)
 
+# remove minibulk samples
+mixcr_per_state = mixcr_per_state[-c(1,3,6,8)]
+
 # shared CDR3 sequences
 
 setwd('/t1-data/user/lfelce/TCR_analysis/new_mixcr_results')
@@ -312,6 +389,9 @@ length(mixcr_per_state)
 
 df <- do.call(rbind.data.frame, mixcr_per_state)
 dim(df)
+
+# remove minibulk samples
+mixcr_per_state = mixcr_per_state[-c(1,3,6)]
 
 # shared CDR3 sequences
 
