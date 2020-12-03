@@ -132,3 +132,38 @@ DimHeatmap(object = tcell, reduction = "pca", cells = 200, balanced = TRUE)
 
 ### Determine statistically significant principal components
 Overcome extensive technical noise in any single gene for scRNA-seq data, Seurat clusters cells based on PCA scores. Determining how many PCs to include downstream is an important step.
+
+Here it looks like PC1-8 are significant (looking at p-values)
+```{r}
+tcell <- JackStraw(tcell, num.replicate = 100)
+
+# visualise distribution of p-values for each PC with uniform distribution (dashed line) Significant PCs show strong enrichment of genes with low p-values (solid curve above dashed line)
+
+tcell <- ScoreJackStraw(tcell, dims = 1:20)
+
+JackStrawPlot(tcell, dims = 1:15)
+
+```
+
+## Cell clustering
+Construct a k-nearest neighbours graph based on Euclidean distance in PCA space, refine edge weights between any 2 cells based on shared overlap in local neighbourhoods. Use Louvain algorithm to cluster cells - modularity optimisation technique to iteratively group cells together.
+
+Resolution parameter - sets granularity of downstream clustering, larger values leads to more clusters. Set between 0.6-1.2 for single cell datasets around 3000 cells. 
+
+```{r}
+# calculate KNN and construct SNN graph (find neighbours), then find clusters
+
+tcell <- FindNeighbors(tcell, dims = 1:10)
+tcell <- FindClusters(tcell, resolution = 0.5)
+
+```
+### Non-linear dimensional reduction (UMAP)
+Place similar cells in low-dimensional space. Use same PCs as input to clustering analysis
+```{r}
+tcell <- RunUMAP(tcell, dims = 1:8)
+DimPlot(tcell, reduction = "umap")
+
+# save UMAP: saveRDS(pbmc, file = "data/pbmc_tutorial.rds")
+
+```
+
