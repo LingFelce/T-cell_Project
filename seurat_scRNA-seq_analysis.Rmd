@@ -1,0 +1,52 @@
+---
+title: "scRNA-Seq Analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(Seurat)
+library(dplyr)
+library(patchwork)
+library(cowplot)
+library(ggplot2)
+library(data.table)
+library(tidyverse)
+```
+
+# Single-cell RNA-Seq analysis of CD4 and CD8 SARS-CoV-2 specific T cells
+
+Analysis of Dong samples: CD8 NP16, CD8 ORF3a-28 and CD4 S34 & M24.
+Follow guided clustering tutorial https://satijalab.org/seurat/v3.2/pbmc3k_tutorial.html and this one https://scrnaseq-course.cog.sanger.ac.uk/website/seurat-chapter.html
+
+## Load counts matrix and create Seurat object
+```{r}
+setwd('/t1-data/user/lfelce/scRNA-Seq/T-cell_201203/')
+# load data (from featureCounts)
+tcell_data <-  fread('201203_counts.txt', stringsAsFactors = F, header=T)
+# remove columns with chromosome, start, end, strand and length info
+tcell_data <- tcell_data[,-c(2:6)]
+# make Geneid into row names
+tcell_data <-tibble::column_to_rownames(tcell_data, "Geneid")
+
+# Initialise Seurat object with raw (non-normalised) data
+# min.cells = include features detected in at least this many cells
+# min.features includes cells where at least this many features detected
+tcell <- CreateSeuratObject(counts = tcell_data, min.cells = 3, min.features = 200, project = "T-cell_data", assay = "RNA")
+
+```
+
+## Standard pre-processing workflow
+
+### QC and selecting cells for further analysis
+Minimum gene cut off already set with CreateSeuratObject, but can filter out cells based on technical or biological parameters.
+Visualise gene and molecule counts, plot relationship and exclude cells with clear outlier number of genes detected as potential multiplets (filter user-defined outlier cells). Also filter cells based on % mitochondrial genes present
+
+```{r}
+# non-UMI data - nUMI represents sum of non-normalised values within cells
+# calculate % mitochondrial genes and store in separate object
+# use object@raw.data represents non-transformed and non-log-normalised counts
+# % of UMI mapping to MT-genes is a common scRNA-seq QC metric
+
+
+```
