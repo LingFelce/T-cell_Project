@@ -222,35 +222,29 @@ trb <- merge(trb, metadata_b, by="cell_name")
 cd8_np16 <- merge (tra, trb, by="cell_name")
 
 cd8_np16_005 <- cd8_np16[1:26,]
-cd8_np16_005_cdr3 <- as.data.frame(table(cd8_np16_005$CDR3a, cd8_np16_005$CDR3b))
-names(cd8_np16_005_cdr3) <- c("CDR3a", "CDR3b", "Frequency")
-cd8_np16_005_freq <- merge(cd8_np16_005, cd8_np16_005_cdr3, by=c("CDR3a", "CDR3b"))
-final_cd8_np16_005_cdr3 <- cd8_np16_005_freq[,c(2, 10, 11, 1, 5, 6, 7, 14)]
+cd8_np16_005$Count <- 1
+final_cd8_np16_005_cdr3 <- aggregate(Count~CDR3a+TRAV+TRAJ+CDR3b+TRBV+TRBJ+patient.x, cd8_np16_005, sum)
 colnames(final_cd8_np16_005_cdr3)[7] <- "Patient"
 
 cd8_np16_1131tp2 <- cd8_np16[27:45,]
-cd8_np16_1131tp2_cdr3 <- as.data.frame(table(cd8_np16_1131tp2$CDR3a, cd8_np16_1131tp2$CDR3b))
-names(cd8_np16_1131tp2_cdr3) <- c("CDR3a", "CDR3b", "Frequency")
-cd8_np16_1131tp2_freq <- merge(cd8_np16_1131tp2, cd8_np16_1131tp2_cdr3, by=c("CDR3a", "CDR3b"))
-final_cd8_np16_1131tp2_cdr3 <- cd8_np16_1131tp2_freq[,c(2, 10, 11, 1, 5, 6, 7, 14)]
+cd8_np16_1131tp2$Count <- 1
+final_cd8_np16_1131tp2_cdr3 <- aggregate(Count~CDR3a+TRAV+TRAJ+CDR3b+TRBV+TRBJ+patient.x, cd8_np16_1131tp2, sum)
 colnames(final_cd8_np16_1131tp2_cdr3)[7] <- "Patient"
 
 cd8_np16_1153 <- cd8_np16[46:63,]
-cd8_np16_1153_cdr3 <- as.data.frame(table(cd8_np16_1153$CDR3a, cd8_np16_1153$CDR3b))
-names(cd8_np16_1153_cdr3) <- c("CDR3a", "CDR3b", "Frequency")
-cd8_np16_1153_freq <- merge(cd8_np16_1153, cd8_np16_1153_cdr3, by=c("CDR3a", "CDR3b"))
-final_cd8_np16_1153_cdr3 <- cd8_np16_1153_freq[,c(2, 10, 11, 1, 5, 6, 7, 14)]
+cd8_np16_1153$Count <- 1
+final_cd8_np16_1153_cdr3 <- aggregate(Count~CDR3a+TRAV+TRAJ+CDR3b+TRBV+TRBJ+patient.x, cd8_np16_1153, sum)
 colnames(final_cd8_np16_1153_cdr3)[7] <- "Patient"
 
 cd8_np16_1201tp2 <- cd8_np16[64:92,]
-cd8_np16_1201tp2_cdr3 <- as.data.frame(table(cd8_np16_1201tp2$CDR3a, cd8_np16_1201tp2$CDR3b))
-names(cd8_np16_1201tp2_cdr3) <- c("CDR3a", "CDR3b", "Frequency")
-cd8_np16_1201tp2_freq <- merge(cd8_np16_1201tp2, cd8_np16_1201tp2_cdr3, by=c("CDR3a", "CDR3b"))
-final_cd8_np16_1201tp2_cdr3 <- cd8_np16_1201tp2_freq[,c(2, 10, 11, 1, 5, 6, 7, 14)]
+cd8_np16_1201tp2$Count <- 1
+final_cd8_np16_1201tp2_cdr3 <- aggregate(Count~CDR3a+TRAV+TRAJ+CDR3b+TRBV+TRBJ+patient.x, cd8_np16_1201tp2, sum)
 colnames(final_cd8_np16_1201tp2_cdr3)[7] <- "Patient"
 
 final_cd8_np16_cdr3 <- rbind(final_cd8_np16_005_cdr3, final_cd8_np16_1131tp2_cdr3, final_cd8_np16_1153_cdr3, final_cd8_np16_1201tp2_cdr3)
 
+setwd('/t1-data/user/lfelce/TCR_analysis/')
+write.csv(final_cd8_np16_cdr3, "shared_cdr3_cd8_np16.csv")
 
 #------------- CD 0RF3a-28 ------------------------
 
@@ -466,6 +460,8 @@ colnames(final_cd8_orf_1525tp2_cdr3)[7] <- "Patient"
 
 final_cd8_orf_cdr3 <- rbind(final_cd8_orf_1105_cdr3, final_cd8_orf_1134tp2_cdr3, final_cd8_orf_1525tp1_cdr3, final_cd8_orf_1525tp2_cdr3)
 
+setwd('/t1-data/user/lfelce/TCR_analysis/')
+write.csv(final_cd8_orf_cdr3, "shared_cdr3_cd8_orf.csv")
 
 #---------------- CD4 S34 + M24 ---------------
 
