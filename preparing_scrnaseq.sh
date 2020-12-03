@@ -74,15 +74,14 @@ done
 
 squeue -u lfelce
 
-# mapping quality control - multiqc
+# mapping quality control - do in results folder with additional log files etc that STAR generated
+multiqc .
 
-# rename files? otherwise file names will be used as sample names in downstream analysis?
+# renamed files to remove _Aligned.sortedByCoord.out
 
 # use featureCounts to quantify reads 
 # featureCounts is part of subreads package
 # exclude multimapping (10x Cell Ranger by default exludes mutimapping, so must be ok!)
-
-<featureCounts_path>/featureCounts -Q 30 -p -a genome.gtf -o outputfile input.bam
 
 featureCounts -t exon -g gene_id -a <GTF> -o counts.txt <bam1> <bam2> <bam3> #-t and -g are default, -Q minimum mapping score 0 is default
 
@@ -90,9 +89,11 @@ featureCounts -t exon -g gene_id -a <GTF> -o counts.txt <bam1> <bam2> <bam3> #-t
 
 module load subread/2.0.0 
 
-cd /t1-data/user/lfelce/STAR/results/
+cd /t1-data/user/lfelce/STAR/results/bam
 
-featureCounts -a /databank/igenomes/Homo_sapiens/UCSC/hg19/Annotation/Genes/genes.gtf -o ./counts.txt ./*.bam
+featureCounts -a /databank/igenomes/Homo_sapiens/UCSC/hg19/Annotation/Genes/genes.gtf -o ./201203_counts.txt ./*.bam
+
+#######################
 
 
 # once have counts matrix, can analyse in R Studio using Seurat or Jupyter Notebook using Scanpy
