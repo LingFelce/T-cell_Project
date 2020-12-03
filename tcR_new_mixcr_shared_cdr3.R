@@ -532,6 +532,10 @@ for (i in (193:288)) {all_metadata[i,2] <- "025"}
 metadata_a <- all_metadata[is.element(all_metadata$sample, mixcr_a_names$cell_name),]
 metadata_b <- all_metadata[is.element(all_metadata$sample, mixcr_b_names$cell_name),]
 
+# rename column to cell_name
+colnames(metadata_a)[1]<- "cell_name"
+colnames(metadata_b)[1]<- "cell_name"
+
 ## alpha chain ##
 
 # replace file names with patient index
@@ -608,3 +612,84 @@ imm.shared <- shared.repertoire(.data = mixcr_per_state, .type = 'avrc', .min.pp
 head(imm.shared)
 
 write.table(imm.shared, 'shared_repertoire_per_patient_beta.txt', quote = F, row.names = F, sep = '\t')
+
+
+## table of CDR3 sequences and frequency
+# alpha
+datalist = list()
+for (i in (1:length(mixcr_a))) {
+  dat <- data.frame(c(mixcr_a[[i]][6],mixcr_a[[i]][7], mixcr_a[[i]][8]))
+  dat$i <- i # keep track of which iteration produced it
+  datalist[[i]] <- dat # add it to list
+}
+# combine columns for each cell, select only cells with only 2 rows (dual alpha)
+big_data = do.call(rbind, datalist)
+tra <- big_data %>% group_by(i) %>% filter(n() <= 2)
+# rename columns
+colnames(tra) <- c("CDR3a", "TRAV", "TRAJ", "cell_number")
+# get cell name by merging by cell number
+tra <- merge(tra, mixcr_a_names, by="cell_number")
+# get patient overall id by merging by cell name
+tra <- merge(tra, metadata_a, by="cell_name")
+
+# beta
+datalist = list()
+for (i in (1:length(mixcr_b))) {
+  dat <- data.frame(c(mixcr_b[[i]][6],mixcr_b[[i]][7], mixcr_b[[i]][8]))
+  dat$i <- i # keep track of which iteration produced it
+  datalist[[i]] <- dat # add it to list
+}
+# combine columns for each cell, select only cells with only 1 row (single beta)
+big_data = do.call(rbind, datalist)
+trb <- big_data %>% group_by(i) %>% filter(n() <= 1)
+# rename columns
+colnames(trb) <- c("CDR3b", "TRBV", "TRBJ", "cell_number")
+# get cell name by merging by cell number
+trb <- merge(trb, mixcr_b_names, by="cell_number")
+# get patient overall id by merging by cell name
+trb <- merge(trb, metadata_b, by="cell_name")
+
+# merge alpha and beta by cell name
+cd4 <- merge (tra, trb, by="cell_name")
+
+cd4_022 <- cd4[1:23,]
+cd4_022$Count <- 1
+final_cd4_022_cdr3 <- aggregate(Count~CDR3a+TRAV+TRAJ+CDR3b+TRBV+TRBJ+patient.x+epitope.x, cd4_022, sum)
+colnames(final_cd4_022_cdr3)[7] <- "Patient"
+colnames(final_cd4_022_cdr3)[8] <- "Epitope"
+
+cd4_1062 <- cd4[61:79,]
+cd4_1062$Count <- 1
+final_cd4_1062_cdr3 <- aggregate(Count~CDR3a+TRAV+TRAJ+CDR3b+TRBV+TRBJ+patient.x+epitope.x, cd4_1062, sum)
+colnames(final_cd4_1062_cdr3)[7] <- "Patient"
+colnames(final_cd4_1062_cdr3)[8] <- "Epitope"
+
+cd4_025 <- cd4[24:60,]
+cd4_025$Count <- 1
+final_cd4_025_cdr3 <- aggregate(Count~CDR3a+TRAV+TRAJ+CDR3b+TRBV+TRBJ+patient.x+epitope.x, cd4_025, sum)
+colnames(final_cd4_025_cdr3)[7] <- "Patient"
+colnames(final_cd4_025_cdr3)[8] <- "Epitope"
+
+cd4_1493 <- cd4[80:103,]
+cd4_1493$Count <- 1
+final_cd4_1493_cdr3 <- aggregate(Count~CDR3a+TRAV+TRAJ+CDR3b+TRBV+TRBJ+patient.x+epitope.x, cd4_1493, sum)
+colnames(final_cd4_1493_cdr3)[7] <- "Patient"
+colnames(final_cd4_1493_cdr3)[8] <- "Epitope"
+
+cd4_1504 <- cd4[104:117,]
+cd4_1504$Count <- 1
+final_cd4_1504_cdr3 <- aggregate(Count~CDR3a+TRAV+TRAJ+CDR3b+TRBV+TRBJ+patient.x+epitope.x, cd4_1504, sum)
+colnames(final_cd4_1504_cdr3)[7] <- "Patient"
+colnames(final_cd4_1504_cdr3)[8] <- "Epitope"
+
+cd4_1525 <- cd4[118:137,]
+cd4_1525$Count <- 1
+final_cd4_1525_cdr3 <- aggregate(Count~CDR3a+TRAV+TRAJ+CDR3b+TRBV+TRBJ+patient.x+epitope.x, cd4_1525, sum)
+colnames(final_cd4_1525_cdr3)[7] <- "Patient"
+colnames(final_cd4_1525_cdr3)[8] <- "Epitope"
+
+final_cd4_cdr3 <- rbind(final_cd4_022_cdr3, final_cd4_1062_cdr3, final_cd4_025_cdr3, final_cd4_1493_cdr3,
+                        final_cd4_1504_cdr3, final_cd4_1525_cdr3)
+
+setwd('/t1-data/user/lfelce/TCR_analysis/')
+write.csv(final_cd4_cdr3, "shared_cdr3_cd4.csv")
