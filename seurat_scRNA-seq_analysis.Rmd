@@ -62,11 +62,73 @@ VlnPlot(object = tcell, features = c("nFeature_RNA", "nCount_RNA", "percent.mito
 
 
 ```
-
 ```{r}
 # can use GenePlot to visualise gene-gene relationships and anything else calculated by object
 FeatureScatter(object=tcell, feature1="nCount_RNA", feature2="nFeature_RNA")
 
 ```
+```{r}
+# Filter out cells that have unique gene counts (nFeature_RNA) over 4000 or less than 200 
+# Note that > and < are used to define a'gate'.  
+# -Inf and Inf should be used if don't want a lower or upper threshold.
+tcell <- subset(x = tcell, subset = nFeature_RNA > 200 & nFeature_RNA < 4000 & percent.mito >  -Inf & percent.mito < 0.05 )
+```
 
+### Normalising the data
+After removing unwanted cells from dataset, need to normalise data. Use global-scaling normalisation method "LogNormalize" - normalises gene expression measurements for each cell by total expression, multiplies by scale factor (10,000 default) and log-tranforms result.
+```{r}
+tcell <- NormalizeData(object = tcell, normalization.method = "LogNormalize", scale.factor = 10000)
+```
 
+### Detection of variables genes across single cells
+Seurat calculates highly variable genes and focuses on these for downstream analysis. FindVariableGenes calculates average expression and dispersion for each gene, places genes into bins and calculates z-score for dispersion within each bin - helps to control relationship between variability and average expression. 
+
+```{r, fig.height=8, fig.width = 16}
+# identify 2000 variable genes - normal parameter settings for UMI data normalised to total of 1e4 molecules
+
+tcell <- FindVariableFeatures(object = tcell, mean.function = ExpMean, dispersion.function = LogVMR, x.low.cutoff = 0.0125, x.high.cutoff = 3, y.cutoff = 0.5, nfeatures = 2000)
+
+# Identify the 10 most highly variable genes
+top10 <- head(VariableFeatures(tcell), 10)
+
+# plot variable features with and without labels
+plot1 <- VariableFeaturePlot(tcell)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot1 + plot2
+```
+### Scaling data and removing unwanted sources of variation
+Dataset may include uninteresting sources of variation - technical noise, batch effects, biological sources of variation (cell cycle) - regressing these signals can improve downstream dimensionality reduction and clustering. To judge effects of these signals, Seurat constructs linear models to predict gene expression based on user-defined variables. Scaled z-scored residuals of these models are stored in scale.data slot, used for dimensionality reduction and clustering.
+
+```{r}
+tcell <- ScaleData(object = tcell, vars.to.regress = c("nCounts_RNA", "percent.mito"))
+
+```
+
+### Linear dimensional reduction (PCA)
+Perform PCA on scaled data. Not sure if highly variable genes or pc.genes are input?
+
+```{r}
+tcell <- RunPCA(object = tcell,  npcs = 30, verbose = FALSE)
+#standard PCA plot
+DimPlot(object = tcell, reduction = "pca")
+```
+```{r}
+# same but colour cells by quantitative feature
+FeaturePlot(object = tcell, features = "GZMB")
+```
+```{r}
+# Scatter plot across single cells
+FeatureScatter(object = tcell, feature1 = "GZMB", feature2 = "CD69")
+```
+```{r, fig.height=6, fig.width=16}
+VlnPlot(object = tcell, features = c("CD69", "GZMB", "IL2"))
+```
+
+Using a heatmap can be useful to look at primary sources of heterogeneity in a dataset, and can use to decide which PCs to include for further downstream analysis. 
+
+```{r}
+DimHeatmap(object = tcell, reduction = "pca", cells = 200, balanced = TRUE)
+```
+
+### Determine statistically significant principal components
+Overcome extensive technical noise in any single gene for scRNA-seq data, Seurat clusters cells based on PCA scores. Determining how many PCs to include downstream is an important step.
