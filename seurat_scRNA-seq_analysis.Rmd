@@ -28,6 +28,9 @@ tcell_data <-  fread('201203_counts.txt', stringsAsFactors = F, header=T)
 tcell_data <- tcell_data[,-c(2:6)]
 # make Geneid into row names
 tcell_data <-tibble::column_to_rownames(tcell_data, "Geneid")
+# tidy up sample names
+names(tcell_data) <- gsub(x = names(tcell_data), pattern = "./", replacement = "")  
+names(tcell_data) <- gsub(x = names(tcell_data), pattern = ".bam", replacement = "")
 
 # Initialise Seurat object with raw (non-normalised) data
 # min.cells = include features detected in at least this many cells
@@ -44,7 +47,7 @@ Visualise gene and molecule counts, plot relationship and exclude cells with cle
 
 Also filter cells based on % mitochondrial genes present:
 
-```{r}
+```{r, fig.height=6, fig.width=16}
 # non-UMI data - nUMI represents sum of non-normalised values within cells
 # calculate % mitochondrial genes and store in separate object
 # use object@raw.data represents non-transformed and non-log-normalised counts
@@ -62,7 +65,7 @@ VlnPlot(object = tcell, features = c("nFeature_RNA", "nCount_RNA", "percent.mito
 
 
 ```
-```{r}
+```{r, fig.height=4, fig.width=6}
 # can use GenePlot to visualise gene-gene relationships and anything else calculated by object
 FeatureScatter(object=tcell, feature1="nCount_RNA", feature2="nFeature_RNA")
 
@@ -107,16 +110,16 @@ tcell <- ScaleData(object = tcell, vars.to.regress = c("nCounts_RNA", "percent.m
 ### Linear dimensional reduction (PCA)
 Perform PCA on scaled data. Not sure if highly variable genes or pc.genes are input?
 
-```{r}
+```{r, fig.height=4, fig.width=6}
 tcell <- RunPCA(object = tcell,  npcs = 30, verbose = FALSE)
 #standard PCA plot
 DimPlot(object = tcell, reduction = "pca")
 ```
-```{r}
+```{r, fig.height=4, fig.width=6}
 # same but colour cells by quantitative feature
 FeaturePlot(object = tcell, features = "GZMB")
 ```
-```{r}
+```{r, fig.height=4, fig.width=6}
 # Scatter plot across single cells
 FeatureScatter(object = tcell, feature1 = "GZMB", feature2 = "CD69")
 ```
@@ -126,7 +129,7 @@ VlnPlot(object = tcell, features = c("CD69", "GZMB", "IL2"))
 
 Using a heatmap can be useful to look at primary sources of heterogeneity in a dataset, and can use to decide which PCs to include for further downstream analysis. 
 
-```{r}
+```{r, fig.height=4, fig.width=6}
 DimHeatmap(object = tcell, reduction = "pca", cells = 200, balanced = TRUE)
 ```
 
@@ -134,7 +137,7 @@ DimHeatmap(object = tcell, reduction = "pca", cells = 200, balanced = TRUE)
 Overcome extensive technical noise in any single gene for scRNA-seq data, Seurat clusters cells based on PCA scores. Determining how many PCs to include downstream is an important step.
 
 Here it looks like PC1-8 are significant (looking at p-values)
-```{r}
+```{r, fig.height=4, fig.width=6}
 tcell <- JackStraw(tcell, num.replicate = 100)
 
 # visualise distribution of p-values for each PC with uniform distribution (dashed line) Significant PCs show strong enrichment of genes with low p-values (solid curve above dashed line)
@@ -153,17 +156,66 @@ Resolution parameter - sets granularity of downstream clustering, larger values 
 ```{r}
 # calculate KNN and construct SNN graph (find neighbours), then find clusters
 
-tcell <- FindNeighbors(tcell, dims = 1:10)
-tcell <- FindClusters(tcell, resolution = 0.5)
+tcell <- FindNeighbors(tcell, dims = 1:8)
+tcell <- FindClusters(tcell, resolution = 0.8)
 
 ```
 ### Non-linear dimensional reduction (UMAP)
 Place similar cells in low-dimensional space. Use same PCs as input to clustering analysis
-```{r}
+```{r, fig.height=6, fig.width=16}
 tcell <- RunUMAP(tcell, dims = 1:8)
-DimPlot(tcell, reduction = "umap")
+# plot UMAP and labels by cluster
+UMAP_cluster <- DimPlot(tcell, reduction = "umap")
 
-# save UMAP: saveRDS(pbmc, file = "data/pbmc_tutorial.rds")
+# save current clustering labelling
+tcell[["cluster.ident"]] <- Idents(object = tcell)
 
+# plot UMAP and label by patient
+Idents(tcell) <- "orig.ident"
+UMAP_patient <- DimPlot(tcell, reduction = "umap")
+
+UMAP_cluster + UMAP_patient
+
+# save tcell object at this point so don't have to redo all of the above again
+saveRDS(tcell, file = "tcell_seurat.rds")
+
+```
+
+## Finding differentially expressed genes (cluster biomarkers)
+Define clusters via differential expression. Identifies positive and negative markers of single cluster compared to all other cells.
+
+```{r}
+# How many cells for each patient?
+Idents(tcell) <- "orig.ident"
+table(Idents(tcell))
+
+# How many cells in each cluster?
+Idents(tcell) <- "cluster.ident"
+table(Idents(tcell))
+
+```
+
+```{r}
+# Find all markers of cluster 1
+# min.pct gene detected at min %
+# thresh.test gene differentially expressed by some amount between 2 groups
+# max.cells.per.ident downsample each identity class, runs quicker (but loss in power)
+cluster1.markers <- FindMarkers(object = tcell, ident.1 = 1, min.pct = 0.25)
+print(x = head(x = cluster1.markers, n = 5))
+
+```
+
+```{r}
+# find markers distinguishing cluster 2 from clusters 6 and 4
+cluster2.markers <- FindMarkers(object = tcell, ident.1 = 2, ident.2 = c(4, 6), min.pct = 0.25)
+print(x = head(x = cluster2.markers, n = 5))
+```
+
+```{r}
+# find markers for every cluster compared to remaining cells, report only positive ones
+tcell.markers <- FindAllMarkers(object = tcell, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
+
+# show top 2 differentially expressed genes per cluster
+tcell.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_log2FC)
 ```
 
