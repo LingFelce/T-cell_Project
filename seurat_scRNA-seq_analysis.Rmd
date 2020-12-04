@@ -213,9 +213,25 @@ print(x = head(x = cluster2.markers, n = 5))
 
 ```{r}
 # find markers for every cluster compared to remaining cells, report only positive ones
+# Wilcoxon Rank Sum test default
 tcell.markers <- FindAllMarkers(object = tcell, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
 
 # show top 2 differentially expressed genes per cluster
 tcell.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_log2FC)
+```
+```{r, fig.height=12, fig.width=16}
+# Top 2 genes from each cluster
+VlnPlot(object = tcell, features =c("ITGB2", "PRF1", "DUSP1", "GPR183","CD200","IL2","TNFSF14","TNF","JAK1","SMC5","LTB","GBP1","MCM5","FAT1"))
+```
+
+```{r, fig.height=16, fig.width=20}
+# overlay gene expression onto UMAPs
+FeaturePlot(object = tcell, features = c("ITGB2", "PRF1", "DUSP1", "GPR183","CD200","IL2","TNFSF14","TNF","JAK1","SMC5","LTB","GBP1","MCM5","FAT1"), cols = c("grey", "blue"), reduction = "umap")
+```
+```{r}
+# Expression heatmap for top 20 markers for each cluster
+top10 <- tcell.markers %>% group_by(cluster) %>% top_n(10, avg_log2FC)
+# setting slim.col.label to TRUE will print just the cluster IDS instead of every cell name
+DoHeatmap(object = tcell, features = top10$gene, label = TRUE)
 ```
 
