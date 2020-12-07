@@ -1,0 +1,215 @@
+---
+title: "seurat2.Rmd"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(Seurat)
+library(sctransform)
+library(SeuratDisk)
+library(dplyr)
+library(patchwork)
+library(cowplot)
+library(ggplot2)
+library(data.table)
+library(tidyverse)
+
+```
+
+# SCTransform T cell dataset and reference mapping for cell annotation
+Analysis of Dong samples: CD8 NP16, CD8 ORF3a-28 and CD4 S34 & M24.
+Followed this tutorial: https://satijalab.org/seurat/v3.2/sctransform_vignette.html
+
+
+## Load counts matrix and create Seurat object
+```{r}
+setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
+
+# load data (from featureCounts)
+all_data <-  fread('201203_counts.txt', stringsAsFactors = F, header=T)
+
+# remove columns with chromosome, start, end, strand and length info
+all_data <- all_data[,-c(2:6)]
+
+# make Geneid into row names
+all_data <-tibble::column_to_rownames(all_data, "Geneid")
+
+# tidy up sample names
+names(all_data) <- gsub(x = names(all_data), pattern = "./", replacement = "")  
+names(all_data) <- gsub(x = names(all_data), pattern = ".bam", replacement = "")
+
+sample_list <- as.data.frame(colnames(all_data))
+tcell_data <- all_data[,-c(481:486,774:779,1404:1409)]
+
+# Initialise Seurat object with raw (non-normalised) data
+# min.cells = include features detected in at least this many cells
+# min.features includes cells where at least this many features detected
+tcell <- CreateSeuratObject(counts = tcell_data, min.cells = 3, min.features = 200)
+
+# filtering
+mito.genes <- grep(pattern = "^MT-", x = rownames(tcell@assays[["RNA"]]), value = TRUE)
+
+percent.mito <- Matrix::colSums(
+  tcell@assays[["RNA"]][mito.genes, ])/Matrix::colSums(tcell@assays[["RNA"]])
+
+tcell <- AddMetaData(object = tcell, metadata = percent.mito, col.name = "percent.mito") 
+
+```
+
+Visualise data
+```{r, fig.height=4, fig.width=6}
+# can use GenePlot to visualise gene-gene relationships and anything else calculated by object - check nFeature_RNA cut off for filtering
+FeatureScatter(object=tcell, feature1="nCount_RNA", feature2="nFeature_RNA")
+```
+## Filtering and transformation (normalisation)
+```{r, message=FALSE}
+tcell <- subset(x = tcell, subset = nFeature_RNA > 200 & nFeature_RNA < 4000 & 
+                   percent.mito >  -Inf & percent.mito < 0.05 )
+
+# SCTransform includes NormalizeData, ScaleData, and FindVariableFeatures
+tcell <- SCTransform(tcell, vars.to.regress = "percent.mito", verbose = FALSE)
+
+```
+
+```{r, fig.height=4, fig.width=6}
+# downstream processing of SCTransformed object
+
+tcell <- RunPCA(tcell, verbose = FALSE)
+tcell <- RunUMAP(tcell, dims = 1:30, verbose = FALSE)
+
+tcell <- FindNeighbors(tcell, dims = 1:30, verbose = FALSE)
+tcell <- FindClusters(tcell, verbose = FALSE)
+
+DimPlot(tcell, label = TRUE) + NoLegend()
+
+```
+
+## Variable features
+
+```{r, fig.height=8, fig.width = 16}
+# Identify the 10 most highly variable genes
+top10 <- head(VariableFeatures(tcell), 10)
+
+# plot variable features with and without labels
+plot1 <- VariableFeaturePlot(tcell)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot1 + plot2
+
+```
+
+
+## PCA plot by patients
+```{r, fig.height=6, fig.width=8}
+# PCA plot by patients
+DimPlot(object = tcell, reduction = "pca", group.by = "orig.ident")
+```
+
+
+
+
+## Finding differentially expressed genes (cluster biomarkers)
+Define clusters via differential expression. Identifies positive and negative markers of single cluster compared to all other cells.
+
+```{r}
+# How many cells for each patient?
+Idents(tcell) <- "orig.ident"
+table(Idents(tcell))
+# How many cells in each cluster?
+Idents(tcell) <- "seurat_clusters"
+table(Idents(tcell))
+```
+
+
+```{r}
+# find markers for every cluster compared to remaining cells, report only positive ones
+# Wilcoxon Rank Sum test default
+tcell.markers <- FindAllMarkers(object = tcell, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
+write.csv (tcell.markers, "tcell_markers_2.csv")
+```
+# show top 2 differentially expressed genes per cluster
+```{r}
+tcell.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_log2FC)
+```
+
+```{r, fig.height=12, fig.width=16}
+# Top 2 genes from each cluster a bit weird? Plot some other genes instead.
+VlnPlot(object = tcell, features =c("CD8A", "CD8B", "CD4", "IL2", "GZMB", "IFNG", "CD69", "PTPRC"))
+```
+
+```{r, fig.height=18, fig.width=22}
+# overlay gene expression onto UMAPs
+FeaturePlot(object = tcell, features = c("CD8A", "CD8B", "CD4", "IL2", "GZMB", "IFNG", "CD69", "PTPRC"), cols = c("grey", "blue"), reduction = "umap")
+```
+
+```{r}
+# Expression heatmap for top 20 markers for each cluster
+top10 <- tcell.markers %>% group_by(cluster) %>% top_n(10, avg_log2FC)
+# setting slim.col.label to TRUE will print just the cluster IDS instead of every cell name
+DoHeatmap(object = tcell, features = top10$gene, label = TRUE)
+```
+
+```{r}
+# save tcell2 object at this point so don't have to redo all of the above again
+saveRDS(tcell, file = "tcell_seurat_2.rds")
+
+```
+
+## Reference mapping using multimodal pbmc dataset
+```{r}
+reference <- LoadH5Seurat("pbmc_multimodal.h5seurat")
+
+DimPlot(object = reference, reduction = "wnn.umap", group.by = "celltype.l2", label = TRUE, label.size = 3, repel = TRUE) + NoLegend()
+
+```
+
+```{r}
+anchors <- FindTransferAnchors(
+  reference = reference,
+  query = tcell3,
+  normalization.method = "SCT",
+  reference.reduction = "spca",
+  dims = 1:50
+)
+
+tcell3 <- MapQuery(
+  anchorset = anchors,
+  query = tcell3,
+  reference = reference,
+  refdata = list(
+    celltype.l1 = "celltype.l1",
+    celltype.l2 = "celltype.l2",
+    predicted_ADT = "ADT"
+  ),
+  reference.reduction = "spca", 
+  reduction.model = "wnn.umap"
+)
+
+# using reference clustering - check which annotation is better
+p1 = DimPlot(tcell3, reduction = "ref.umap", group.by = "predicted.celltype.l1", label = TRUE, label.size = 3, repel = TRUE) + NoLegend()
+p2 = DimPlot(tcell3, reduction = "ref.umap", group.by = "predicted.celltype.l2", label = TRUE, label.size = 3 ,repel = TRUE) + NoLegend()
+
+p1 + p2
+
+```
+
+
+```{r, fig.height=6, fig.width=8}
+# plot UMAP and label by patient
+UMAP_patient <- DimPlot(tcell3, reduction = "umap", group.by = "orig.ident") 
+UMAP_patient
+```
+
+```{r, fig.height=6, fig.width=8}
+# plot UMAP and label by cluster
+UMAP_cluster <- DimPlot(tcell3, reduction = "umap", group.by = "seurat_clusters", label = TRUE, label.size = 5 ,repel = TRUE)
+UMAP_cluster
+
+```
+```{r, fig.height=6, fig.width=8}
+# plot UMAP and label by annotation
+UMAP_annot <- DimPlot(tcell3, reduction = "umap", group.by = "predicted.celltype.l2", label = TRUE, label.size = 3 ,repel = TRUE)
+UMAP_annot
+
+```
+
