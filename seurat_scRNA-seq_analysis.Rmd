@@ -17,6 +17,7 @@ library(cowplot)
 library(ggplot2)
 library(data.table)
 library(tidyverse)
+library(plyr)
 ```
 
 # All samples (except minibulk!)
@@ -248,7 +249,7 @@ VlnPlot(object = tcell2, features =c("IL2","CCL20","ZFP36","PRF1","GPR183","DUSP
 
 ```{r, fig.height=18, fig.width=22}
 # overlay gene expression onto UMAPs
-FeaturePlot(object = tcell2, features = c("IL2","CCL20","ZFP36","PRF1","GPR183","DUSP1","SMC5","JAK1","TNFSF14","TNF","CORO1A","S100A4","LTB","GBP1","CD8A","CD8B","CD4"), cols = c("grey", "blue"), reduction = "umap")
+FeaturePlot(object = tcell2, features = c("IL2","CCL20","ZFP36","PRF1","GPR183","DUSP1","SMC5","JAK1","TNFSF14","TNF","CORO1A","S100A4","LTB","GBP1","CD8A","CD8B","CD4", "FOXP3", "CD69","HLA-A","HLA-B","HLA-C"), cols = c("grey", "blue"), reduction = "umap")
 ```
 
 ```{r}
@@ -343,5 +344,94 @@ tcell2@meta.data$"clin.type" <- as.factor(clin.type)
 UMAP_clin <- DimPlot(tcell2, reduction = "umap", group.by = "clin.type", label = TRUE, label.size = 3 ,repel = TRUE)
 
 UMAP_clin
+
+```
+
+## Gene expression by clusters
+
+### Chemokine receptors
+```{r, fig.height=4, fig.width=16}
+FeaturePlot(object = tcell2, features = c("CCR7", "CXCR3", "CXCR4"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
+```
+
+### Cytokine receptors and other CD markers
+```{r, fig.height=8, fig.width=14}
+FeaturePlot(object = tcell2, 
+            features = c("CD4", "CD8A", "CD8B", "IFNGR2", "FAS", "CD69", "CD28"), 
+            cols = c("grey", "blue"), reduction = "umap", ncol=3)
+```
+
+### Chemokines and cytokines
+```{r, fig.height=12, fig.width=20}
+FeaturePlot(object = tcell2, 
+            features = c("CCL20", "IL2", "IL16", "TNF", "LTA", "IFNG", "FASLG", "TNFSF10"), 
+            cols = c("grey", "blue"), reduction = "umap")
+```
+
+### Cytotoxicity
+```{r, fig.height=6, fig.width=14}
+FeaturePlot(object = tcell2, 
+            features = c("GZMA", "GZMB", "GZMH", "GZMK", "GZMM", "PRF1"), 
+            cols = c("grey", "blue"), reduction = "umap", ncol= 3)
+```
+
+### TCR information
+
+```{r}
+cd4_tcr <- read.csv("cd4_tcr.csv", row.names=1)
+cd8_np16_tcr <- read.csv("cd8_np16_tcr.csv", row.names=1)
+cd8_orf_tcr <- read.csv("cd8_orf_tcr.csv", row.names=1)
+
+tcr <- rbind(cd4_tcr, cd8_np16_tcr, cd8_orf_tcr)
+
+tcr <- tcr[order(tcr$cell_name),]
+tcr <- tcr[,c(1,3,4,6,7)]
+
+new_names <- as.data.frame(rownames(tcell2@meta.data))
+colnames(new_names)[1] <- "cell_name"
+new_names <- tibble::rownames_to_column(new_names, "order")
+
+tcr_edit <-  join(new_names, tcr)
+
+trav <- tcr_edit[3]
+traj <- tcr_edit[4]
+trbv <- tcr_edit[5]
+trbj <- tcr_edit[6]
+
+trav[is.na(trav)] <- 0
+traj[is.na(traj)] <- 0
+trbv[is.na(trbv)] <- 0
+trbj[is.na(trbj)] <- 0
+
+tcell2@meta.data$"trav" <- as.factor(trav$TRAV)
+tcell2@meta.data$"traj" <- as.factor(traj$TRAJ)
+tcell2@meta.data$"trbv" <- as.factor(trbv$TRBV)
+tcell2@meta.data$"trbj" <- as.factor(trbj$TRBJ)
+
+```
+
+```{r, fig.height=6, fig.width=10}
+UMAP_trav <- DimPlot(tcell2, reduction = "umap", group.by = "trav", label = TRUE, label.size = 3 ,repel = TRUE)
+
+UMAP_trav
+
+```
+
+```{r, fig.height=6, fig.width=10}
+UMAP_traj <- DimPlot(tcell2, reduction = "umap", group.by = "traj", label = TRUE, label.size = 3 ,repel = TRUE)
+
+UMAP_traj
+
+```
+```{r, fig.height=6, fig.width=10}
+UMAP_trbv <- DimPlot(tcell2, reduction = "umap", group.by = "trbv", label = TRUE, label.size = 3 ,repel = TRUE)+ NoLegend()
+
+UMAP_trbv
+
+```
+```{r, fig.height=6, fig.width=10}
+UMAP_trbj <- DimPlot(tcell2, reduction = "umap", group.by = "trbj", label = TRUE, label.size = 3 ,repel = TRUE)
+
+UMAP_trbj
 
 ```
