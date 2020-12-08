@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(Seurat)
 library(sctransform)
 library(SeuratDisk)
+library(SeuratData)
 library(dplyr)
 library(patchwork)
 library(cowplot)
@@ -18,7 +19,7 @@ library(data.table)
 library(tidyverse)
 ```
 
-# All samples
+# All samples (except minibulk!)
 Analysis of Dong samples: CD8 NP16, CD8 ORF3a-28 and CD4 S34 & M24.
 Follow guided clustering tutorial https://satijalab.org/seurat/v3.2/pbmc3k_tutorial.html and this one https://scrnaseq-course.cog.sanger.ac.uk/website/seurat-chapter.html
 
@@ -34,217 +35,6 @@ tcell_data <-tibble::column_to_rownames(tcell_data, "Geneid")
 # tidy up sample names
 names(tcell_data) <- gsub(x = names(tcell_data), pattern = "./", replacement = "")  
 names(tcell_data) <- gsub(x = names(tcell_data), pattern = ".bam", replacement = "")
-
-# Initialise Seurat object with raw (non-normalised) data
-# min.cells = include features detected in at least this many cells
-# min.features includes cells where at least this many features detected
-tcell <- CreateSeuratObject(counts = tcell_data, min.cells = 3, min.features = 200, project = "T-cell_data", assay = "RNA")
-
-```
-
-## Standard pre-processing workflow
-
-### QC and selecting cells for further analysis
-Minimum gene cut off already set with CreateSeuratObject, but can filter out cells based on technical or biological parameters.
-Visualise gene and molecule counts, plot relationship and exclude cells with clear outlier number of genes detected as potential multiplets (filter user-defined outlier cells). 
-
-Also filter cells based on % mitochondrial genes present:
-
-```{r, fig.height=6, fig.width=16}
-# non-UMI data - nUMI represents sum of non-normalised values within cells
-# calculate % mitochondrial genes and store in separate object
-# use object@raw.data represents non-transformed and non-log-normalised counts
-# % of UMI mapping to MT-genes is a common scRNA-seq QC metric
-
-mito.genes <- grep(pattern = "^MT-", x = rownames(tcell@assays[["RNA"]]), value = TRUE)
-
-percent.mito <- Matrix::colSums(tcell@assays[["RNA"]][mito.genes, ])/Matrix::colSums(tcell@assays[["RNA"]])
-
-tcell <- AddMetaData(object = tcell, metadata = percent.mito, col.name = "percent.mito") 
-
-VlnPlot(object = tcell, features = c("nFeature_RNA", "nCount_RNA", "percent.mito"), ncol = 3)
-
-# all cells have same value % mitochondrial cells?
-
-
-```
-```{r, fig.height=4, fig.width=6}
-# can use GenePlot to visualise gene-gene relationships and anything else calculated by object
-FeatureScatter(object=tcell, feature1="nCount_RNA", feature2="nFeature_RNA")
-
-```
-```{r}
-# Filter out cells that have unique gene counts (nFeature_RNA) over 4000 or less than 200 
-# Note that > and < are used to define a'gate'.  
-# -Inf and Inf should be used if don't want a lower or upper threshold.
-tcell <- subset(x = tcell, subset = nFeature_RNA > 200 & nFeature_RNA < 4000 & percent.mito >  -Inf & percent.mito < 0.05 )
-```
-
-### Normalising the data
-After removing unwanted cells from dataset, need to normalise data. Use global-scaling normalisation method "LogNormalize" - normalises gene expression measurements for each cell by total expression, multiplies by scale factor (10,000 default) and log-tranforms result.
-```{r}
-tcell <- NormalizeData(object = tcell, normalization.method = "LogNormalize", scale.factor = 10000)
-```
-
-### Detection of variables genes across single cells
-Seurat calculates highly variable genes and focuses on these for downstream analysis. FindVariableGenes calculates average expression and dispersion for each gene, places genes into bins and calculates z-score for dispersion within each bin - helps to control relationship between variability and average expression. 
-
-```{r, fig.height=8, fig.width = 16}
-# identify 2000 variable genes - normal parameter settings for UMI data normalised to total of 1e4 molecules
-
-tcell <- FindVariableFeatures(object = tcell, mean.function = ExpMean, dispersion.function = LogVMR, x.low.cutoff = 0.0125, x.high.cutoff = 3, y.cutoff = 0.5, nfeatures = 2000)
-
-# Identify the 10 most highly variable genes
-top10 <- head(VariableFeatures(tcell), 10)
-
-# plot variable features with and without labels
-plot1 <- VariableFeaturePlot(tcell)
-plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
-plot1 + plot2
-```
-### Scaling data and removing unwanted sources of variation
-Dataset may include uninteresting sources of variation - technical noise, batch effects, biological sources of variation (cell cycle) - regressing these signals can improve downstream dimensionality reduction and clustering. To judge effects of these signals, Seurat constructs linear models to predict gene expression based on user-defined variables. Scaled z-scored residuals of these models are stored in scale.data slot, used for dimensionality reduction and clustering.
-
-```{r}
-tcell <- ScaleData(object = tcell, vars.to.regress = c("nCounts_RNA", "percent.mito"))
-
-```
-
-### Linear dimensional reduction (PCA)
-Perform PCA on scaled data. Not sure if highly variable genes or pc.genes are input?
-
-```{r, fig.height=4, fig.width=6}
-tcell <- RunPCA(object = tcell,  npcs = 30, verbose = FALSE)
-#standard PCA plot
-DimPlot(object = tcell, reduction = "pca")
-```
-```{r, fig.height=4, fig.width=6}
-# same but colour cells by quantitative feature
-FeaturePlot(object = tcell, features = "GZMB")
-```
-```{r, fig.height=4, fig.width=6}
-# Scatter plot across single cells
-FeatureScatter(object = tcell, feature1 = "GZMB", feature2 = "CD69")
-```
-```{r, fig.height=10, fig.width=16}
-VlnPlot(object = tcell, features = c("CD69", "GZMB", "IL2", "CD8A","CD8B", "CD4"))
-```
-
-Using a heatmap can be useful to look at primary sources of heterogeneity in a dataset, and can use to decide which PCs to include for further downstream analysis. 
-
-```{r, fig.height=4, fig.width=6}
-DimHeatmap(object = tcell, reduction = "pca", cells = 200, balanced = TRUE)
-```
-
-### Determine statistically significant principal components
-Overcome extensive technical noise in any single gene for scRNA-seq data, Seurat clusters cells based on PCA scores. Determining how many PCs to include downstream is an important step.
-
-Here it looks like PC1-8 are significant (looking at p-values)
-```{r, fig.height=4, fig.width=6}
-tcell <- JackStraw(tcell, num.replicate = 100)
-
-# visualise distribution of p-values for each PC with uniform distribution (dashed line) Significant PCs show strong enrichment of genes with low p-values (solid curve above dashed line)
-
-tcell <- ScoreJackStraw(tcell, dims = 1:20)
-
-JackStrawPlot(tcell, dims = 1:15)
-
-```
-
-## Cell clustering
-Construct a k-nearest neighbours graph based on Euclidean distance in PCA space, refine edge weights between any 2 cells based on shared overlap in local neighbourhoods. Use Louvain algorithm to cluster cells - modularity optimisation technique to iteratively group cells together.
-
-Resolution parameter - sets granularity of downstream clustering, larger values leads to more clusters. Set between 0.6-1.2 for single cell datasets around 3000 cells. 
-
-```{r}
-# calculate KNN and construct SNN graph (find neighbours), then find clusters
-
-tcell <- FindNeighbors(tcell, dims = 1:8)
-tcell <- FindClusters(tcell, resolution = 0.8)
-
-```
-### Non-linear dimensional reduction (UMAP)
-Place similar cells in low-dimensional space. Use same PCs as input to clustering analysis
-```{r, fig.height=6, fig.width=16}
-tcell <- RunUMAP(tcell, dims = 1:8)
-# plot UMAP and labels by cluster
-UMAP_cluster <- DimPlot(tcell, reduction = "umap")
-
-# save current clustering labelling
-tcell[["cluster.ident"]] <- Idents(object = tcell)
-
-# plot UMAP and label by patient
-Idents(tcell) <- "orig.ident"
-UMAP_patient <- DimPlot(tcell, reduction = "umap")
-
-UMAP_cluster + UMAP_patient
-
-# save tcell object at this point so don't have to redo all of the above again
-saveRDS(tcell, file = "tcell_seurat.rds")
-
-```
-
-## Finding differentially expressed genes (cluster biomarkers)
-Define clusters via differential expression. Identifies positive and negative markers of single cluster compared to all other cells.
-
-```{r}
-# How many cells for each patient?
-Idents(tcell) <- "orig.ident"
-table(Idents(tcell))
-
-# How many cells in each cluster?
-Idents(tcell) <- "cluster.ident"
-table(Idents(tcell))
-
-```
-
-```{r}
-# Find all markers of cluster 1
-# min.pct gene detected at min %
-# thresh.test gene differentially expressed by some amount between 2 groups
-# max.cells.per.ident downsample each identity class, runs quicker (but loss in power)
-cluster1.markers <- FindMarkers(object = tcell, ident.1 = 1, min.pct = 0.25)
-print(x = head(x = cluster1.markers, n = 5))
-
-```
-
-```{r}
-# find markers distinguishing cluster 2 from clusters 6 and 4
-cluster2.markers <- FindMarkers(object = tcell, ident.1 = 2, ident.2 = c(4, 6), min.pct = 0.25)
-print(x = head(x = cluster2.markers, n = 5))
-```
-
-```{r}
-# find markers for every cluster compared to remaining cells, report only positive ones
-# Wilcoxon Rank Sum test default
-tcell.markers <- FindAllMarkers(object = tcell, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
-
-# show top 2 differentially expressed genes per cluster
-tcell.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_log2FC)
-```
-```{r, fig.height=12, fig.width=16}
-# Top 2 genes from each cluster
-VlnPlot(object = tcell, features =c("ITGB2", "PRF1", "DUSP1", "GPR183","CD200","IL2","TNFSF14","TNF","JAK1","SMC5","LTB","GBP1","MCM5","FAT1"))
-```
-
-```{r, fig.height=16, fig.width=20}
-# overlay gene expression onto UMAPs
-FeaturePlot(object = tcell, features = c("ITGB2", "PRF1", "DUSP1", "GPR183","CD200","IL2","TNFSF14","TNF","JAK1","SMC5","LTB","GBP1","MCM5","FAT1"), cols = c("grey", "blue"), reduction = "umap")
-```
-```{r}
-# Expression heatmap for top 20 markers for each cluster
-top10 <- tcell.markers %>% group_by(cluster) %>% top_n(10, avg_log2FC)
-# setting slim.col.label to TRUE will print just the cluster IDS instead of every cell name
-DoHeatmap(object = tcell, features = top10$gene, label = TRUE)
-```
-```{r}
-# save tcell object at this point so don't have to redo all of the above again
-saveRDS(tcell, file = "tcell_seurat.rds")
-```
-
-# Remove minibulk samples and repeat
-
-```{r}
 sample_list <- as.data.frame(colnames(tcell_data))
 tcell_data2 <- tcell_data[,-c(481:486,774:779,1404:1409)]
 
@@ -388,15 +178,13 @@ Place similar cells in low-dimensional space. Use same PCs as input to clusterin
 ```{r, fig.height=5, fig.width=16}
 tcell2 <- RunUMAP(tcell2, dims = 1:14)
 # plot UMAP and labels by cluster
-Idents(tcell2) <- "cluster.ident"
-UMAP_cluster <- DimPlot(tcell2, reduction = "umap")
+Idents(tcell2) <- "seurat_clusters"
+UMAP_cluster <- DimPlot(tcell2, reduction = "umap", group.by = "seurat_clusters")
 UMAP_cluster
-# save current clustering labelling
-tcell2[["cluster.ident"]] <- Idents(object = tcell2)
+
 
 # plot UMAP and label by patient
-Idents(tcell2) <- "orig.ident"
-UMAP_patient <- DimPlot(tcell2, reduction = "umap")
+UMAP_patient <- DimPlot(tcell2, reduction = "umap", group.by = "orig.ident")
 
 UMAP_cluster + UMAP_patient
 
@@ -414,20 +202,11 @@ Idents(tcell2) <- "orig.ident"
 table(Idents(tcell2))
 
 # How many cells in each cluster?
-Idents(tcell2) <- "cluster.ident"
+Idents(tcell2) <- "seurat_clusters"
 table(Idents(tcell2))
 
 ```
 
-```{r}
-# Find all markers of cluster 1
-# min.pct gene detected at min %
-# thresh.test gene differentially expressed by some amount between 2 groups
-# max.cells.per.ident downsample each identity class, runs quicker (but loss in power)
-cluster1.markers <- FindMarkers(object = tcell2, ident.1 = 1, min.pct = 0.25)
-print(x = head(x = cluster1.markers, n = 5))
-
-```
 
 ```{r}
 # find markers for every cluster compared to remaining cells, report only positive ones
@@ -482,11 +261,10 @@ saveRDS(tcell2, file = "tcell2_seurat.rds")
 
 ```
 
-# Reference mapping - work in progress!
+# Reference mapping - using PBMC 3K dataset
 Followed this tutorial https://satijalab.org/seurat/v4.0/reference_mapping.html
 
 Reference dataset - Single Cell Comparison: PBMC 3K data
-
 
 ```{r}
 # load dataset and process in same way as T cell data
@@ -514,14 +292,20 @@ tcell2 <- AddMetaData (object = tcell2, metadata = predictions)
 
 
 ```
-Run UMAP with cell annotations
-```{r, fig.height=4, fig.width=18}
-tcell2 <- RunUMAP(tcell2, dims = 1:14)
-# plot UMAP and labels by cluster
-Idents(tcell2) <- "predicted.id"
-UMAP_annot <- DimPlot(tcell2, reduction = "umap")
-
-UMAP_patient + UMAP_cluster + UMAP_annot
+### Run UMAP with cell annotations
+```{r, fig.height=4, fig.width=6}
+# plot UMAP and label by patient
+UMAP_patient <- DimPlot(tcell2, reduction = "umap", group.by = "orig.ident") 
+UMAP_patient
 ```
 
-
+```{r, fig.height=4, fig.width=6}
+# plot UMAP and label by cluster
+UMAP_cluster <- DimPlot(tcell2, reduction = "umap", group.by = "seurat_clusters") 
+UMAP_cluster
+```
+```{r, fig.height=6, fig.width=8}
+# plot UMAP and label by annotation
+UMAP_annot <- DimPlot(tcell2, reduction = "umap", group.by = "predicted.id", label = TRUE, label.size = 3 ,repel = TRUE)
+UMAP_annot
+```
