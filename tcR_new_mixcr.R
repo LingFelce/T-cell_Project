@@ -100,7 +100,7 @@ for (i in (1:length(mixcr_a))) {
 }
 # combine columns for each cell, select only cells with only 2 rows (dual alpha)
 big_data = do.call(rbind, datalist)
-tra <- big_data %>% group_by(i) %>% filter(n() <= 2)
+tra <- big_data %>% group_by(i) %>% filter(n() ==1)
 colnames(tra) <- c("TRAV", "TRAJ", "cell_number")
 tra <- merge(tra, mixcr_a_names, by="cell_number")
 
@@ -123,6 +123,10 @@ cd8_np16 <- merge(tra,trb, by="cell_name")
 cd8_np16 <- mutate(cd8_np16, alpha=paste(TRAV, TRAJ, sep="_"))
 
 cd8_np16 <- mutate(cd8_np16, beta=paste(TRBV, TRBJ, sep="_"))
+
+setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
+
+write.csv(cd8_np16, "cd8_np16_tcr.csv")
 
 # tabulate to get dominant alpha-beta pairing
 # 005 
@@ -228,7 +232,7 @@ for (i in (1:(length(mixcr_a)))) {
 }
 # combine columns for each cell, select only cells with only 2 rows (dual receptor)
 big_data = do.call(rbind, datalist)
-tra <- big_data %>% group_by(i) %>% filter(n() <= 2)
+tra <- big_data %>% group_by(i) %>% filter(n() == 1)
 colnames(tra) <- c("TRAV", "TRAJ", "cell_number")
 tra <- merge(tra, mixcr_a_names, by="cell_number")
 
@@ -251,6 +255,10 @@ cd8_orf <- merge(tra,trb, by="cell_name")
 cd8_orf <- mutate(cd8_orf, alpha=paste(TRAV, TRAJ, sep="_"))
 
 cd8_orf <- mutate(cd8_orf, beta=paste(TRBV, TRBJ, sep="_"))
+
+setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
+
+write.csv(cd8_orf, "cd8_orf_tcr.csv") 
 
 # tabulate to get dominant alpha-beta pairing
 # 1105 rows 
@@ -356,7 +364,7 @@ for (i in (1:(length(mixcr_a)))) {
 }
 # combine columns for each cell, select only cells with only 2 rows (dual alpha)
 big_data = do.call(rbind, datalist)
-tra <- big_data %>% group_by(i) %>% filter(n() <= 2)
+tra <- big_data %>% group_by(i) %>% filter(n() == 1)
 colnames(tra) <- c("TRAV", "TRAJ", "cell_number")
 tra <- merge(tra, mixcr_a_names, by="cell_number")
 
@@ -373,12 +381,17 @@ trb <- big_data %>% group_by(i) %>% filter(n() == 1)
 colnames(trb) <- c("TRBV", "TRBJ", "cell_number")
 trb <- merge(trb, mixcr_b_names, by="cell_number")
 
-# combine TRA and TRB dataframes
+# combine TRA and TRB dataframes  
 cd4 <- merge(tra,trb, by="cell_name")
 
 cd4 <- mutate(cd4, alpha=paste(TRAV, TRAJ, sep="_"))
 
 cd4 <- mutate(cd4, beta=paste(TRBV, TRBJ, sep="_"))
+
+setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
+
+write.csv(cd4, "cd4_tcr.csv")
+
 
 # tabulate to get dominant alpha-beta pairing
 library(circlize)
