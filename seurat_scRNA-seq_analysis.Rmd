@@ -23,6 +23,7 @@ library(tidyverse)
 Analysis of Dong samples: CD8 NP16, CD8 ORF3a-28 and CD4 S34 & M24.
 Follow guided clustering tutorial https://satijalab.org/seurat/v3.2/pbmc3k_tutorial.html and this one https://scrnaseq-course.cog.sanger.ac.uk/website/seurat-chapter.html
 
+
 ## Load counts matrix and create Seurat object
 ```{r}
 setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
@@ -37,6 +38,8 @@ names(tcell_data) <- gsub(x = names(tcell_data), pattern = "./", replacement = "
 names(tcell_data) <- gsub(x = names(tcell_data), pattern = ".bam", replacement = "")
 sample_list <- as.data.frame(colnames(tcell_data))
 tcell_data2 <- tcell_data[,-c(481:486,774:779,1404:1409)]
+
+write.table(tcell_data2, file="smartseq_counts.txt", sep="\t")
 
 # Initialise Seurat object with raw (non-normalised) data
 # min.cells = include features detected in at least this many cells
@@ -308,4 +311,37 @@ UMAP_cluster
 # plot UMAP and label by annotation
 UMAP_annot <- DimPlot(tcell2, reduction = "umap", group.by = "predicted.id", label = TRUE, label.size = 3 ,repel = TRUE)
 UMAP_annot
+```
+```{r, fig.height=6, fig.width=8}
+# assign known identities to clusters - look at known cell type
+
+cell.type <- rep(c("CD8", "CD4", "CD4", "CD4", "CD8", "CD8", "CD8", "CD8", "CD8", "CD8", "CD4", 
+                   "CD4", "CD4", "CD8", "CD8"), 
+                 times = c("133", "67", "79", "73", "94", "16", "74","95", "66", "75", "84", 
+                           "82", "86", "46", "95"))
+
+
+tcell2@meta.data$"cell.type" <- as.factor(cell.type)
+
+UMAP_cell <- DimPlot(tcell2, reduction = "umap", group.by = "cell.type", label = TRUE, label.size = 3 ,repel = TRUE)
+
+UMAP_cell
+
+```
+
+```{r, fig.height=6, fig.width=8}
+# assign known identities to clusters - look at known clinical description
+
+clin.type <- rep(c("mild", "mild", "mild", "severe", "severe", "severe", "severe", "severe", "severe",
+                   "mild", "mild", "severe", "severe", "severe", "severe"), 
+                 times = c("133", "67", "79", "73", "94", "16", "74","95", "66", "75", "84", 
+                           "82", "86", "46", "95"))
+
+
+tcell2@meta.data$"clin.type" <- as.factor(clin.type)
+
+UMAP_clin <- DimPlot(tcell2, reduction = "umap", group.by = "clin.type", label = TRUE, label.size = 3 ,repel = TRUE)
+
+UMAP_clin
+
 ```
