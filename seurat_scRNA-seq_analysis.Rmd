@@ -412,11 +412,6 @@ traj <- tcr_edit[4]
 trbv <- tcr_edit[5]
 trbj <- tcr_edit[6]
 
-trav[is.na(trav)] <- 0
-traj[is.na(traj)] <- 0
-trbv[is.na(trbv)] <- 0
-trbj[is.na(trbj)] <- 0
-
 tcell2@meta.data$"trav" <- as.factor(trav$TRAV)
 tcell2@meta.data$"traj" <- as.factor(traj$TRAJ)
 tcell2@meta.data$"trbv" <- as.factor(trbv$TRBV)
