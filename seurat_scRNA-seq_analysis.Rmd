@@ -174,8 +174,7 @@ Resolution parameter - sets granularity of downstream clustering, larger values 
 # calculate KNN and construct SNN graph (find neighbours), then find clusters
 
 tcell2 <- FindNeighbors(tcell2, dims = 1:14)
-tcell2 <- FindClusters(tcell2, resolution = 1.2)
-
+tcell2 <- FindClusters(tcell2, resolution = 0.2)
 ```
 ### Non-linear dimensional reduction (UMAP)
 Place similar cells in low-dimensional space. Use same PCs as input to clustering analysis
@@ -184,8 +183,6 @@ tcell2 <- RunUMAP(tcell2, dims = 1:14)
 # plot UMAP and labels by cluster
 Idents(tcell2) <- "seurat_clusters"
 UMAP_cluster <- DimPlot(tcell2, reduction = "umap", group.by = "seurat_clusters")
-UMAP_cluster
-
 
 # plot UMAP and label by patient
 UMAP_patient <- DimPlot(tcell2, reduction = "umap", group.by = "orig.ident")
@@ -225,17 +222,13 @@ cluster_0 <- tcell2.markers[tcell2.markers$cluster == "0", ]
 cluster_1 <- tcell2.markers[tcell2.markers$cluster == "1", ]
 cluster_2 <- tcell2.markers[tcell2.markers$cluster == "2", ]
 cluster_3 <- tcell2.markers[tcell2.markers$cluster == "3", ]
-cluster_4 <- tcell2.markers[tcell2.markers$cluster == "4", ]
-cluster_5 <- tcell2.markers[tcell2.markers$cluster == "5", ]
-cluster_6 <- tcell2.markers[tcell2.markers$cluster == "6", ]
+
 
 write.csv (cluster_0, "cluster_0.csv")
 write.csv (cluster_1, "cluster_1.csv")
 write.csv (cluster_2, "cluster_2.csv")
 write.csv (cluster_3, "cluster_3.csv")
-write.csv (cluster_4, "cluster_4.csv")
-write.csv (cluster_5, "cluster_5.csv")
-write.csv (cluster_6, "cluster_6.csv")
+
 
 
 # show top 2 differentially expressed genes per cluster
@@ -244,7 +237,7 @@ tcell2.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_log2FC)
 
 ```{r, fig.height=12, fig.width=16}
 # Top 2 genes from each cluster
-VlnPlot(object = tcell2, features =c("IL2","CCL20","ZFP36","PRF1","GPR183","DUSP1","SMC5","JAK1","TNFSF14","TNF","CORO1A","S100A4","LTB","GBP1"))
+VlnPlot(object = tcell2, features =c("SMC5", "DUSP1", "TNFSF8", "CD200", "FAT1", "S100A4", "GBP1", "LTB"))
 ```
 
 ```{r, fig.height=18, fig.width=22}
@@ -354,28 +347,49 @@ UMAP_clin
 FeaturePlot(object = tcell2, features = c("CCR7", "CXCR3", "CXCR4"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
 ```
 
-### Cytokine receptors and other CD markers
-```{r, fig.height=8, fig.width=14}
+### Cytokine receptors and other markers
+```{r, fig.height=14, fig.width=16}
 FeaturePlot(object = tcell2, 
-            features = c("CD4", "CD8A", "CD8B", "IFNGR2", "FAS", "CD69", "CD28"), 
+            features = c("CD4", "CD8A", "CD8B", "PTPRC", "IFNGR2", "FAS", "CD69","CD27",  "CD28", "PDCD1", "POU2AF1", "IL7R", "SELL"), 
             cols = c("grey", "blue"), reduction = "umap", ncol=3)
 ```
 
 ### Chemokines and cytokines
-```{r, fig.height=12, fig.width=20}
+```{r, fig.height=14, fig.width=20}
 FeaturePlot(object = tcell2, 
-            features = c("CCL20", "IL2", "IL16", "TNF", "LTA", "IFNG", "FASLG", "TNFSF10"), 
-            cols = c("grey", "blue"), reduction = "umap")
-```
-
-### Cytotoxicity
-```{r, fig.height=6, fig.width=14}
-FeaturePlot(object = tcell2, 
-            features = c("GZMA", "GZMB", "GZMH", "GZMK", "GZMM", "PRF1"), 
+            features = c("CCL5", "CCL20", "IL2", "IL16", "IL21", "TNF", "LTA", "IFNG", "FASLG", "TNFSF10", "OAS1", "MX1"), 
             cols = c("grey", "blue"), reduction = "umap", ncol= 3)
 ```
 
-### TCR information
+### Cytotoxicity
+```{r, fig.height=8, fig.width=14}
+FeaturePlot(object = tcell2, 
+            features = c("GZMA", "GZMB", "GZMH", "GZMK", "GZMM", "PRF1", "CSF2", "GNLY"), 
+            cols = c("grey", "blue"), reduction = "umap", ncol= 3)
+```
+
+### Differentiation
+```{r, fig.height=4, fig.width=14}
+FeaturePlot(object = tcell2, 
+            features = c("CD27", "CD28"), 
+            cols = c("grey", "blue"), reduction = "umap", ncol= 3)
+```
+
+### Memory
+```{r, fig.height=6, fig.width=14}
+FeaturePlot(object = tcell2, 
+            features = c("PTPRC", "CCR7", "SELL", "CD28", "IL7R"), 
+            cols = c("grey", "blue"), reduction = "umap", ncol= 3)
+```
+### T follicular helper
+```{r, fig.height=4, fig.width=14}
+FeaturePlot(object = tcell2, 
+            features = c("IL21", "POU2AF1", "PDCD1"), 
+            cols = c("grey", "blue"), reduction = "umap", ncol= 3)
+```
+
+
+## TCR information
 
 ```{r}
 cd4_tcr <- read.csv("cd4_tcr.csv", row.names=1)
