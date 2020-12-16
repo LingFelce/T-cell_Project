@@ -221,9 +221,9 @@ write.csv (cluster_3, "cluster_3.csv")
 tcell2.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_log2FC)
 ```
 
-```{r top 2 genes, fig.height=12, fig.width=16}
-# Top 2 genes from each cluster
-VlnPlot(object = tcell2, features =c("SMC5", "DUSP1", "TNFSF8", "CD200", "FAT1", "S100A4", "GBP1", "LTB"))
+```{r top 2 genes, fig.height=10, fig.width=16}
+# Top 2 genes from each cluster - from manual annotation 
+VlnPlot(object = tcell2, features =c("CCR7", "CCL5", "IFNG", "BTLA", "PRF1", "GZMH", "OAS1", "IFIT3"), ncol=4)
 ```
 
 
