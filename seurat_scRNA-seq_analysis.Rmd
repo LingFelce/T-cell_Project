@@ -370,11 +370,11 @@ FeaturePlot(object = tcell2, features = c("IL4", "IL5", "IL6", "IL9", "IL13"), c
 ```
 ### Treg
 ```{r, fig.height=4, fig.width=16}
-FeaturePlot(object = tcell2, features = c("IL10", "IL35", "TGFB1", "LGALS1"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
+FeaturePlot(object = tcell2, features = c("IL10", "FOXP3", "TGFB1"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
 ```
 ### Memory
 ```{r, fig.height=12, fig.width=16}
-FeaturePlot(object = tcell2, features = c("PTPRC", "CCR7", "SELL", "TCF7", "STAT5", "CD44", "IL7R", "S100A4","CD154", "CD38", "CD137"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
+FeaturePlot(object = tcell2, features = c("PTPRC", "CD44", "CD38", "CCR7", "SELL", "TCF7", "IL7R", "S100A4"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
 ```
 ### Activation and differentiation
 ```{r, fig.height=8, fig.width=16}
