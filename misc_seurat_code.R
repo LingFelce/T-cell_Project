@@ -42,6 +42,29 @@ genes_2 <- tmarkers[is.element(tmarkers$V1, cluster_2$gene),]
 markers_summary <- rbind(genes_0, genes_1, genes_2)
 
 
+#----------------------- Separate patients and then integrate properly----------------
+# https://satijalab.org/seurat/v3.2/integration.html
+# split by patient - orig.ident from metadata
+patient.list <- SplitObject(tcell2, split.by="orig.ident")
+patient.list <- patient.list[c("005", "022", "025", "1062", "1105", "1131-TP-1", "1131-TP-2", 
+                               "1134-TP-2", "1153", "1201-TP-2", "1493", "1504", "1525",
+                               "1525-TP-1", "1525-TP-2")]
+
+for (i in 1:length(patient.list)) {
+  patient.list[[i]] <- NormalizeData(patient.list[[i]], verbose = FALSE)
+  patient.list[[i]] <- FindVariableFeatures(patient.list[[i]], mean.function = ExpMean, 
+                                            dispersion.function = LogVMR, 
+                                            x.low.cutoff = 0.0125, x.high.cutoff = 3, 
+                                            y.cutoff = 0.5, nfeatures = 2000)
+}
+
+
+# dimensions 10 to 50 is ok
+reference.list <- patient.list[c("022", "025", "1062", "1493", "1504", "1525")]
+patient.anchors <- FindIntegrationAnchors(object.list = reference.list, dims = 1:30)
+
+patient.integrated <- IntegrateData(anchorset = patient.anchors, dims = 1:30)
+
 #########
 
 test <- rep(c("A","B","C"), times =c("1","2","3"))
