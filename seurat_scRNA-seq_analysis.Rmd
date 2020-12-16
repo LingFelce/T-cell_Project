@@ -462,6 +462,18 @@ UMAP_trbj
 
 ```
 
+```{r investigating cluster 3, fig.height=4, fig.width=16}
+# compare specifically to 0 and 2 (neighbouring clusters)
+cluster3.markers <- FindMarkers(tcell2, ident.1 = 3, ident.2 = c(0,2), min.pct = 0.25)
+
+head(cluster3.markers, n = 10)
+
+FeaturePlot(object = tcell2, features = c("FOXP3", "MX1"), cols = c("grey", "blue", "black"), ncol = 2, reduction = "umap", blend = TRUE)
+
+# FOXP3 not on top list when compared with neighbouring clusters, only IL2RA, IFIT3 and OAS1. When looking at blended UMAP, can see that FOXP3 only expressed in 2 cells in cluster 3, and not same cells as MX1. Therefore probably not that many Tregs.
+
+```
+
 
 # Save file
 
