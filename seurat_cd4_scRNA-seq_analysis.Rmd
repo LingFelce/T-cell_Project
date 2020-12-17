@@ -345,7 +345,7 @@ VlnPlot(object = cd4, features = c("PTPRC", "CCR7", "SELL", "TCF7", "CD44", "IL7
 ```
 ### Activation and differentiation
 ```{r, fig.height=4, fig.width=16}
-VlnPlot(object = cd4, features = c("CD27", "CD28", "CD69"), ncol = 4)
+VlnPlot(object = cd4, features = c("CD27", "CD28", "CD69", "TUBA1B"), ncol = 4)
 ```
 ### Recruitment and migration
 ```{r, fig.height=8, fig.width=16}
@@ -356,7 +356,22 @@ VlnPlot(object = cd4, features = c("CCL4", "CCL5", "CCL20","CXCR3", "CXCR4"), nc
 ```{r, fig.height=8, fig.width=16}
 VlnPlot(object = cd4, features = c("OAS1", "MX1", "IFIT3", "IFI44L", "ISG15"), ncol = 4)
 ```
+## Comparing to Calli's marker list
 
+```{r marker list}
+# compare marker list to all genes in each cluster
+
+setwd('/t1-data/user/lfelce/scRNA-Seq//t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
+
+tmarkers <- read.csv("Markers_for_Ling.csv", header=F)
+
+genes_0 <- tmarkers[is.element(tmarkers$V1, cluster_0$gene),]
+genes_1 <- tmarkers[is.element(tmarkers$V1, cluster_1$gene),]
+genes_2 <- tmarkers[is.element(tmarkers$V1, cluster_2$gene),]
+genes_3 <- tmarkers[is.element(tmarkers$V1, cluster_3$gene),]
+genes_4 <- tmarkers[is.element(tmarkers$V1, cluster_4$gene),]
+
+```
 
 ## TCR information
 
