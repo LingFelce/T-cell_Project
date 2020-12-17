@@ -11,13 +11,14 @@ library(Seurat)
 library(sctransform)
 library(SeuratDisk)
 library(SeuratData)
+library(plyr)
 library(dplyr)
 library(patchwork)
 library(cowplot)
 library(ggplot2)
 library(data.table)
 library(tidyverse)
-library(plyr)
+
 ```
 
 # All CD4 samples
@@ -152,7 +153,7 @@ cd4 <- JackStraw(cd4, num.replicate = 100)
 
 cd4 <- ScoreJackStraw(cd4, dims = 1:20)
 
-JackStrawPlot(cd4, dims = 1:15)
+JackStrawPlot(cd4, dims = 1:20)
 
 ```
 
@@ -165,13 +166,13 @@ Resolution parameter - sets granularity of downstream clustering, larger values 
 ```{r clustering}
 # calculate KNN and construct SNN graph (find neighbours), then find clusters
 
-cd4 <- FindNeighbors(cd4, dims = 1:10)
-cd4 <- FindClusters(cd4, resolution = 0.4)
+cd4 <- FindNeighbors(cd4, dims = 1:30)
+cd4 <- FindClusters(cd4, resolution = 1)
 ```
 ### Non-linear dimensional reduction (UMAP)
 Place similar cells in low-dimensional space. Use same PCs as input to clustering analysis
 ```{r umap, fig.height=5, fig.width=16}
-cd4 <- RunUMAP(cd4, dims = 1:10)
+cd4 <- RunUMAP(cd4, dims = 1:30)
 # plot UMAP and labels by cluster
 Idents(cd4) <- "seurat_clusters"
 UMAP_cluster <- DimPlot(cd4, reduction = "umap", group.by = "seurat_clusters")
@@ -212,6 +213,7 @@ cluster_0 <- cd4.markers[cd4.markers$cluster == "0", ]
 cluster_1 <- cd4.markers[cd4.markers$cluster == "1", ]
 cluster_2 <- cd4.markers[cd4.markers$cluster == "2", ]
 cluster_3 <- cd4.markers[cd4.markers$cluster == "3", ]
+cluster_4 <- cd4.markers[cd4.markers$cluster == "4", ]
 
 
 write.csv (cluster_0, "cluster_0.csv")
@@ -290,8 +292,8 @@ FeaturePlot(object = cd4, features = c("TBX21", "IFNG", "LTA", "TNF", "IL2"), co
 FeaturePlot(object = cd4, features = c("IL4", "IL5", "IL6", "IL9", "IL13"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
 ```
 ### Treg
-```{r, fig.height=4, fig.width=16}
-FeaturePlot(object = cd4, features = c("IL10", "IL35", "TGFB1", "LGALS1"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
+```{r, fig.height=8, fig.width=16}
+FeaturePlot(object = cd4, features = c("IL10", "TGFB1", "LGALS1", "FOXP3"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
 ```
 ### Memory
 ```{r, fig.height=12, fig.width=16}
@@ -302,8 +304,11 @@ FeaturePlot(object = cd4, features = c("PTPRC", "CCR7", "SELL", "TCF7", "STAT5",
 FeaturePlot(object = cd4, features = c("CD27", "CD28", "CD69", "ITGAE", "CD25"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
 ```
 ### Recruitment and migration
-```{r, fig.height=8, fig.width=16}
-FeaturePlot(object = cd4, features = c("CCL3", "CCL4", "CCL5", "CXCR3", "CXCR4", "XCR1"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
+```{r, fig.height=20, fig.width=16}
+FeaturePlot(object = cd4, features = c(
+  "CXCL13", "CXCL16", "CCL3", "CCL4", "CCL5", "CCL20",
+  "CXCR3", "CXCR4","CXCR5", "CXCR6","CCR4", "CCR5", "CCR6","CCR8"), 
+  cols = c("grey", "blue"), ncol = 3, reduction = "umap")
 ```
 
 ### Integrins
@@ -320,6 +325,36 @@ FeaturePlot(object = cd4, features = c("OAS1", "MX1", "IFIT3", "IFI44L", "ISG15"
 FeaturePlot(object = cd4, 
             features = c("GZMA", "GZMB", "GZMH", "GZMK", "GZMM", "PRF1", "CSF2", "GNLY"), 
             cols = c("grey", "blue"), reduction = "umap", ncol= 3)
+```
+
+
+## Violin plots of genes by cluster
+
+### T follicular helper
+```{r, fig.height=8, fig.width=16}
+VlnPlot(object = cd4, features = c("IL21", "POU2AF1", "CD200", "BTLA", "IFNG"), ncol = 4, group.by="seurat_clusters")
+```
+### Th1
+```{r, fig.height=4, fig.width=16}
+VlnPlot(object = cd4, features = c("IFNG", "LTA", "TNF", "IL2"), ncol = 4, group.by="seurat_clusters")
+```
+
+### Memory
+```{r, fig.height=8, fig.width=16}
+VlnPlot(object = cd4, features = c("PTPRC", "CCR7", "SELL", "TCF7", "CD44", "IL7R", "S100A4"), ncol = 4)
+```
+### Activation and differentiation
+```{r, fig.height=4, fig.width=16}
+VlnPlot(object = cd4, features = c("CD27", "CD28", "CD69"), ncol = 4)
+```
+### Recruitment and migration
+```{r, fig.height=8, fig.width=16}
+VlnPlot(object = cd4, features = c("CCL4", "CCL5", "CCL20","CXCR3", "CXCR4"), ncol = 4)
+```
+
+### Type I interferon
+```{r, fig.height=8, fig.width=16}
+VlnPlot(object = cd4, features = c("OAS1", "MX1", "IFIT3", "IFI44L", "ISG15"), ncol = 4)
 ```
 
 
