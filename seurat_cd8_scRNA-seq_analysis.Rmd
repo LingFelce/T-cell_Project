@@ -1,0 +1,346 @@
+---
+title: "Single-cell RNA-Seq analysis of CD8+ SARS-CoV-2 specific T cells"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(Seurat)
+library(sctransform)
+library(SeuratDisk)
+library(SeuratData)
+library(dplyr)
+library(patchwork)
+library(cowplot)
+library(ggplot2)
+library(data.table)
+library(tidyverse)
+library(plyr)
+```
+
+# All CD8 samples
+Analysis of Dong samples: CD8 NP16 & ORF3a-28
+Follow guided clustering tutorial https://satijalab.org/seurat/v3.2/pbmc3k_tutorial.html and this one https://scrnaseq-course.cog.sanger.ac.uk/website/seurat-chapter.html
+
+
+## Load counts matrix and create Seurat object
+```{r loading}
+setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
+
+# load data (from featureCounts)
+tcell_data <-  fread('201203_counts.txt', stringsAsFactors = F, header=T)
+
+# remove columns with chromosome, start, end, strand and length info
+tcell_data <- tcell_data[,-c(2:6)]
+
+# make Geneid into row names
+tcell_data <-tibble::column_to_rownames(tcell_data, "Geneid")
+
+# tidy up sample names
+names(tcell_data) <- gsub(x = names(tcell_data), pattern = "./", replacement = "")  
+names(tcell_data) <- gsub(x = names(tcell_data), pattern = ".bam", replacement = "")
+
+# select CD8 cells only - should have 911
+sample_list <- as.data.frame(colnames(tcell_data))
+tcell_data2 <- tcell_data[,-c(481:486,774:779,1404:1409)]
+sample_list2 <- as.data.frame(colnames(tcell_data2))
+cd8_data <- tcell_data2[,c(1:192, 481:1055, 1344:1487)]
+
+# Initialise Seurat object with raw (non-normalised) data
+# min.cells = include features detected in at least this many cells
+# min.features includes cells where at least this many features detected
+cd8 <- CreateSeuratObject(counts = cd8_data, min.cells = 3, min.features = 200, project = "CD8 T-cell_data", assay = "RNA")
+```
+
+## Standard pre-processing workflow
+
+### QC and selecting cells for further analysis
+Minimum gene cut off already set with CreateSeuratObject, but can filter out cells based on technical or biological parameters.
+Visualise gene and molecule counts, plot relationship and exclude cells with clear outlier number of genes detected as potential multiplets (filter user-defined outlier cells). 
+
+Also filter cells based on % mitochondrial genes present:
+
+```{r qc, fig.height=6, fig.width=16}
+# non-UMI data - nUMI represents sum of non-normalised values within cells
+# calculate % mitochondrial genes and store in separate object
+# use object@raw.data represents non-transformed and non-log-normalised counts
+# % of UMI mapping to MT-genes is a common scRNA-seq QC metric
+mito.genes <- grep(pattern = "^MT-", x = rownames(cd8@assays[["RNA"]]), value = TRUE)
+
+percent.mito <- Matrix::colSums(cd8@assays[["RNA"]][mito.genes, ])/Matrix::colSums(cd8@assays[["RNA"]])
+
+cd8 <- AddMetaData(object = cd8, metadata = percent.mito, col.name = "percent.mito") 
+
+VlnPlot(object = cd8, features = c("nFeature_RNA", "nCount_RNA", "percent.mito"), ncol = 3)
+# all cells have same value % mitochondrial cells?
+```
+
+```{r, fig.height=4, fig.width=6}
+# can use GenePlot to visualise gene-gene relationships and anything else calculated by object
+FeatureScatter(object=cd8, feature1="nCount_RNA", feature2="nFeature_RNA")
+```
+
+
+```{r filtering}
+# Filter out cells that have unique gene counts (nFeature_RNA) over 4000 or less than 200 
+# Note that > and < are used to define a'gate'.  
+# -Inf and Inf should be used if don't want a lower or upper threshold.
+cd8 <- subset(x = cd8, subset = nFeature_RNA > 200 & nFeature_RNA < 4000 & percent.mito >  -Inf & percent.mito < 0.05 )
+```
+
+### Normalising the data
+After removing unwanted cells from dataset, need to normalise data. Use global-scaling normalisation method "LogNormalize" - normalises gene expression measurements for each cell by total expression, multiplies by scale factor (10,000 default) and log-tranforms result.
+```{r normalisation}
+cd8 <- NormalizeData(object = cd8, normalization.method = "LogNormalize", scale.factor = 10000)
+```
+
+### Detection of variables genes across single cells
+Seurat calculates highly variable genes and focuses on these for downstream analysis. FindVariableGenes calculates average expression and dispersion for each gene, places genes into bins and calculates z-score for dispersion within each bin - helps to control relationship between variability and average expression. 
+
+```{r variability, fig.height=8, fig.width = 16}
+# identify 2000 variable genes - normal parameter settings for UMI data normalised to total of 1e4 molecules
+cd8 <- FindVariableFeatures(object = cd8, mean.function = ExpMean, dispersion.function = LogVMR, x.low.cutoff = 0.0125, x.high.cutoff = 3, y.cutoff = 0.5, nfeatures = 2000)
+
+# Identify the 10 most highly variable genes
+top10 <- head(VariableFeatures(cd8), 10)
+
+# plot variable features with and without labels
+plot1 <- VariableFeaturePlot(cd8)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot1 + plot2
+```
+### Scaling data and removing unwanted sources of variation
+Dataset may include uninteresting sources of variation - technical noise, batch effects, biological sources of variation (cell cycle) - regressing these signals can improve downstream dimensionality reduction and clustering. To judge effects of these signals, Seurat constructs linear models to predict gene expression based on user-defined variables. Scaled z-scored residuals of these models are stored in scale.data slot, used for dimensionality reduction and clustering.
+
+```{r scaling}
+cd8 <- ScaleData(object = cd8, vars.to.regress = c("nCounts_RNA", "percent.mito"))
+```
+
+### Linear dimensional reduction (PCA)
+Perform PCA on scaled data. Not sure if highly variable genes or pc.genes are input?
+
+```{r pca, fig.height=4, fig.width=6}
+cd8 <- RunPCA(object = cd8,  npcs = 30, verbose = FALSE)
+#standard PCA plot
+DimPlot(object = cd8, reduction = "pca")
+```
+
+Using a heatmap can be useful to look at primary sources of heterogeneity in a dataset, and can use to decide which PCs to include for further downstream analysis. 
+
+```{r pca heatmap, fig.height=4, fig.width=6}
+DimHeatmap(object = cd8, reduction = "pca", cells = 200, balanced = TRUE)
+```
+
+### Determine statistically significant principal components
+Overcome extensive technical noise in any single gene for scRNA-seq data, Seurat clusters cells based on PCA scores. Determining how many PCs to include downstream is an important step.
+
+Here it looks like PC1-8 are significant (looking at p-values)
+```{r jackstraw, fig.height=4, fig.width=6}
+cd8 <- JackStraw(cd8, num.replicate = 100)
+# visualise distribution of p-values for each PC with uniform distribution (dashed line) Significant PCs show strong enrichment of genes with low p-values (solid curve above dashed line)
+cd8 <- ScoreJackStraw(cd8, dims = 1:20)
+JackStrawPlot(cd8, dims = 1:15)
+```
+
+
+## Cell clustering
+Construct a k-nearest neighbours graph based on Euclidean distance in PCA space, refine edge weights between any 2 cells based on shared overlap in local neighbourhoods. Use Louvain algorithm to cluster cells - modularity optimisation technique to iteratively group cells together.
+
+Resolution parameter - sets granularity of downstream clustering, larger values leads to more clusters. Set between 0.6-1.2 for single cell datasets around 3000 cells. 
+
+```{r clustering}
+# calculate KNN and construct SNN graph (find neighbours), then find clusters
+cd8 <- FindNeighbors(cd8, dims = 1:15)
+cd8 <- FindClusters(cd8, resolution = 0.4)
+```
+### Non-linear dimensional reduction (UMAP)
+Place similar cells in low-dimensional space. Use same PCs as input to clustering analysis
+```{r umap, fig.height=5, fig.width=16}
+cd8 <- RunUMAP(cd8, dims = 1:15)
+# plot UMAP and labels by cluster
+Idents(cd8) <- "seurat_clusters"
+UMAP_cluster <- DimPlot(cd8, reduction = "umap", group.by = "seurat_clusters")
+# plot UMAP and label by patient
+UMAP_patient <- DimPlot(cd8, reduction = "umap", group.by = "orig.ident")
+UMAP_cluster + UMAP_patient
+```
+
+## Finding differentially expressed genes (cluster biomarkers)
+Define clusters via differential expression. Identifies positive and negative markers of single cluster compared to all other cells.
+
+```{r number of cells}
+# How many cells for each patient?
+Idents(cd8) <- "orig.ident"
+table(Idents(cd8))
+# How many cells in each cluster?
+Idents(cd8) <- "seurat_clusters"
+table(Idents(cd8))
+```
+
+
+```{r markers}
+# find markers for every cluster compared to remaining cells, report only positive ones
+# Wilcoxon Rank Sum test default
+cd8.markers <- FindAllMarkers(object = cd8, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
+write.csv (cd8.markers, "cd8-tcell_markers.csv")
+# divide file into separate clusters
+cluster_0 <- cd8.markers[cd8.markers$cluster == "0", ]
+cluster_1 <- cd8.markers[cd8.markers$cluster == "1", ]
+cluster_2 <- cd8.markers[cd8.markers$cluster == "2", ]
+cluster_3 <- cd8.markers[cd8.markers$cluster == "3", ]
+write.csv (cluster_0, "cluster_0.csv")
+write.csv (cluster_1, "cluster_1.csv")
+write.csv (cluster_2, "cluster_2.csv")
+write.csv (cluster_3, "cluster_3.csv")
+# show top 2 differentially expressed genes per cluster
+cd8.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_log2FC)
+```
+
+```{r top 2 genes, fig.height=3, fig.width=7}
+# Top 2 genes from each cluster
+VlnPlot(object = cd8, features =c("CCR7", "GZMB"), ncol=2)
+```
+
+
+```{r heatmap}
+# Expression heatmap for top 20 markers for each cluster
+top10 <- cd8.markers %>% group_by(cluster) %>% top_n(10, avg_log2FC)
+# setting slim.col.label to TRUE will print just the cluster IDS instead of every cell name
+DoHeatmap(object = cd8, features = top10$gene, label = TRUE)
+```
+
+# Annotating UMAPs with meaningful information
+## Known information
+### Severity
+```{r severity annotation, fig.height=4, fig.width=6}
+# assign known identities to clusters - look at known clinical description
+clin.type <- rep(c("mild", "severe", "severe", "severe", "mild"), 
+                 times = c("133", "15", "74", "66", "75", "86"))
+cd8@meta.data$"clin.type" <- as.factor(clin.type)
+UMAP_clin <- DimPlot(cd8, reduction = "umap", group.by = "clin.type", label = TRUE, label.size = 3 ,repel = TRUE)
+UMAP_clin
+```
+### Epitope
+```{r known epitopes, fig.height=4, fig.width=6}
+# assign known identities to clusters - look at known epitopes
+epitope <- rep(c("S34", "M24", "S34", "M24", "M24", "M24"), 
+                 times = c("67", "79", "73", "84", "82", "86"))
+cd8@meta.data$"epitope" <- as.factor(epitope)
+UMAP_epitope <- DimPlot(cd8, reduction = "umap", group.by = "epitope", label = TRUE, label.size = 3 ,repel = TRUE)
+# use split.by="seurat_clusters" to also show UMAP by epitope and cluster number
+UMAP_epitope
+```
+
+
+## Gene expression by clusters
+
+### T follicular helper
+```{r, fig.height=10, fig.width=16}
+FeaturePlot(object = cd8, features = c("IL21", "POU2AF1", "PDCD1", "CXCL13", "CD200", "BTLA", "IL4", "IFNG"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
+```
+### Th1
+```{r, fig.height=8, fig.width=16}
+FeaturePlot(object = cd8, features = c("TBX21", "IFNG", "LTA", "TNF", "IL2"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
+```
+
+### Th2
+```{r, fig.height=4, fig.width=14}
+FeaturePlot(object = cd8, features = c("IL4", "IL5", "IL6", "IL9", "IL13"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
+```
+### Treg
+```{r, fig.height=4, fig.width=16}
+FeaturePlot(object = cd8, features = c("IL10", "IL35", "TGFB1", "LGALS1"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
+```
+### Memory
+```{r, fig.height=12, fig.width=16}
+FeaturePlot(object = cd8, features = c("PTPRC", "CCR7", "SELL", "TCF7", "STAT5", "CD44", "IL7R", "S100A4","CD154", "CD38", "CD137"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
+```
+### Activation and differentiation
+```{r, fig.height=8, fig.width=16}
+FeaturePlot(object = cd8, features = c("CD27", "CD28", "CD69", "ITGAE", "CD25"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
+```
+### Recruitment and migration
+```{r, fig.height=8, fig.width=16}
+FeaturePlot(object = cd8, features = c("CCL3", "CCL4", "CCL5", "CXCR3", "CXCR4", "XCR1"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
+```
+
+### Integrins
+```{r, fig.height=4, fig.width=14}
+FeaturePlot(object = cd8, features = c("ITGAE", "ITGB3", "CD107", "ITGB7"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
+```
+### Type I interferon
+```{r, fig.height=8, fig.width=16}
+FeaturePlot(object = cd8, features = c("OAS1", "MX1", "IFIT3", "IFI44L", "ISG15", "MX2"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
+```
+
+### Cytotoxicity
+```{r, fig.height=10, fig.width=16}
+FeaturePlot(object = cd8, 
+            features = c("GZMA", "GZMB", "GZMH", "GZMK", "GZMM", "PRF1", "CSF2", "GNLY"), 
+            cols = c("grey", "blue"), reduction = "umap", ncol= 3)
+```
+
+
+## TCR information
+
+```{r load tcr gene info}
+tcr <- read.csv("cd8_tcr.csv", row.names=1)
+tcr <- tcr[order(tcr$cell_name),]
+tcr <- tcr[,c(1,3,4,6,7)]
+table(tcr$TRAV)
+table(tcr$TRAJ)
+table(tcr$TRBV)
+table(tcr$TRBJ)
+trav <- tcr[1:2]
+traj <- tcr[,c(1,3)]
+trbv <- tcr[,c(1,4)]
+trbj <- tcr[,c(1,5)]
+top3trav <- c("TRAV35", "TRAV9-2", "TRAV29DV5", "TRAV8-3", "TRAV38-DV8", "TRAV17")
+top3traj <- c("TRAJ42", "TRAJ5", "TRAJ48")
+top3trbv <- c("TRBV19", "TRBV14", "TRBV5-1", "TRBV9")
+top3trbj <- c("TRBJ1-2", "TRBJ2-7", "TRBJ2-2")
+trav <- subset(trav, TRAV %in% top3trav)
+traj <- subset(traj, TRAJ %in% top3traj)
+trbv <- subset(trbv, TRBV %in% top3trbv)
+trbj <- subset(trbj, TRBJ %in% top3trbj)
+new_names <- as.data.frame(rownames(cd4@meta.data))
+colnames(new_names)[1] <- "cell_name"
+new_names <- tibble::rownames_to_column(new_names, "order")
+trav <-  join(new_names, trav)
+traj <-  join(new_names, traj)
+trbv <-  join(new_names, trbv)
+trbj <-  join(new_names, trbj)
+cd8@meta.data$"trav" <- as.factor(trav$TRAV)
+cd8@meta.data$"traj" <- as.factor(traj$TRAJ)
+cd8@meta.data$"trbv" <- as.factor(trbv$TRBV)
+cd8@meta.data$"trbj" <- as.factor(trbj$TRBJ)
+```
+
+```{r trav umap, fig.height=5, fig.width=8}
+UMAP_trav <- DimPlot(cd8, reduction = "umap", group.by = "trav")
+UMAP_trav
+```
+
+```{r traj umap, fig.height=5, fig.width=8}
+UMAP_traj <- DimPlot(cd8, reduction = "umap", group.by = "traj")
+UMAP_traj
+```
+
+```{r trbv umap, fig.height=5, fig.width=8}
+UMAP_trbv <- DimPlot(cd8, reduction = "umap", group.by = "trbv")
+UMAP_trbv
+```
+```{r trbj umap, fig.height=5, fig.width=8}
+UMAP_trbj <- DimPlot(cd8, reduction = "umap", group.by = "trbj")
+UMAP_trbj
+```
+
+
+# Save file
+
+```{r save}
+# save cd8 object at this point so don't have to redo all of the above again
+saveRDS(cd8, file = "cd8_seurat.rds")
+```
