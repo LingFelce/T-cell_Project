@@ -11,13 +11,14 @@ library(Seurat)
 library(sctransform)
 library(SeuratDisk)
 library(SeuratData)
+library(plyr)
 library(dplyr)
 library(patchwork)
 library(cowplot)
 library(ggplot2)
 library(data.table)
 library(tidyverse)
-library(plyr)
+
 ```
 
 # All CD8 samples
@@ -152,13 +153,13 @@ Resolution parameter - sets granularity of downstream clustering, larger values 
 
 ```{r clustering}
 # calculate KNN and construct SNN graph (find neighbours), then find clusters
-cd8 <- FindNeighbors(cd8, dims = 1:15)
+cd8 <- FindNeighbors(cd8, dims = 1:12)
 cd8 <- FindClusters(cd8, resolution = 0.4)
 ```
 ### Non-linear dimensional reduction (UMAP)
 Place similar cells in low-dimensional space. Use same PCs as input to clustering analysis
 ```{r umap, fig.height=5, fig.width=16}
-cd8 <- RunUMAP(cd8, dims = 1:15)
+cd8 <- RunUMAP(cd8, dims = 1:12)
 # plot UMAP and labels by cluster
 Idents(cd8) <- "seurat_clusters"
 UMAP_cluster <- DimPlot(cd8, reduction = "umap", group.by = "seurat_clusters")
@@ -185,6 +186,7 @@ table(Idents(cd8))
 # Wilcoxon Rank Sum test default
 cd8.markers <- FindAllMarkers(object = cd8, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
 write.csv (cd8.markers, "cd8-tcell_markers.csv")
+
 # divide file into separate clusters
 cluster_0 <- cd8.markers[cd8.markers$cluster == "0", ]
 cluster_1 <- cd8.markers[cd8.markers$cluster == "1", ]
@@ -194,13 +196,14 @@ write.csv (cluster_0, "cluster_0.csv")
 write.csv (cluster_1, "cluster_1.csv")
 write.csv (cluster_2, "cluster_2.csv")
 write.csv (cluster_3, "cluster_3.csv")
+
 # show top 2 differentially expressed genes per cluster
 cd8.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_log2FC)
 ```
 
-```{r top 2 genes, fig.height=3, fig.width=7}
+```{r top 2 genes, fig.height=10, fig.width=8}
 # Top 2 genes from each cluster
-VlnPlot(object = cd8, features =c("CCR7", "GZMB"), ncol=2)
+VlnPlot(object = cd8, features =c("CD69", "CCR7", "PRF1", "CCL3", "MCM5", "TUBB"), ncol=2)
 ```
 
 
@@ -216,8 +219,8 @@ DoHeatmap(object = cd8, features = top10$gene, label = TRUE)
 ### Severity
 ```{r severity annotation, fig.height=4, fig.width=6}
 # assign known identities to clusters - look at known clinical description
-clin.type <- rep(c("mild", "severe", "severe", "severe", "mild"), 
-                 times = c("133", "15", "74", "66", "75", "86"))
+clin.type <- rep(c("mild", "severe","severe","severe","severe","severe","mild", "severe","severe"), 
+                 times = c("133", "94", "15", "74", "95", "66", "75", "46", "95"))
 cd8@meta.data$"clin.type" <- as.factor(clin.type)
 UMAP_clin <- DimPlot(cd8, reduction = "umap", group.by = "clin.type", label = TRUE, label.size = 3 ,repel = TRUE)
 UMAP_clin
@@ -225,8 +228,8 @@ UMAP_clin
 ### Epitope
 ```{r known epitopes, fig.height=4, fig.width=6}
 # assign known identities to clusters - look at known epitopes
-epitope <- rep(c("S34", "M24", "S34", "M24", "M24", "M24"), 
-                 times = c("67", "79", "73", "84", "82", "86"))
+epitope <- rep(c("NP16", "ORF3a-28", "NP16", "NP16", "ORF3a-28", "NP16", "NP16", "ORF3a-28","ORF3a-28"), 
+                 times = c("133", "94", "15", "74", "95", "66", "75", "46", "95"))
 cd8@meta.data$"epitope" <- as.factor(epitope)
 UMAP_epitope <- DimPlot(cd8, reduction = "umap", group.by = "epitope", label = TRUE, label.size = 3 ,repel = TRUE)
 # use split.by="seurat_clusters" to also show UMAP by epitope and cluster number
@@ -234,107 +237,18 @@ UMAP_epitope
 ```
 
 
-## Gene expression by clusters
+## Gene expression by epitope
 
-### T follicular helper
-```{r, fig.height=10, fig.width=16}
-FeaturePlot(object = cd8, features = c("IL21", "POU2AF1", "PDCD1", "CXCL13", "CD200", "BTLA", "IL4", "IFNG"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
-```
-### Th1
-```{r, fig.height=8, fig.width=16}
-FeaturePlot(object = cd8, features = c("TBX21", "IFNG", "LTA", "TNF", "IL2"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
-```
-
-### Th2
-```{r, fig.height=4, fig.width=14}
-FeaturePlot(object = cd8, features = c("IL4", "IL5", "IL6", "IL9", "IL13"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
-```
-### Treg
-```{r, fig.height=4, fig.width=16}
-FeaturePlot(object = cd8, features = c("IL10", "IL35", "TGFB1", "LGALS1"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
-```
-### Memory
-```{r, fig.height=12, fig.width=16}
-FeaturePlot(object = cd8, features = c("PTPRC", "CCR7", "SELL", "TCF7", "STAT5", "CD44", "IL7R", "S100A4","CD154", "CD38", "CD137"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
-```
-### Activation and differentiation
-```{r, fig.height=8, fig.width=16}
-FeaturePlot(object = cd8, features = c("CD27", "CD28", "CD69", "ITGAE", "CD25"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
-```
-### Recruitment and migration
-```{r, fig.height=8, fig.width=16}
-FeaturePlot(object = cd8, features = c("CCL3", "CCL4", "CCL5", "CXCR3", "CXCR4", "XCR1"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
-```
-
-### Integrins
-```{r, fig.height=4, fig.width=14}
-FeaturePlot(object = cd8, features = c("ITGAE", "ITGB3", "CD107", "ITGB7"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
-```
-### Type I interferon
-```{r, fig.height=8, fig.width=16}
-FeaturePlot(object = cd8, features = c("OAS1", "MX1", "IFIT3", "IFI44L", "ISG15", "MX2"), cols = c("grey", "blue"), ncol = 3, reduction = "umap")
-```
-
-### Cytotoxicity
-```{r, fig.height=10, fig.width=16}
-FeaturePlot(object = cd8, 
-            features = c("GZMA", "GZMB", "GZMH", "GZMK", "GZMM", "PRF1", "CSF2", "GNLY"), 
-            cols = c("grey", "blue"), reduction = "umap", ncol= 3)
-```
-
-
-## TCR information
-
-```{r load tcr gene info}
-tcr <- read.csv("cd8_tcr.csv", row.names=1)
-tcr <- tcr[order(tcr$cell_name),]
-tcr <- tcr[,c(1,3,4,6,7)]
-table(tcr$TRAV)
-table(tcr$TRAJ)
-table(tcr$TRBV)
-table(tcr$TRBJ)
-trav <- tcr[1:2]
-traj <- tcr[,c(1,3)]
-trbv <- tcr[,c(1,4)]
-trbj <- tcr[,c(1,5)]
-top3trav <- c("TRAV35", "TRAV9-2", "TRAV29DV5", "TRAV8-3", "TRAV38-DV8", "TRAV17")
-top3traj <- c("TRAJ42", "TRAJ5", "TRAJ48")
-top3trbv <- c("TRBV19", "TRBV14", "TRBV5-1", "TRBV9")
-top3trbj <- c("TRBJ1-2", "TRBJ2-7", "TRBJ2-2")
-trav <- subset(trav, TRAV %in% top3trav)
-traj <- subset(traj, TRAJ %in% top3traj)
-trbv <- subset(trbv, TRBV %in% top3trbv)
-trbj <- subset(trbj, TRBJ %in% top3trbj)
-new_names <- as.data.frame(rownames(cd4@meta.data))
-colnames(new_names)[1] <- "cell_name"
-new_names <- tibble::rownames_to_column(new_names, "order")
-trav <-  join(new_names, trav)
-traj <-  join(new_names, traj)
-trbv <-  join(new_names, trbv)
-trbj <-  join(new_names, trbj)
-cd8@meta.data$"trav" <- as.factor(trav$TRAV)
-cd8@meta.data$"traj" <- as.factor(traj$TRAJ)
-cd8@meta.data$"trbv" <- as.factor(trbv$TRBV)
-cd8@meta.data$"trbj" <- as.factor(trbj$TRBJ)
-```
-
-```{r trav umap, fig.height=5, fig.width=8}
-UMAP_trav <- DimPlot(cd8, reduction = "umap", group.by = "trav")
-UMAP_trav
-```
-
-```{r traj umap, fig.height=5, fig.width=8}
-UMAP_traj <- DimPlot(cd8, reduction = "umap", group.by = "traj")
-UMAP_traj
-```
-
-```{r trbv umap, fig.height=5, fig.width=8}
-UMAP_trbv <- DimPlot(cd8, reduction = "umap", group.by = "trbv")
-UMAP_trbv
-```
-```{r trbj umap, fig.height=5, fig.width=8}
-UMAP_trbj <- DimPlot(cd8, reduction = "umap", group.by = "trbj")
-UMAP_trbj
+```{r, fig.height=32, fig.width=16}
+VlnPlot(object = cd8, features = c("CD27", "IL7R", "S100A4", "PTPRC", 
+                                   "CCR7", "SELL", "CD44", "CD69", 
+                                   "HLA-DRA", "CCL4", 
+                                   "CCL5", "CXCR3", "CXCR4",
+                                   "IL16", "IFNG", 
+                                   "PRF1", "GNLY", "NKG7", 
+                                   "GZMA", "GZMB", "GZMH", "GZMK",
+                                   "FASLG", "ISG15"), 
+        ncol=4, group.by = "epitope")
 ```
 
 
