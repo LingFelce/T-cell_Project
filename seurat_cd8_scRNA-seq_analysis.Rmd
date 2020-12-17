@@ -242,7 +242,7 @@ UMAP_epitope
 ```{r, fig.height=32, fig.width=16}
 VlnPlot(object = cd8, features = c("CD27", "IL7R", "S100A4", "PTPRC", 
                                    "CCR7", "SELL", "CD44", "CD69", 
-                                   "HLA-DRA", "CCL4", 
+                                   "HLA-DRB1", "CCL4", 
                                    "CCL5", "CXCR3", "CXCR4",
                                    "IL16", "IFNG", 
                                    "PRF1", "GNLY", "NKG7", 
