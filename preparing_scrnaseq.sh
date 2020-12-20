@@ -6,9 +6,6 @@
 
 # .fastq.gz quality control - see separate script as send to queue, module available
 
-mkdir fastqc_results
-fastqc -o fastqc_results <input file>
-
 # multiqc installed on conda so have to run locally, but doesn't take very long
 
 # trimming - necessary? if so, use trim_galore
@@ -25,22 +22,6 @@ fastqc -o fastqc_results <input file>
 
 # softlink .fastq.gz files from MiXCR input folders to STAR folder
 find /t1-data/user/lfelce/MiXCR/CD4_input -name "*.fastq.gz" | xargs -I v_f ln -s v_f
-
-# run all files in 1 script - very slow!
-#!/bin/bash
-#SBATCH --partition=batch
-#SBATCH --job-name=star_map
-#SBATCH --nodes=1
-#SBATCH --mem=128G
-#SBATCH --time=07-00:00:00
-#SBATCH --output=%j_%x.out
-#SBATCH --error=%j_%x.err
-module load STAR/2.6.1d
-cd /t1-data/user/lfelce/STAR/
-for i in ./*_R1_001.fastq.gz
-do
-STAR --runThreadN 10 --readFilesCommand gunzip -c --outSAMtype BAM SortedByCoordinate --genomeDir /databank/indices/star/hg19 --readFilesIn $i --outFileNamePrefix ./results/${i%_R1_001.fastq.gz}_
-done
 
 # run each file as single script
 # copy and paste below into command line. 
