@@ -572,3 +572,153 @@ circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
   circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
 }, bg.border = NA)
 dev.off()
+
+
+
+
+#------------- CD8 NP16 1131-TP-1 -------------------------
+
+# separate TCR sequencing repeat sample 
+# Peng carried out targeted scTCR sequencing -> bcl2fastq -> new MiXCR analyze amplicon
+
+setwd('/t1-data/user/lfelce/TCR_analysis/1131-TP-1_cd8_new')
+listFiles = list.files()
+
+# revise the structure of input files
+for(i in 1:length(listFiles))
+{
+  DT = fread(listFiles[i])
+  write.table(DT,listFiles[i],quote = F, row.names = F, sep = '\t')
+}
+
+library(stringr)
+
+# read in TRA names and convert to list
+tra_names <- fread('/t1-data/user/lfelce/TCR_analysis/1131-TP-1_cd8_new/tra_names.txt', stringsAsFactors = F, header=F)
+
+tra_names <- as.list(as.data.frame(t(tra_names)))
+
+# remove ./ at start of name
+tra_names <- tra_names %>% str_replace("./*", "")
+
+# read in TRB names and convert to list
+trb_names <- fread('/t1-data/user/lfelce/TCR_analysis/1131-TP-1_cd8_new/trb_names.txt', stringsAsFactors = F, header=F)
+
+trb_names <- as.list(as.data.frame(t(trb_names)))
+
+# remove ./ at start of name
+trb_names <- trb_names %>% str_replace("./*", "")
+
+
+# parse mixcr files
+# for some reason MiXCR makes clone count numeric rather than integer
+# have modified code for parse.mixcr and saved in separated file
+# call function parse.mixcr.ling
+source('/t1-data/user/lfelce/TCR_analysis/parse_mixcr.R')
+
+# TRA: generate list of lists (like mixcr parsed into R)
+datalist = list()
+for (i in (1:length(tra_names))) {
+  dat <- parse.mixcr.ling(tra_names[i])
+  datalist[[i]] <- dat # add it to list
+}
+
+# rename with sample name
+names(datalist) <- tra_names
+mixcr_a <- datalist
+
+# TRB: generate list of lists (like mixcr parsed into R)
+datalist = list()
+for (i in (1:length(trb_names))) {
+  dat <- parse.mixcr.ling(trb_names[i])
+  datalist[[i]] <- dat # add it to list
+}
+
+# rename with sample name
+names(datalist) <- trb_names
+mixcr_b <- datalist
+
+# sort alphabetically
+mixcr_a <- mixcr_a[order(names(mixcr_a))]
+mixcr_b <- mixcr_b[order(names(mixcr_b))]
+
+# create list of cell numbers and cell names
+# different lengths so same cell will be different number in a or b
+mixcr_a_names <- as.data.frame(names(mixcr_a))
+mixcr_b_names <- as.data.frame(names(mixcr_b))
+
+mixcr_a_names <-tibble::rownames_to_column(mixcr_a_names, "cell_number")
+mixcr_b_names <- tibble::rownames_to_column(mixcr_b_names, "cell_number")
+
+# rename columns
+colnames(mixcr_a_names) <- c("cell_number", "cell_name")
+colnames(mixcr_b_names) <- c("cell_number", "cell_name")
+
+# remove file extensions from names
+mixcr_a_names$cell_name <- mixcr_a_names$cell_name %>% str_replace("_L001.clonotypes.TRA.txt", "")
+mixcr_b_names$cell_name <- mixcr_b_names$cell_name %>% str_replace("_L001.clonotypes.TRB.txt", "")
+
+# convert mixcr lists to dataframe with just V.gene and J.gene info
+
+# mixcr_a - select top 2 rows for each cell
+datalist = list()
+for (i in (1:length(mixcr_a))) {
+  dat1 <- data.frame(c(mixcr_a[[i]][3],mixcr_a[[i]][7], mixcr_a[[i]][8]))
+  dat <- dat1[1,]
+  dat$i <- i # keep track of which iteration produced it
+  datalist[[i]] <- dat # add it to list
+}
+# combine columns
+big_data = do.call(rbind, datalist)
+tra <- big_data
+colnames(tra) <- c("Read.count", "TRAV", "TRAJ", "cell_number")
+tra <- merge(tra, mixcr_a_names, by="cell_number")
+
+
+# mixcr_b - select top row for each cell
+datalist = list()
+for (i in (1:length(mixcr_b))) {
+  dat1 <- data.frame(c(mixcr_b[[i]][3],mixcr_b[[i]][7], mixcr_b[[i]][8]))
+  dat <- dat1[1,]
+  dat$i <- i # keep track of which iteration produced it
+  datalist[[i]] <- dat # add it to list
+}
+# combine columns for each cell
+big_data = do.call(rbind, datalist)
+trb <- big_data 
+colnames(trb) <- c("Read.count", "TRBV", "TRBJ", "cell_number")
+trb <- merge(trb, mixcr_b_names, by="cell_number")
+
+# combine TRA and TRB dataframes
+cd8_1131 <- merge(tra,trb, by="cell_name")
+
+cd8_1131 <- mutate(cd8_1131, alpha=paste(TRAV, TRAJ, sep="_"))
+
+cd8_1131 <- mutate(cd8_1131, beta=paste(TRBV, TRBJ, sep="_"))
+
+
+# tabulate to get dominant alpha-beta pairing
+
+library(circlize)
+
+cd8_np16_1131_TP1 <- as.matrix(as.data.frame.matrix(table(cd8_1131$alpha, cd8_1131$beta)))
+cd8_np16_1131_TP1_table <- as.data.frame(table(cd8_1131$alpha, cd8_1131$beta))
+
+setwd("/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/")
+
+list <- c("cd8_np16_1131_TP1")
+
+for (i in 1:length(list)) {
+  circos.clear()
+  set.seed(999)
+  pdf(paste((list[i]), "_chorddiagram.pdf", sep=""), width = 16, height = 12, useDingbats = FALSE)
+  chordDiagram(get(list[i]), annotationTrack = "grid", preAllocateTracks = 1)
+  circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+    xlim = get.cell.meta.data("xlim")
+    ylim = get.cell.meta.data("ylim")
+    sector.name = get.cell.meta.data("sector.index")
+    circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+    circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+  }, bg.border = NA)
+  dev.off()
+}
