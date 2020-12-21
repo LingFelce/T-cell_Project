@@ -1,6 +1,7 @@
 ########## Isar's modified script for MiXCR ##############
 
 # see bottom of page for updated version with 2 reads and new batch queue information
+# note: specific example below won't work as files are from TCR sequencing, not RNA-sequencing!
 
 # copy and paste below into command line. 
 # then when have generated scripts, copy and paste second bit into command line
