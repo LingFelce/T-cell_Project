@@ -1,4 +1,7 @@
 ########## Isar's modified script for MiXCR ##############
+
+# see bottom of page for updated version with 2 reads and new batch queue information
+
 # copy and paste below into command line. 
 # then when have generated scripts, copy and paste second bit into command line
 
@@ -48,3 +51,28 @@ done
 
 # copy and save output to cd8_np16_tra_names.txt
 # repeat for TRB.txt
+
+############# updated version of new MiXCR-SmartSeq.sh script ############
+cd /t1-data/user/lfelce/MiXCR/1131-TP-1_CD8_new_input/
+DIR=/t1-data/user/lfelce/MiXCR/1131-TP-1_CD8_new_output/
+
+for NAME in $(find . -name '*_R1_001.fastq.gz' -printf "%f\n" | sed 's/_R1_001.fastq.gz//'); do
+
+echo "$NAME"
+
+p1='_R1_001.fastq.gz'
+p2='_R2_001.fastq.gz'
+
+echo -e '#! /bin/sh
+#SBATCH --partition=batch
+#SBATCH --nodes=1
+#SBATCH --mem=128G
+
+module load mixcr
+
+cd /t1-data/user/lfelce/MiXCR/1131-TP-1_CD8_new_output/
+
+mixcr analyze shotgun -s hsa --starting-material rna --contig-assembly 
+--only-productive /t1-data/user/lfelce/MiXCR/1131-TP-1_CD8_new_input/'$NAME$p1 
+'/t1-data/user/lfelce/MiXCR/1131-TP-1_CD8_new_input/'$NAME$p2
+$NAME '--receptor-type tcr' > 
