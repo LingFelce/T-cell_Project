@@ -29,18 +29,15 @@ ref="/databank/10x-rangers/${transcriptome}"
 
 ################### My Script - generate individual .sh for each .fastq.gz file then send to queue separately ####################
 
-cd /t1-data/user/lfelce/Cell_Ranger_VDJ/Dong231120TCR/fastq
+cd /t1-data/user/lfelce/CellRanger_VDJ/Dong231120TCR/fastq
 
-DIR=/t1-data/user/lfelce/Cell_Ranger_VDJ/Dong231120TCR/
+DIR=/t1-data/user/lfelce/CellRanger_VDJ/Dong231120TCR/
 REF=/databank/10x-rangers/refdata-cellranger-vdj-GRCm38-alts-ensembl-4.0.0
-FASTQS=/t1-data/user/lfelce/Cell_Ranger_VDJ/Dong231120TCR/fastq
+FASTQS=/t1-data/user/lfelce/CellRanger_VDJ/Dong231120TCR/fastq/
 
-for NAME in $(find . -name '*_S*_L001_R1_001.fastq.gz' -printf "%f\n" | sed 's/*_S*_L001_R1_001.fastq.gz//'); do
+for NAME in $(find . -name '*_R1_001.fastq.gz' -printf "%f\n" | sed 's/_R1_001.fastq.gz//'); do
  
 echo "$NAME"
-
-p1='_R1_001.fastq.gz'
-p2='_R2_001.fastq.gz' 
 
 echo -e '#!/bin/sh
 #SBATCH --partition=batch
@@ -49,9 +46,9 @@ echo -e '#!/bin/sh
 
 module load cellranger/5.0.0
 
-cd /t1-data/user/lfelce/Cell_Ranger_VDJ/Dong231120TCR/
+cd /t1-data/user/lfelce/CellRanger_VDJ/Dong231120TCR/fastq/
 
-cellranger vdj --id=1131-TP-1_CD8_NP16 --reference='$REF '--fastqs='$FASTQS '--sample='$NAME > $DIR'script/'$NAME'.sh'
+cellranger vdj --id=1131-TP-1_CD8_NP16 --reference='$REF '--fastqs='$FASTQS > $DIR'script/'$NAME'.sh'
 
 done
 
