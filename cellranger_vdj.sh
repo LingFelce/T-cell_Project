@@ -29,8 +29,11 @@ ref="/databank/10x-rangers/${transcriptome}"
 
 ################### My Script - generate individual .sh for each .fastq.gz file then send to queue separately ####################
 
-cd /t1-data/user/lfelce/MiXCR/1131-TP-1_CD8_new_input/
-DIR=/t1-data/user/lfelce/MiXCR/1131-TP-1_CD8_new_output/
+cd /t1-data/user/lfelce/BACKUP/Dong231120TCR/
+
+DIR=/t1-data/user/lfelce/Cell_Ranger_VDJ/Dong231120TCR/
+REF=/databank/10x-rangers/refdata-cellranger-vdj-GRCm38-alts-ensembl-4.0.0
+FASTQS=/t1-data/user/lfelce/BACKUP/Dong231120TCR/
 
 for NAME in $(find . -name '*_R1_001.fastq.gz' -printf "%f\n" | sed 's/_R1_001.fastq.gz//'); do
  
@@ -44,13 +47,20 @@ echo -e '#!/bin/sh
 #SBATCH --nodes=1
 #SBATCH --mem=128G
 
-module load mixcr
+module load cellranger/5.0.0
 
-cd /t1-data/user/lfelce/MiXCR/1131-TP-1_CD8_new_output/
+cd /t1-data/user/lfelce/Cell_Ranger_VDJ/Dong231120TCR/
 
-cellranger vdj --id=
+cellranger vdj --id=1131-TP-1_CD8_NP16 --reference='$REF '--fastqs='$FASTQS '--sample='$NAME > $DIR'script/'$NAME'.sh'
 
 done
 
-#################################
-mixcr analyze amplicon -s hsa --starting-material rna --5-end no-v-primers --3-end c-primers --adapters no-adapters --contig-assembly --only-productive /t1-data/user/lfelce/MiXCR/1131-TP-1_CD8_new_input/'$NAME$p1 '/t1-data/user/lfelce/MiXCR/1131-TP-1_CD8_new_input/'$NAME$p2 $NAME '--receptor-type tcr' > $DIR'script/'$NAME'.sh'
+
+########### run scripts on server ######################
+cd /t1-data/user/lfelce/Cell_Ranger_VDJ/Dong231120TCR/script/
+
+for line in $(ls *.sh); do
+sbatch $line
+done
+
+squeue -u lfelce
