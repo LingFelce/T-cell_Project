@@ -29,13 +29,13 @@ ref="/databank/10x-rangers/${transcriptome}"
 
 ################### My Script - generate individual .sh for each .fastq.gz file then send to queue separately ####################
 
-cd /t1-data/user/lfelce/BACKUP/Dong231120TCR/
+cd /t1-data/user/lfelce/Cell_Ranger_VDJ/Dong231120TCR/fastq
 
 DIR=/t1-data/user/lfelce/Cell_Ranger_VDJ/Dong231120TCR/
 REF=/databank/10x-rangers/refdata-cellranger-vdj-GRCm38-alts-ensembl-4.0.0
-FASTQS=/t1-data/user/lfelce/BACKUP/Dong231120TCR/
+FASTQS=/t1-data/user/lfelce/Cell_Ranger_VDJ/Dong231120TCR/fastq
 
-for NAME in $(find . -name '*_R1_001.fastq.gz' -printf "%f\n" | sed 's/_R1_001.fastq.gz//'); do
+for NAME in $(find . -name '*_S*_L001_R1_001.fastq.gz' -printf "%f\n" | sed 's/*_S*_L001_R1_001.fastq.gz//'); do
  
 echo "$NAME"
 
