@@ -43,11 +43,25 @@ tcell_data <-tibble::column_to_rownames(tcell_data, "Geneid")
 names(tcell_data) <- gsub(x = names(tcell_data), pattern = "./", replacement = "")  
 names(tcell_data) <- gsub(x = names(tcell_data), pattern = ".bam", replacement = "")
 
-# select CD8 cells only - should have 911
+# select CD8 cells only but leave out 1131-TP-1 - should have 816
 sample_list <- as.data.frame(colnames(tcell_data))
 tcell_data2 <- tcell_data[,-c(481:486,774:779,1404:1409)]
 sample_list2 <- as.data.frame(colnames(tcell_data2))
-cd8_data <- tcell_data2[,c(1:192, 481:1055, 1344:1487)]
+cd8_data <- tcell_data2[,c(1:192, 481:576, 672:1055, 1344:1487)]
+
+# load new 1131-TP-1 data and process
+data_1131_new <- fread('201221_counts.txt', stringsAsFactors = F, header=T)
+data_1131_new <- data_1131_new[,-c(2:6)]
+data_1131_new <-tibble::column_to_rownames(data_1131_new, "Geneid")
+names(data_1131_new) <- gsub(x = names(data_1131_new), pattern = "./", replacement = "")  
+names(data_1131_new) <- gsub(x = names(data_1131_new), pattern = ".bam", replacement = "")
+
+# leave out bulk samples
+list_1131 <- as.data.frame(colnames(data_1131_new))
+data_1131_new <- data_1131_new[,-c(25:96)]
+
+# merge with cd8_data = 816 + 92 = 908
+cd8_data <- cbind(cd8_data, data_1131_new)
 
 # Initialise Seurat object with raw (non-normalised) data
 # min.cells = include features detected in at least this many cells
@@ -88,7 +102,7 @@ FeatureScatter(object=cd8, feature1="nCount_RNA", feature2="nFeature_RNA")
 # Filter out cells that have unique gene counts (nFeature_RNA) over 4000 or less than 200 
 # Note that > and < are used to define a'gate'.  
 # -Inf and Inf should be used if don't want a lower or upper threshold.
-cd8 <- subset(x = cd8, subset = nFeature_RNA > 200 & nFeature_RNA < 4000 & percent.mito >  -Inf & percent.mito < 0.05 )
+cd8 <- subset(x = cd8, subset = nFeature_RNA > 200 & nFeature_RNA < 6000 & percent.mito >  -Inf & percent.mito < 0.05 )
 ```
 
 ### Normalising the data
@@ -178,6 +192,7 @@ table(Idents(cd8))
 # How many cells in each cluster?
 Idents(cd8) <- "seurat_clusters"
 table(Idents(cd8))
+
 ```
 
 
@@ -201,9 +216,9 @@ write.csv (cluster_3, "cluster_3.csv")
 cd8.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_log2FC)
 ```
 
-```{r top 2 genes, fig.height=10, fig.width=8}
+```{r top 2 genes, fig.height=8, fig.width=12}
 # Top 2 genes from each cluster
-VlnPlot(object = cd8, features =c("CD69", "CCR7", "PRF1", "CCL3", "MCM5", "TUBB"), ncol=2)
+VlnPlot(object = cd8, features =c("CD69", "CCR7", "PRF1", "CCL3", "MCM5", "TUBB"), ncol=4)
 ```
 
 
