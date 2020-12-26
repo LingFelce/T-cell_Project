@@ -356,6 +356,16 @@ VlnPlot(object = cd4, features = c("CCL4", "CCL5", "CCL20","CXCR3", "CXCR4"), nc
 ```{r, fig.height=8, fig.width=16}
 VlnPlot(object = cd4, features = c("OAS1", "MX1", "IFIT3", "IFI44L", "ISG15"), ncol = 4)
 ```
+
+### Exhaustion markers
+```{r, fig.height=8, fig.width=16}
+VlnPlot(object = cd4, features = c("PDCD1", "CTLA4", "HAVCR2", "CD244",
+                                   "KLRG1", "TIGIT", "BTLA", "CD160"), ncol = 4)
+```
+
+
+
+
 ## Comparing to Calli's marker list
 
 ```{r marker list}
