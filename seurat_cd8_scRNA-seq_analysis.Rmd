@@ -102,7 +102,7 @@ FeatureScatter(object=cd8, feature1="nCount_RNA", feature2="nFeature_RNA")
 # Filter out cells that have unique gene counts (nFeature_RNA) over 4000 or less than 200 
 # Note that > and < are used to define a'gate'.  
 # -Inf and Inf should be used if don't want a lower or upper threshold.
-cd8 <- subset(x = cd8, subset = nFeature_RNA > 200 & nFeature_RNA < 6000 & percent.mito >  -Inf & percent.mito < 0.05 )
+cd8 <- subset(x = cd8, subset = nFeature_RNA > 200 & nFeature_RNA < 4000 & percent.mito >  -Inf & percent.mito < 0.05 )
 ```
 
 ### Normalising the data
@@ -167,13 +167,13 @@ Resolution parameter - sets granularity of downstream clustering, larger values 
 
 ```{r clustering}
 # calculate KNN and construct SNN graph (find neighbours), then find clusters
-cd8 <- FindNeighbors(cd8, dims = 1:12)
+cd8 <- FindNeighbors(cd8, dims = 1:8)
 cd8 <- FindClusters(cd8, resolution = 0.4)
 ```
 ### Non-linear dimensional reduction (UMAP)
 Place similar cells in low-dimensional space. Use same PCs as input to clustering analysis
 ```{r umap, fig.height=5, fig.width=16}
-cd8 <- RunUMAP(cd8, dims = 1:12)
+cd8 <- RunUMAP(cd8, dims = 1:8)
 # plot UMAP and labels by cluster
 Idents(cd8) <- "seurat_clusters"
 UMAP_cluster <- DimPlot(cd8, reduction = "umap", group.by = "seurat_clusters")
@@ -218,7 +218,8 @@ cd8.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_log2FC)
 
 ```{r top 2 genes, fig.height=8, fig.width=12}
 # Top 2 genes from each cluster
-VlnPlot(object = cd8, features =c("CD69", "CCR7", "PRF1", "CCL3", "MCM5", "TUBB"), ncol=4)
+VlnPlot(object = cd8, features =c("GPR183", "CCR7", "FAT1", "NOTCH3", "JAK1",
+                                  "NDUFA3", "MX1", "SLC7A5"), ncol=4)
 ```
 
 
@@ -235,7 +236,7 @@ DoHeatmap(object = cd8, features = top10$gene, label = TRUE)
 ```{r severity annotation, fig.height=4, fig.width=6}
 # assign known identities to clusters - look at known clinical description
 clin.type <- rep(c("mild", "severe","severe","severe","severe","severe","mild", "severe","severe"), 
-                 times = c("133", "94", "15", "74", "95", "66", "75", "46", "95"))
+                 times = c("133", "94", "62", "74", "95", "66", "75", "46", "95"))
 cd8@meta.data$"clin.type" <- as.factor(clin.type)
 UMAP_clin <- DimPlot(cd8, reduction = "umap", group.by = "clin.type", label = TRUE, label.size = 3 ,repel = TRUE)
 UMAP_clin
@@ -244,7 +245,7 @@ UMAP_clin
 ```{r known epitopes, fig.height=4, fig.width=6}
 # assign known identities to clusters - look at known epitopes
 epitope <- rep(c("NP16", "ORF3a-28", "NP16", "NP16", "ORF3a-28", "NP16", "NP16", "ORF3a-28","ORF3a-28"), 
-                 times = c("133", "94", "15", "74", "95", "66", "75", "46", "95"))
+                 times = c("133", "94", "62", "74", "95", "66", "75", "46", "95"))
 cd8@meta.data$"epitope" <- as.factor(epitope)
 UMAP_epitope <- DimPlot(cd8, reduction = "umap", group.by = "epitope", label = TRUE, label.size = 3 ,repel = TRUE)
 # use split.by="seurat_clusters" to also show UMAP by epitope and cluster number
