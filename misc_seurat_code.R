@@ -27,17 +27,11 @@ setwd('/t1-data/user/lfelce/scRNA-Seq//t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T
 
 tmarkers <- read.csv("Markers_for_Ling.csv", header=F)
 
-cluster_0 <- cd4.markers[cd4.markers$cluster == "0", ]
-cluster_1 <- cd4.markers[cd4.markers$cluster == "1", ]
-cluster_2 <- cd4.markers[cd4.markers$cluster == "2", ]
-
-cluster_0 <- cluster_0[cluster_0$p_val_adj < 0.05,]
-cluster_1 <- cluster_1[cluster_1$p_val_adj < 0.05,]
-cluster_2 <- cluster_2[cluster_2$p_val_adj < 0.05,]
-
 genes_0 <- tmarkers[is.element(tmarkers$V1, cluster_0$gene),]
 genes_1 <- tmarkers[is.element(tmarkers$V1, cluster_1$gene),]
 genes_2 <- tmarkers[is.element(tmarkers$V1, cluster_2$gene),]
+genes_3 <- tmarkers[is.element(tmarkers$V1, cluster_3$gene),]
+genes_4 <- tmarkers[is.element(tmarkers$V1, cluster_4$gene),]
 
 markers_summary <- rbind(genes_0, genes_1, genes_2)
 
@@ -64,6 +58,36 @@ reference.list <- patient.list[c("022", "025", "1062", "1493", "1504", "1525")]
 patient.anchors <- FindIntegrationAnchors(object.list = reference.list, dims = 1:30)
 
 patient.integrated <- IntegrateData(anchorset = patient.anchors, dims = 1:30)
+
+
+#--------------------- CD8 separate patients and integrate properly ----------------
+cd8_fresh <- CreateSeuratObject(counts = cd8_data, 
+                                min.cells = 3, min.features = 200, 
+                                project = "CD8 T-cell_data", assay = "RNA")
+
+# split by patient - orig.ident from metadata (new patient 1131-TP-1)
+cd8.list <- SplitObject(cd8_fresh, split.by="orig.ident")
+cd8.list <- cd8.list[c("005", "1105", "1131-TP-1", "1131-TP-2", 
+                               "1134-TP-2", "1153", "1201-TP-2",
+                               "1525-TP-1", "1525-TP-2")]
+
+for (i in 1:length(cd8.list)) {
+  cd8.list[[i]] <- SCTransform(cd8.list[[i]], verbose = FALSE)
+}
+
+cd8.features <- SelectIntegrationFeatures(object.list = cd8.list, nfeatures = 2000)
+
+cd8.list <- PrepSCTIntegration(object.list = cd8.list, anchor.features = cd8.features, 
+                                    verbose = FALSE)
+
+
+cd8.anchors <- FindIntegrationAnchors(object.list = cd8.list, normalization.method = "SCT", 
+                                           anchor.features = cd8.features, 
+                                      k.anchor = 5,
+                                      k.filter = 46,
+                                      k.score = 30)
+
+cd8.integrated <- IntegrateData(anchorset = cd8.anchors, normalization.method = "SCT", k.weight=46)
 
 #########
 
