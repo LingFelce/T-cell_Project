@@ -263,10 +263,67 @@ VlnPlot(object = cd8, features = c("CD27", "IL7R", "S100A4", "PTPRC",
                                    "IL16", "IFNG", 
                                    "PRF1", "GNLY", "NKG7", 
                                    "GZMA", "GZMB", "GZMH", "GZMK",
-                                   "FASLG", "ISG15"), 
+                                   "FASLG", "ISG15",
+                                   "PDCD1", "CTLA4", "HAVCR2", "CD244",
+                                   "KLRG1", "TIGIT", "BTLA", "CD160"), 
         ncol=4, group.by = "epitope")
+
 ```
 
+# Integrate CD8 patients separately using SCTransform
+```{r integrate}
+cd8_fresh <- CreateSeuratObject(counts = cd8_data, min.cells = 3, min.features = 200, project = "CD8 T-cell_data", assay = "RNA")
+
+# split by patient - orig.ident from metadata (new patient 1131-TP-1)
+cd8.list <- SplitObject(cd8, split.by="orig.ident")
+cd8.list <- cd8.list[c("005", "1105", "1131-TP-1", "1131-TP-2", 
+                               "1134-TP-2", "1153", "1201-TP-2",
+                               "1525-TP-1", "1525-TP-2")]
+
+for (i in 1:length(cd8.list)) {
+    cd8.list[[i]] <- NormalizeData(cd8.list[[i]], verbose = FALSE)
+    cd8.list[[i]] <- FindVariableFeatures(cd8.list[[i]], selection.method = "vst", 
+        nfeatures = 2000, verbose = FALSE)
+}
+
+cd8.anchors <- FindIntegrationAnchors(object.list = cd8.list, dims = 1:30, k.filter=46, verbose=FALSE)
+cd8.integrated <- IntegrateData(anchorset = cd8.anchors, dims = 1:30, k.weight=46, verbose=FALSE)
+```
+
+```{r processing data}
+cd8.integrated <- ScaleData(cd8.integrated, verbose = FALSE)
+
+cd8.integrated <- RunPCA(cd8.integrated, npcs = 30, verbose = FALSE)
+
+cd8.integrated <- RunUMAP(cd8.integrated, reduction = "pca", dims = 1:10, verbose = FALSE)
+
+```
+
+### Cluster + patient UMAP
+```{r umap, fig.height=5, fig.width=16}
+# plot UMAP and labels by cluster
+Idents(cd8.integrated) <- "seurat_clusters"
+UMAP_int_cluster <- DimPlot(cd8.integrated, reduction = "umap", group.by = "seurat_clusters")
+
+# plot UMAP and label by patient
+UMAP_int_patient <- DimPlot(cd8.integrated, reduction = "umap", group.by = "orig.ident")
+
+UMAP_int_cluster + UMAP_int_patient
+```
+
+### Epitope UMAP
+```{r known epitopes, fig.height=4, fig.width=6}
+# assign known identities to clusters - look at known epitopes
+epitope <- rep(c("NP16", "ORF3a-28", "NP16", "NP16", "ORF3a-28", "NP16", "NP16", "ORF3a-28","ORF3a-28"), 
+                 times = c("133", "94", "62", "74", "95", "66", "75", "46", "95"))
+
+cd8.integrated@meta.data$"epitope" <- as.factor(epitope)
+
+UMAP_int_epitope <- DimPlot(cd8.integrated, reduction = "umap", group.by = "epitope", label = TRUE, label.size = 3 ,repel = TRUE)
+
+# use split.by="seurat_clusters" to also show UMAP by epitope and cluster number
+UMAP_int_epitope
+```
 
 # Save file
 
