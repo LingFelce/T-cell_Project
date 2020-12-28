@@ -366,15 +366,15 @@ VlnPlot(object = cd4, features = c("PDCD1", "CTLA4", "HAVCR2", "CD244",
 ```{r marker list}
 # compare marker list to all genes in each cluster
 
-setwd('/t1-data/user/lfelce/scRNA-Seq//t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
-
-tmarkers <- read.csv("Markers_for_Ling.csv", header=F)
-
-genes_0 <- tmarkers[is.element(tmarkers$V1, cluster_0$gene),]
-genes_1 <- tmarkers[is.element(tmarkers$V1, cluster_1$gene),]
-genes_2 <- tmarkers[is.element(tmarkers$V1, cluster_2$gene),]
-genes_3 <- tmarkers[is.element(tmarkers$V1, cluster_3$gene),]
-genes_4 <- tmarkers[is.element(tmarkers$V1, cluster_4$gene),]
+# setwd('/t1-data/user/lfelce/scRNA-Seq//t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
+# 
+# tmarkers <- read.csv("Markers_for_Ling.csv", header=F)
+# 
+# genes_0 <- tmarkers[is.element(tmarkers$V1, cluster_0$gene),]
+# genes_1 <- tmarkers[is.element(tmarkers$V1, cluster_1$gene),]
+# genes_2 <- tmarkers[is.element(tmarkers$V1, cluster_2$gene),]
+# genes_3 <- tmarkers[is.element(tmarkers$V1, cluster_3$gene),]
+# genes_4 <- tmarkers[is.element(tmarkers$V1, cluster_4$gene),]
 
 ```
 
@@ -502,7 +502,7 @@ UMAP_epitope
 
 ### T follicular helper
 ```{r, fig.height=8, fig.width=16}
-DefaultAssay(cd8.integrated) <- "RNA"
+DefaultAssay(cd4.integrated) <- "RNA"
 VlnPlot(object = cd4.integrated, features = c("IL21", "POU2AF1", "CD200", "BTLA", "IFNG"), ncol = 4, group.by="seurat_clusters")
 ```
 ### Th1
