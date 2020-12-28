@@ -203,23 +203,17 @@ cd8.markers <- FindAllMarkers(object = cd8, only.pos = TRUE, min.pct = 0.25, thr
 write.csv (cd8.markers, "cd8-tcell_markers.csv")
 
 # divide file into separate clusters
-cluster_0 <- cd8.markers[cd8.markers$cluster == "0", ]
-cluster_1 <- cd8.markers[cd8.markers$cluster == "1", ]
-cluster_2 <- cd8.markers[cd8.markers$cluster == "2", ]
-cluster_3 <- cd8.markers[cd8.markers$cluster == "3", ]
-write.csv (cluster_0, "cluster_0.csv")
-write.csv (cluster_1, "cluster_1.csv")
-write.csv (cluster_2, "cluster_2.csv")
-write.csv (cluster_3, "cluster_3.csv")
+# cluster_0 <- cd8.markers[cd8.markers$cluster == "0", ]
+# cluster_1 <- cd8.markers[cd8.markers$cluster == "1", ]
+# cluster_2 <- cd8.markers[cd8.markers$cluster == "2", ]
+# cluster_3 <- cd8.markers[cd8.markers$cluster == "3", ]
+# write.csv (cluster_0, "cluster_0.csv")
+# write.csv (cluster_1, "cluster_1.csv")
+# write.csv (cluster_2, "cluster_2.csv")
+# write.csv (cluster_3, "cluster_3.csv")
 
 # show top 2 differentially expressed genes per cluster
 cd8.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_log2FC)
-```
-
-```{r top 2 genes, fig.height=8, fig.width=12}
-# Top 2 genes from each cluster
-VlnPlot(object = cd8, features =c("GPR183", "CCR7", "FAT1", "NOTCH3", "JAK1",
-                                  "NDUFA3", "MX1", "SLC7A5"), ncol=4)
 ```
 
 
@@ -270,12 +264,12 @@ VlnPlot(object = cd8, features = c("CD27", "IL7R", "S100A4", "PTPRC",
 
 ```
 
-# Integrate CD8 patients separately using SCTransform
-```{r integrate}
+# Integrate CD8 patients separately FindIntegrationAnchors and IntegrateData
+```{r integrate, include=FALSE}
 cd8_fresh <- CreateSeuratObject(counts = cd8_data, min.cells = 3, min.features = 200, project = "CD8 T-cell_data", assay = "RNA")
 
 # split by patient - orig.ident from metadata (new patient 1131-TP-1)
-cd8.list <- SplitObject(cd8, split.by="orig.ident")
+cd8.list <- SplitObject(cd8_fresh, split.by="orig.ident")
 cd8.list <- cd8.list[c("005", "1105", "1131-TP-1", "1131-TP-2", 
                                "1134-TP-2", "1153", "1201-TP-2",
                                "1525-TP-1", "1525-TP-2")]
@@ -286,24 +280,27 @@ for (i in 1:length(cd8.list)) {
         nfeatures = 2000, verbose = FALSE)
 }
 
-cd8.anchors <- FindIntegrationAnchors(object.list = cd8.list, dims = 1:30, k.filter=46, verbose=FALSE)
-cd8.integrated <- IntegrateData(anchorset = cd8.anchors, dims = 1:30, k.weight=46, verbose=FALSE)
+cd8.anchors <- FindIntegrationAnchors(object.list = cd8.list, dims = 1:30, k.filter=48, verbose=FALSE)
+cd8.integrated <- IntegrateData(anchorset = cd8.anchors, dims = 1:30, k.weight=48, verbose=FALSE)
 ```
 
-```{r processing data}
+```{r processing data, include=FALSE}
 cd8.integrated <- ScaleData(cd8.integrated, verbose = FALSE)
 
 cd8.integrated <- RunPCA(cd8.integrated, npcs = 30, verbose = FALSE)
 
-cd8.integrated <- RunUMAP(cd8.integrated, reduction = "pca", dims = 1:10, verbose = FALSE)
+cd8.integrated <- FindNeighbors(cd8.integrated, dims = 1:8)
+
+cd8.integrated <- FindClusters(cd8.integrated, resolution = 0.5)
+
+cd8.integrated <- RunUMAP(cd8.integrated, reduction = "pca", dims = 1:8, verbose = FALSE)
 
 ```
 
 ### Cluster + patient UMAP
-```{r umap, fig.height=5, fig.width=16}
+```{r int umap, fig.height=5, fig.width=16}
 # plot UMAP and labels by cluster
-Idents(cd8.integrated) <- "seurat_clusters"
-UMAP_int_cluster <- DimPlot(cd8.integrated, reduction = "umap", group.by = "seurat_clusters")
+UMAP_int_cluster <- DimPlot(cd8.integrated, reduction = "umap", group.by="seurat_clusters")
 
 # plot UMAP and label by patient
 UMAP_int_patient <- DimPlot(cd8.integrated, reduction = "umap", group.by = "orig.ident")
@@ -312,22 +309,42 @@ UMAP_int_cluster + UMAP_int_patient
 ```
 
 ### Epitope UMAP
-```{r known epitopes, fig.height=4, fig.width=6}
+```{r int epitopes, fig.height=4, fig.width=6}
 # assign known identities to clusters - look at known epitopes
 epitope <- rep(c("NP16", "ORF3a-28", "NP16", "NP16", "ORF3a-28", "NP16", "NP16", "ORF3a-28","ORF3a-28"), 
-                 times = c("133", "94", "62", "74", "95", "66", "75", "46", "95"))
+                 times = c("133", "95", "70", "74", "95", "66", "75", "48", "95"))
 
 cd8.integrated@meta.data$"epitope" <- as.factor(epitope)
 
-UMAP_int_epitope <- DimPlot(cd8.integrated, reduction = "umap", group.by = "epitope", label = TRUE, label.size = 3 ,repel = TRUE)
+UMAP_int_epitope <- DimPlot(cd8.integrated, reduction = "umap", group.by = "epitope")
 
 # use split.by="seurat_clusters" to also show UMAP by epitope and cluster number
 UMAP_int_epitope
 ```
+
+## Gene expression by epitope
+
+```{r, fig.height=32, fig.width=16}
+DefaultAssay(cd8.integrated) <- "RNA"
+VlnPlot(object = cd8.integrated, features = c("CD27", "IL7R", "S100A4", "PTPRC", 
+                                   "CCR7", "SELL", "CD44", "CD69", 
+                                   "HLA-DRB1", "CCL4", 
+                                   "CCL5", "CXCR3", "CXCR4",
+                                   "IL16", "IFNG", 
+                                   "PRF1", "GNLY", "NKG7", 
+                                   "GZMA", "GZMB", "GZMH", "GZMK",
+                                   "FASLG", "ISG15",
+                                   "PDCD1", "CTLA4", "HAVCR2", "CD244",
+                                   "KLRG1", "TIGIT", "BTLA", "CD160"), 
+        ncol=4, group.by = "epitope")
+```
+
 
 # Save file
 
 ```{r save}
 # save cd8 object at this point so don't have to redo all of the above again
 saveRDS(cd8, file = "cd8_seurat.rds")
+
+saveRDS(cd8.integrated, file="cd8_integrated_seurat.rds")
 ```
