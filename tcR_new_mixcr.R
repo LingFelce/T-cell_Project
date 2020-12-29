@@ -578,6 +578,103 @@ dev.off()
 
 #------------- CD8 NP16 1131-TP-1 -------------------------
 
+setwd('/t1-data/user/lfelce/TCR_analysis/1131-TP-1_cd8_new')
+listFiles = list.files()
+
+# revise the structure of input files
+for(i in 1:length(listFiles))
+{
+  DT = fread(listFiles[i])
+  write.table(DT,listFiles[i],quote = F, row.names = F, sep = '\t')
+}
+
+library(stringr)
+
+# read in TRA names and convert to list
+tra_names <- fread('/t1-data/user/lfelce/TCR_analysis/1131-TP-1_cd8_new/tra_names.txt', stringsAsFactors = F, header=F)
+
+tra_names <- as.list(as.data.frame(t(tra_names)))
+
+# remove ./ at start of name and replace with file path
+tra_names <- tra_names %>% str_replace("./*", "")
+
+# read in TRB names and convert to list
+trb_names <- fread('/t1-data/user/lfelce/TCR_analysis/1131-TP-1_cd8_new/trb_names.txt', stringsAsFactors = F, header=F)
+
+trb_names <- as.list(as.data.frame(t(trb_names)))
+
+# remove ./ at start of name and replace with file path
+trb_names <- trb_names %>% str_replace("./*", "")
+
+# parse mixcr files
+mixcr_a <- parse.file.list(tra_names, "mixcr")
+mixcr_b <- parse.file.list(trb_names, "mixcr")
+
+# sort alphabetically
+mixcr_a <- mixcr_a[order(names(mixcr_a))]
+mixcr_b <- mixcr_b[order(names(mixcr_b))]
+
+# create list of cell numbers and cell names
+# different lengths so same cell will be different number in a or b
+mixcr_a_names <- as.data.frame(names(mixcr_a))
+mixcr_b_names <- as.data.frame(names(mixcr_b))
+
+mixcr_a_names <-tibble::rownames_to_column(mixcr_a_names, "cell_number")
+mixcr_b_names <- tibble::rownames_to_column(mixcr_b_names, "cell_number")
+
+# rename columns
+colnames(mixcr_a_names) <- c("cell_number", "cell_name")
+colnames(mixcr_b_names) <- c("cell_number", "cell_name")
+
+# convert mixcr lists to dataframe with just V.gene and J.gene info
+
+# mixcr_a
+datalist = list()
+for (i in (1:length(mixcr_a))) {
+  dat <- data.frame(c(mixcr_a[[i]][3],mixcr_a[[i]][4],mixcr_a[[i]][6],mixcr_a[[i]][7], mixcr_a[[i]][8]))
+  dat$i <- i # keep track of which iteration produced it
+  datalist[[i]] <- dat # add it to list
+}
+# combine columns for each cell, select only cells with only 2 rows (dual alpha)
+big_data = do.call(rbind, datalist)
+tra <- big_data
+tra <- tra[tra$Read.count > 10,]
+colnames(tra) <- c("clone_count", "clone_fraction", "CDR3_aa", "TRAV", "TRAJ", "cell_number")
+tra <- merge(tra, mixcr_a_names, by="cell_number")
+
+# mixcr_b
+datalist = list()
+for (i in (1:length(mixcr_b))) {
+  dat <- data.frame(c(mixcr_b[[i]][3],mixcr_b[[i]][4],mixcr_b[[i]][6],mixcr_b[[i]][7], mixcr_b[[i]][8]))
+  dat$i <- i # keep track of which iteration produced it
+  datalist[[i]] <- dat # add it to list
+}
+# combine columns for each cell, select only cells with only 1 row (single beta)
+big_data = do.call(rbind, datalist)
+trb <- big_data
+trb <- trb[trb$Read.count > 10,]
+colnames(trb) <- c("clone_count", "clone_fraction", "CDR3_aa", "TRBV", "TRBJ", "cell_number")
+trb <- merge(trb, mixcr_b_names, by="cell_number")
+
+# combine TRA and TRB dataframes
+cd8_1131_TP1 <- merge(tra,trb, by="cell_name")
+
+cd8_1131_TP1 <- mutate(cd8_1131_TP1, alpha=paste(TRAV, TRAJ, sep="_"))
+
+cd8_1131_TP1 <- mutate(cd8_1131_TP1, beta=paste(TRBV, TRBJ, sep="_"))
+
+library(stringdist)
+
+x <- c("aa", "bb", "cc")
+y <- c("ax", "bb", "oo")
+test <- stringsim(x, y, method="lv")
+
+cell_1 <- stringsim(tra[c(1:4),4], trb[c(1:2),4], method="lv")
+cd8_1131_TP1$sim_score <- shared_cdr3                              
+                                                              
+
+########################
+
 # separate TCR sequencing repeat sample 
 # Peng carried out targeted scTCR sequencing -> bcl2fastq -> new MiXCR analyze amplicon
 
