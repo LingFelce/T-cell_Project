@@ -578,17 +578,16 @@ dev.off()
 
 #------------- CD8 NP16 1131-TP-1 -------------------------
 
-setwd('/t1-data/user/lfelce/TCR_analysis/1131-TP-1_cd8_new')
-listFiles = list.files()
+# separate TCR sequencing repeat sample 
+# Peng carried out targeted scTCR sequencing -> bcl2fastq -> new MiXCR analyze amplicon
+# filter by cloneCounts to get top alpha and beta chains per cell
+# assess similarity between alpha and beta CDR3s 
+# most similar CDR3s shared between alpha and beta in same cell = top alpha-beta pair for that cell
 
-# revise the structure of input files
-for(i in 1:length(listFiles))
-{
-  DT = fread(listFiles[i])
-  write.table(DT,listFiles[i],quote = F, row.names = F, sep = '\t')
-}
+setwd('/t1-data/user/lfelce/TCR_analysis/1131-TP-1_cd8_new')
 
 library(stringr)
+library(data.table)
 
 # read in TRA names and convert to list
 tra_names <- fread('/t1-data/user/lfelce/TCR_analysis/1131-TP-1_cd8_new/tra_names.txt', stringsAsFactors = F, header=F)
@@ -638,7 +637,7 @@ for (i in (1:length(mixcr_a))) {
 # combine columns for each cell, select only cells with only 2 rows (dual alpha)
 big_data = do.call(rbind, datalist)
 tra <- big_data
-tra <- tra[tra$Read.count > 10,]
+tra <- tra[tra$Read.count > 5,]
 colnames(tra) <- c("clone_count", "clone_fraction", "CDR3_aa", "TRAV", "TRAJ", "cell_number")
 tra <- merge(tra, mixcr_a_names, by="cell_number")
 
@@ -652,7 +651,7 @@ for (i in (1:length(mixcr_b))) {
 # combine columns for each cell, select only cells with only 1 row (single beta)
 big_data = do.call(rbind, datalist)
 trb <- big_data
-trb <- trb[trb$Read.count > 10,]
+trb <- trb[trb$Read.count > 5,]
 colnames(trb) <- c("clone_count", "clone_fraction", "CDR3_aa", "TRBV", "TRBJ", "cell_number")
 trb <- merge(trb, mixcr_b_names, by="cell_number")
 
@@ -665,18 +664,37 @@ cd8_1131_TP1 <- mutate(cd8_1131_TP1, beta=paste(TRBV, TRBJ, sep="_"))
 
 library(stringdist)
 
-x <- c("aa", "bb", "cc")
-y <- c("ax", "bb", "oo")
-test <- stringsim(x, y, method="lv")
+# calculate similarity score using Levenshtein distance
+shared_cdr3 <- stringsim(cd8_1131_TP1$CDR3_aa.x, cd8_1131_TP1$CDR3_aa.y, method="lv")
 
-cell_1 <- stringsim(tra[c(1:4),4], trb[c(1:2),4], method="lv")
+# add to data frame as separate column
 cd8_1131_TP1$sim_score <- shared_cdr3                              
-                                                              
 
-########################
+# create list of cell  names
+list <- mixcr_a_names[,2]
 
-# separate TCR sequencing repeat sample 
-# Peng carried out targeted scTCR sequencing -> bcl2fastq -> new MiXCR analyze amplicon
+# loop - select rows containing same cell name and make new object dat
+# re-order rows by similarity score putting highest one at the top
+# select top row only for each cell, make list of cells
+datalist = list()
+
+for (i in (1:length(list))) {
+  dat <- cd8_1131_TP1[cd8_1131_TP1$cell_name == list[i],]
+  dat <- dat[order(dat$sim_score, decreasing=TRUE),]
+  dat <- dat[1,]
+  datalist[[i]] <- dat # add it to list
+}
+
+# make one big data frame where each row is cell with highest similarity score for a-b pair
+big_data = do.call(rbind, datalist)
+
+# top alpha-beta pairing
+top_ab <- as.data.frame(table(big_data$alpha, big_data$beta))
+
+
+--------------------------------
+
+# previous attempt - just selecting top alpha and top beta row per cell
 
 setwd('/t1-data/user/lfelce/TCR_analysis/1131-TP-1_cd8_new')
 listFiles = list.files()
