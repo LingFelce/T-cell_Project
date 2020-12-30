@@ -634,7 +634,7 @@ for (i in (1:length(mixcr_a))) {
   dat$i <- i # keep track of which iteration produced it
   datalist[[i]] <- dat # add it to list
 }
-# combine columns for each cell, select only cells with only 2 rows (dual alpha)
+# combine columns for each cell, select chains with clone count more than 5
 big_data = do.call(rbind, datalist)
 tra <- big_data
 tra <- tra[tra$Read.count > 5,]
@@ -648,7 +648,7 @@ for (i in (1:length(mixcr_b))) {
   dat$i <- i # keep track of which iteration produced it
   datalist[[i]] <- dat # add it to list
 }
-# combine columns for each cell, select only cells with only 1 row (single beta)
+# combine columns for each cell, select chains with clone count more than 5
 big_data = do.call(rbind, datalist)
 trb <- big_data
 trb <- trb[trb$Read.count > 5,]
