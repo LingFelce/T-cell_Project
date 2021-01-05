@@ -87,3 +87,27 @@ sbatch ./<jobname>.sh
 
 # repeat with Dong_Pools_9-12
 # and repeated with Dong_Pools_1-4
+
+##########################
+# submit job to SunGridEngine (BMRC cluster)
+
+#!/bin/bash
+#$ -wd /well/jknight/users/jln789/DONG231120TCR/
+#$ -q short.qc
+
+cd /well/jknight/users/jln789/DONG231120TCR/
+
+module load bcl2fastq2/2.20.0-foss-2018b
+
+bcl2fastq --input-dir /well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/
+--runfolder-dir /well/jknight/users/jln789/DONG231120TCR/
+--output-dir /well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/Output/
+--interop-dir /well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/InterOp/
+--stats-dir /well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/Stats/
+--reports-dir /well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/Reports/
+--sample-sheet TCRindexing.csv
+
+##############
+
+# submit to queue
+qsub ./bcl2fastq.sh
