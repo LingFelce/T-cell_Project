@@ -94,20 +94,22 @@ sbatch ./<jobname>.sh
 #!/bin/bash
 #$ -wd /well/jknight/users/jln789/DONG231120TCR/
 #$ -q short.qc
+###$ -o output.log
+###$ -e error.log
 
 cd /well/jknight/users/jln789/DONG231120TCR/
 
 module load bcl2fastq2/2.20.0-foss-2018b
 
-bcl2fastq --input-dir /well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/
---runfolder-dir /well/jknight/users/jln789/DONG231120TCR/
---output-dir /well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/Output/
---interop-dir /well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/InterOp/
---stats-dir /well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/Stats/
---reports-dir /well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/Reports/
+bcl2fastq --input-dir /well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/ \
+--runfolder-dir /well/jknight/users/jln789/DONG231120TCR/ \
+--output-dir /well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/Output/ \
+--interop-dir /well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/InterOp/ \
+--stats-dir /well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/Stats/ \
+--reports-dir /well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/Reports/ \
 --sample-sheet TCRindexing.csv
 
 ##############
 
 # submit to queue
-qsub ./bcl2fastq.sh
+qsub -q short.qc ./bcl2fastq.sh
