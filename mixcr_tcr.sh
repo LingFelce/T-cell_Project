@@ -28,6 +28,7 @@ mixcr analyze amplicon -s hsa --starting-material rna --5-end no-v-primers --3-e
 
 done
 
+
 #------------- run scripts on server
 cd /t1-data/user/lfelce/MiXCR/1131-TP-1_CD8_new_output/script/
 
@@ -37,4 +38,46 @@ done
 
 squeue -u lfelce
 
+#####################################
+# run mixcr on BMRC cluster
 
+cd /well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/Output/
+DIR=/well/jknight/users/jln789/mixcr/DONG231120TCR/
+
+for NAME in $(find . -name '*_R1_001.fastq.gz' -printf "%f\n" | sed 's/_R1_001.fastq.gz//'); do
+ 
+echo "$NAME"
+
+p1='_R1_001.fastq.gz'
+p2='_R2_001.fastq.gz' 
+
+echo -e '#!/bin/bash
+#$ -wd /well/jknight/users/jln789/mixcr/DONG231120TCR/
+#$ -q short.qc
+
+module load MiXCR/3.0.3-Java-1.8
+
+cd /well/jknight/users/jln789/mixcr/DONG231120TCR/
+
+mixcr analyze amplicon -s hsa \
+--starting-material rna \
+--5-end no-v-primers \
+--3-end c-primers \
+--adapters no-adapters \
+--contig-assembly \
+--only-productive /well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/Output/'$NAME$p1 '/well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/Output/'$NAME$p2 \
+$NAME '--receptor-type tcr' > $DIR'script/'$NAME'.sh'
+
+done
+
+######
+
+# submit individual scripts to queue
+
+cd /well/jknight/users/jln789/mixcr/DONG231120TCR/script
+
+for line in $(ls H*.sh); do
+qsub -q short.qc $line
+done
+
+qstat
