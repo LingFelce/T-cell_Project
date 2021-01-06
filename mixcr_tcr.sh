@@ -40,6 +40,8 @@ squeue -u lfelce
 
 #####################################
 # run mixcr on BMRC cluster
+# have to specify separate receptor type tra and trb in two separate scripts (run in separate folders)
+# otherwise TRB.txt file was same as TRA.txt file!
 
 cd /well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/Output/
 DIR=/well/jknight/users/jln789/mixcr/DONG231120TCR/
@@ -66,7 +68,7 @@ mixcr analyze amplicon -s hsa \
 --adapters no-adapters \
 --contig-assembly \
 --only-productive /well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/Output/'$NAME$p1 '/well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/Output/'$NAME$p2 \
-$NAME '--receptor-type tcr' > $DIR'script/'$NAME'.sh'
+$NAME '--receptor-type trb' > $DIR'script/'$NAME'.sh'
 
 done
 
