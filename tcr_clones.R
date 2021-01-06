@@ -7,6 +7,8 @@
 
 library(data.table)
 
+########## CD8 NP16 CLONES #################
+
 # list of all .TRA.txt files
 tra_list <- list.files(path = "./cd8_np16_tcr_clones", recursive = TRUE,
                             pattern = "\\TRA.txt$", 
@@ -40,3 +42,11 @@ cd8_np16_trb_clone_names <- read.csv("/gpfs3/well/jknight/users/jln789/tcr_analy
 # merge file names and clone names
 tra <- merge(tra,cd8_np16_tra_clone_names, by="FileName")
 trb <- merge(trb,cd8_np16_trb_clone_names, by="FileName")
+
+# tidy up tables
+tra <- tra[, c("CloneName", "cloneCount", "CDR3_alpha_aa")]
+trb <- trb[, c("CloneName", "cloneCount", "CDR3_beta_aa")]
+
+# probably easier to export files separately as tra has 411 rows and trb has 216 rows (most dual alpha single beta?)
+write.csv(tra, "cd8_np16_tra_cdr3.csv")
+write.csv(trb, "cd8_np16_trb_cdr3.csv")
