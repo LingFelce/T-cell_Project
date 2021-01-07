@@ -8,9 +8,6 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(Seurat)
-library(sctransform)
-library(SeuratDisk)
-library(SeuratData)
 library(plyr)
 library(dplyr)
 library(patchwork)
@@ -18,7 +15,7 @@ library(cowplot)
 library(ggplot2)
 library(data.table)
 library(tidyverse)
-
+library(harmony)
 ```
 
 # All CD8 samples
@@ -29,40 +26,31 @@ Follow guided clustering tutorial https://satijalab.org/seurat/v3.2/pbmc3k_tutor
 ## Load counts matrix and create Seurat object
 ```{r loading}
 setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
-
 # load data (from featureCounts)
 tcell_data <-  fread('201203_counts.txt', stringsAsFactors = F, header=T)
-
 # remove columns with chromosome, start, end, strand and length info
 tcell_data <- tcell_data[,-c(2:6)]
-
 # make Geneid into row names
 tcell_data <-tibble::column_to_rownames(tcell_data, "Geneid")
-
 # tidy up sample names
 names(tcell_data) <- gsub(x = names(tcell_data), pattern = "./", replacement = "")  
 names(tcell_data) <- gsub(x = names(tcell_data), pattern = ".bam", replacement = "")
-
 # select CD8 cells only but leave out 1131-TP-1 - should have 816
 sample_list <- as.data.frame(colnames(tcell_data))
 tcell_data2 <- tcell_data[,-c(481:486,774:779,1404:1409)]
 sample_list2 <- as.data.frame(colnames(tcell_data2))
 cd8_data <- tcell_data2[,c(1:192, 481:576, 672:1055, 1344:1487)]
-
 # load new 1131-TP-1 data and process
 data_1131_new <- fread('201221_counts.txt', stringsAsFactors = F, header=T)
 data_1131_new <- data_1131_new[,-c(2:6)]
 data_1131_new <-tibble::column_to_rownames(data_1131_new, "Geneid")
 names(data_1131_new) <- gsub(x = names(data_1131_new), pattern = "./", replacement = "")  
 names(data_1131_new) <- gsub(x = names(data_1131_new), pattern = ".bam", replacement = "")
-
 # leave out bulk samples
 list_1131 <- as.data.frame(colnames(data_1131_new))
 data_1131_new <- data_1131_new[,-c(25:96)]
-
 # merge with cd8_data = 816 + 92 = 908
 cd8_data <- cbind(cd8_data, data_1131_new)
-
 # Initialise Seurat object with raw (non-normalised) data
 # min.cells = include features detected in at least this many cells
 # min.features includes cells where at least this many features detected
@@ -83,11 +71,8 @@ Also filter cells based on % mitochondrial genes present:
 # use object@raw.data represents non-transformed and non-log-normalised counts
 # % of UMI mapping to MT-genes is a common scRNA-seq QC metric
 mito.genes <- grep(pattern = "^MT-", x = rownames(cd8@assays[["RNA"]]), value = TRUE)
-
 percent.mito <- Matrix::colSums(cd8@assays[["RNA"]][mito.genes, ])/Matrix::colSums(cd8@assays[["RNA"]])
-
 cd8 <- AddMetaData(object = cd8, metadata = percent.mito, col.name = "percent.mito") 
-
 VlnPlot(object = cd8, features = c("nFeature_RNA", "nCount_RNA", "percent.mito"), ncol = 3)
 # all cells have same value % mitochondrial cells?
 ```
@@ -117,10 +102,8 @@ Seurat calculates highly variable genes and focuses on these for downstream anal
 ```{r variability, fig.height=8, fig.width = 16}
 # identify 2000 variable genes - normal parameter settings for UMI data normalised to total of 1e4 molecules
 cd8 <- FindVariableFeatures(object = cd8, mean.function = ExpMean, dispersion.function = LogVMR, x.low.cutoff = 0.0125, x.high.cutoff = 3, y.cutoff = 0.5, nfeatures = 2000)
-
 # Identify the 10 most highly variable genes
 top10 <- head(VariableFeatures(cd8), 10)
-
 # plot variable features with and without labels
 plot1 <- VariableFeaturePlot(cd8)
 plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
@@ -192,7 +175,6 @@ table(Idents(cd8))
 # How many cells in each cluster?
 Idents(cd8) <- "seurat_clusters"
 table(Idents(cd8))
-
 ```
 
 
@@ -201,7 +183,6 @@ table(Idents(cd8))
 # Wilcoxon Rank Sum test default
 cd8.markers <- FindAllMarkers(object = cd8, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
 write.csv (cd8.markers, "cd8-tcell_markers.csv")
-
 # divide file into separate clusters
 # cluster_0 <- cd8.markers[cd8.markers$cluster == "0", ]
 # cluster_1 <- cd8.markers[cd8.markers$cluster == "1", ]
@@ -211,7 +192,6 @@ write.csv (cd8.markers, "cd8-tcell_markers.csv")
 # write.csv (cluster_1, "cluster_1.csv")
 # write.csv (cluster_2, "cluster_2.csv")
 # write.csv (cluster_3, "cluster_3.csv")
-
 # show top 2 differentially expressed genes per cluster
 cd8.markers %>% group_by(cluster) %>% top_n(n = 2, wt = avg_log2FC)
 ```
@@ -261,72 +241,80 @@ VlnPlot(object = cd8, features = c("CD27", "IL7R", "S100A4", "PTPRC",
                                    "PDCD1", "CTLA4", "HAVCR2", "CD244",
                                    "KLRG1", "TIGIT", "BTLA", "CD160"), 
         ncol=4, group.by = "epitope")
+```
+
+# Integrate CD8 patients using Harmony (recommended by Adam)
+Harmony integration carried out on BMRC cluster R studio with locally installed Harmony package and Seurat.
+Loaded cd8_seurat.rds from 28th December 2020 for previously created and analysed cd8 Seurat object.
+
+http://htmlpreview.github.io/?https://github.com/immunogenomics/harmony/blob/master/docs/SeuratV3.html
+IMPORTANT DIFFERENCE: In the Seurat integration tutorial, you need to define a Seurat object for each dataset. With Harmony integration, create only one Seurat object with all cells.
+
+The simplest way to run Harmony is to pass the Seurat object and specify which variable(s) to integrate out. RunHarmony returns a Seurat object, updated with the corrected Harmony coordinates. Let's set plot_convergence to TRUE, so we can make sure that the Harmony objective function gets better with each round.
+
+```{r harmony1}
+options(repr.plot.height = 2.5, repr.plot.width = 6)
+cd8 <- cd8 %>% 
+    RunHarmony("orig.ident", plot_convergence = TRUE)
+
+# Harmony converged after 8 iterations
+
+# access Harmony embeddings - show top 5 rows and top 5 columns
+harmony_embeddings <- Embeddings(cd8, 'harmony')
 
 ```
 
-# Integrate CD8 patients separately FindIntegrationAnchors and IntegrateData
-```{r integrate, include=FALSE}
-cd8_fresh <- CreateSeuratObject(counts = cd8_data, min.cells = 3, min.features = 200, project = "CD8 T-cell_data", assay = "RNA")
+```{r harmony2, fig.height=5, fig.width=12}
+p1 <- DimPlot(object = cd8, reduction = "harmony", group.by = "orig.ident")
+p2 <- VlnPlot(object = cd8, features = "harmony_1", group.by = "orig.ident", pt.size = .1)
 
-# split by patient - orig.ident from metadata (new patient 1131-TP-1)
-cd8.list <- SplitObject(cd8_fresh, split.by="orig.ident")
-cd8.list <- cd8.list[c("005", "1105", "1131-TP-1", "1131-TP-2", 
-                               "1134-TP-2", "1153", "1201-TP-2",
-                               "1525-TP-1", "1525-TP-2")]
-
-for (i in 1:length(cd8.list)) {
-    cd8.list[[i]] <- NormalizeData(cd8.list[[i]], verbose = FALSE)
-    cd8.list[[i]] <- FindVariableFeatures(cd8.list[[i]], selection.method = "vst", 
-        nfeatures = 2000, verbose = FALSE)
-}
-
-cd8.anchors <- FindIntegrationAnchors(object.list = cd8.list, dims = 1:30, k.filter=48, verbose=FALSE)
-cd8.integrated <- IntegrateData(anchorset = cd8.anchors, dims = 1:30, k.weight=48, verbose=FALSE)
+p1 + p2
 ```
-
-```{r processing data, include=FALSE}
-cd8.integrated <- ScaleData(cd8.integrated, verbose = FALSE)
-
-cd8.integrated <- RunPCA(cd8.integrated, npcs = 30, verbose = FALSE)
-
-cd8.integrated <- FindNeighbors(cd8.integrated, dims = 1:8)
-
-cd8.integrated <- FindClusters(cd8.integrated, resolution = 0.5)
-
-cd8.integrated <- RunUMAP(cd8.integrated, reduction = "pca", dims = 1:8, verbose = FALSE)
+```{r harmony3, fig.height=5, fig.width=12}
+p3 <- DimPlot(object = cd8, reduction = "pca", group.by="orig.ident")
+p3 + p1
 
 ```
 
-### Cluster + patient UMAP
-```{r int umap, fig.height=5, fig.width=16}
-# plot UMAP and labels by cluster
-UMAP_int_cluster <- DimPlot(cd8.integrated, reduction = "umap", group.by="seurat_clusters")
+Many downstream analyses are performed on low dimensional embeddings, not gene expression. To use the corrected Harmony embeddings rather than PCs, set reduction = 'harmony'. For example, let's perform the UMAP and Nearest Neighbor analyses using the Harmony embeddings.
+```{r harmony_umap, fig.height=5, fig.width=20}
+cd8 <- cd8 %>% 
+    RunUMAP(reduction = "harmony", dims = 1:20) %>% 
+    FindNeighbors(reduction = "harmony", dims = 1:20) %>% 
+    FindClusters(resolution = 0.5) %>% 
+    identity()
 
-# plot UMAP and label by patient
-UMAP_int_patient <- DimPlot(cd8.integrated, reduction = "umap", group.by = "orig.ident")
+umap_patient <- DimPlot(cd8, reduction = "umap", group.by = "orig.ident")
+umap_epitope <- DimPlot(cd8, reduction = "umap", group.by = "epitope")
+umap_cluster <- DimPlot(cd8, reduction = "umap", group.by = "seurat_clusters")
 
-UMAP_int_cluster + UMAP_int_patient
+umap_patient + umap_epitope + umap_cluster
+
 ```
 
-### Epitope UMAP
-```{r int epitopes, fig.height=4, fig.width=6}
-# assign known identities to clusters - look at known epitopes
-epitope <- rep(c("NP16", "ORF3a-28", "NP16", "NP16", "ORF3a-28", "NP16", "NP16", "ORF3a-28","ORF3a-28"), 
-                 times = c("133", "95", "70", "74", "95", "66", "75", "48", "95"))
+```{r harmony_markers}
+cd8.markers <- FindAllMarkers(object = cd8, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
+cluster_0 <- cd8.markers[cd8.markers$cluster == "0", ]
+cluster_1 <- cd8.markers[cd8.markers$cluster == "1", ]
+cluster_2 <- cd8.markers[cd8.markers$cluster == "2", ]
+cluster_3 <- cd8.markers[cd8.markers$cluster == "3", ]
+cluster_4 <- cd8.markers[cd8.markers$cluster == "4", ]
 
-cd8.integrated@meta.data$"epitope" <- as.factor(epitope)
+tmarkers <- read.csv("Markers_for_Ling.csv", header=F)
 
-UMAP_int_epitope <- DimPlot(cd8.integrated, reduction = "umap", group.by = "epitope")
+genes_0 <- tmarkers[is.element(tmarkers$V1, cluster_0$gene),]
+genes_1 <- tmarkers[is.element(tmarkers$V1, cluster_1$gene),]
+genes_2 <- tmarkers[is.element(tmarkers$V1, cluster_2$gene),]
+genes_3 <- tmarkers[is.element(tmarkers$V1, cluster_3$gene),]
+genes_4 <- tmarkers[is.element(tmarkers$V1, cluster_4$gene),]
 
-# use split.by="seurat_clusters" to also show UMAP by epitope and cluster number
-UMAP_int_epitope
+markers_summary <- rbind(genes_0, genes_1, genes_2)
+
 ```
-
 ## Gene expression by epitope
 
 ```{r, fig.height=32, fig.width=16}
-DefaultAssay(cd8.integrated) <- "RNA"
-VlnPlot(object = cd8.integrated, features = c("CD27", "IL7R", "S100A4", "PTPRC", 
+VlnPlot(object = cd8, features = c("CD27", "IL7R", "S100A4", "PTPRC", 
                                    "CCR7", "SELL", "CD44", "CD69", 
                                    "HLA-DRB1", "CCL4", 
                                    "CCL5", "CXCR3", "CXCR4",
@@ -339,12 +327,88 @@ VlnPlot(object = cd8.integrated, features = c("CD27", "IL7R", "S100A4", "PTPRC",
         ncol=4, group.by = "epitope")
 ```
 
+```{r, fig.height=32, fig.width=16}
+VlnPlot(object = cd8, features = c("CD27", "IL7R", "S100A4", "PTPRC", 
+                                   "CCR7", "SELL", "CD44", "CD69", 
+                                   "HLA-DRB1", "CCL4", 
+                                   "CCL5", "CXCR3", "CXCR4",
+                                   "IL16", "IFNG", 
+                                   "PRF1", "GNLY", "NKG7", 
+                                   "GZMA", "GZMB", "GZMH", "GZMK",
+                                   "FASLG", "ISG15",
+                                   "PDCD1", "CTLA4", "HAVCR2", "CD244",
+                                   "KLRG1", "TIGIT", "BTLA", "CD160"), 
+        ncol=4, group.by = "seurat_clusters")
+```
+
+
+# Integrate CD8 patients separately FindIntegrationAnchors and IntegrateData (Seurat)
+```{r integrate, include=FALSE}
+# cd8_fresh <- CreateSeuratObject(counts = cd8_data, min.cells = 3, min.features = 200, project = "CD8 T-cell_data", assay = "RNA")
+# split by patient - orig.ident from metadata (new patient 1131-TP-1)
+# cd8.list <- SplitObject(cd8_fresh, split.by="orig.ident")
+# cd8.list <- cd8.list[c("005", "1105", "1131-TP-1", "1131-TP-2", 
+#                                "1134-TP-2", "1153", "1201-TP-2",
+#                                "1525-TP-1", "1525-TP-2")]
+# for (i in 1:length(cd8.list)) {
+#     cd8.list[[i]] <- NormalizeData(cd8.list[[i]], verbose = FALSE)
+#     cd8.list[[i]] <- FindVariableFeatures(cd8.list[[i]], selection.method = "vst", 
+#         nfeatures = 2000, verbose = FALSE)
+# }
+# cd8.anchors <- FindIntegrationAnchors(object.list = cd8.list, dims = 1:30, k.filter=48, verbose=FALSE)
+# cd8.integrated <- IntegrateData(anchorset = cd8.anchors, dims = 1:30, k.weight=48, verbose=FALSE)
+```
+
+```{r processing data, include=FALSE}
+# cd8.integrated <- ScaleData(cd8.integrated, verbose = FALSE)
+# cd8.integrated <- RunPCA(cd8.integrated, npcs = 30, verbose = FALSE)
+# cd8.integrated <- FindNeighbors(cd8.integrated, dims = 1:8)
+# cd8.integrated <- FindClusters(cd8.integrated, resolution = 0.5)
+# cd8.integrated <- RunUMAP(cd8.integrated, reduction = "pca", dims = 1:8, verbose = FALSE)
+```
+
+### Cluster + patient UMAP
+```{r int umap, fig.height=5, fig.width=16}
+# # plot UMAP and labels by cluster
+# UMAP_int_cluster <- DimPlot(cd8.integrated, reduction = "umap", group.by="seurat_clusters")
+# # plot UMAP and label by patient
+# UMAP_int_patient <- DimPlot(cd8.integrated, reduction = "umap", group.by = "orig.ident")
+# UMAP_int_cluster + UMAP_int_patient
+```
+
+### Epitope UMAP
+```{r int epitopes, fig.height=4, fig.width=6}
+# # assign known identities to clusters - look at known epitopes
+# epitope <- rep(c("NP16", "ORF3a-28", "NP16", "NP16", "ORF3a-28", "NP16", "NP16", "ORF3a-28","ORF3a-28"), 
+#                  times = c("133", "95", "70", "74", "95", "66", "75", "48", "95"))
+# cd8.integrated@meta.data$"epitope" <- as.factor(epitope)
+# UMAP_int_epitope <- DimPlot(cd8.integrated, reduction = "umap", group.by = "epitope")
+# # use split.by="seurat_clusters" to also show UMAP by epitope and cluster number
+# UMAP_int_epitope
+```
+
+## Gene expression by epitope
+
+```{r, fig.height=32, fig.width=16}
+# DefaultAssay(cd8.integrated) <- "RNA"
+# VlnPlot(object = cd8.integrated, features = c("CD27", "IL7R", "S100A4", "PTPRC", 
+#                                    "CCR7", "SELL", "CD44", "CD69", 
+#                                    "HLA-DRB1", "CCL4", 
+#                                    "CCL5", "CXCR3", "CXCR4",
+#                                    "IL16", "IFNG", 
+#                                    "PRF1", "GNLY", "NKG7", 
+#                                    "GZMA", "GZMB", "GZMH", "GZMK",
+#                                    "FASLG", "ISG15",
+#                                    "PDCD1", "CTLA4", "HAVCR2", "CD244",
+#                                    "KLRG1", "TIGIT", "BTLA", "CD160"), 
+#         ncol=4, group.by = "epitope")
+```
+
 
 # Save file
 
 ```{r save}
 # save cd8 object at this point so don't have to redo all of the above again
 saveRDS(cd8, file = "cd8_seurat.rds")
-
-saveRDS(cd8.integrated, file="cd8_integrated_seurat.rds")
+# saveRDS(cd8.integrated, file="cd8_integrated_seurat.rds")
 ```
