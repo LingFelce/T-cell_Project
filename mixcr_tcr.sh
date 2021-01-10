@@ -43,8 +43,8 @@ squeue -u lfelce
 # have to specify separate receptor type tra and trb in two separate scripts (run in separate folders)
 # otherwise TRB.txt file was same as TRA.txt file!
 
-cd /well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/Output/
-DIR=/well/jknight/users/jln789/mixcr/DONG231120TCR/
+cd /well/jknight/users/jln789/TCR071220_Plate-2/Data/Intensities/BaseCalls/Output/
+DIR=/well/jknight/users/jln789/mixcr/TCR071220_Plate-2/
 
 for NAME in $(find . -name '*_R1_001.fastq.gz' -printf "%f\n" | sed 's/_R1_001.fastq.gz//'); do
  
@@ -54,12 +54,12 @@ p1='_R1_001.fastq.gz'
 p2='_R2_001.fastq.gz' 
 
 echo -e '#!/bin/bash
-#$ -wd /well/jknight/users/jln789/mixcr/DONG231120TCR/
+#$ -wd /well/jknight/users/jln789/mixcr/TCR071220_Plate-2/
 #$ -q short.qc
 
 module load MiXCR/3.0.3-Java-1.8
 
-cd /well/jknight/users/jln789/mixcr/DONG231120TCR/
+cd /well/jknight/users/jln789/mixcr/TCR071220_Plate-2/
 
 mixcr analyze amplicon -s hsa \
 --starting-material rna \
@@ -67,7 +67,7 @@ mixcr analyze amplicon -s hsa \
 --3-end c-primers \
 --adapters no-adapters \
 --contig-assembly \
---only-productive /well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/Output/'$NAME$p1 '/well/jknight/users/jln789/DONG231120TCR/Data/Intensities/BaseCalls/Output/'$NAME$p2 \
+--only-productive /well/jknight/users/jln789/TCR071220_Plate-2/Data/Intensities/BaseCalls/Output/'$NAME$p1 '/well/jknight/users/jln789/TCR071220_Plate-2/Data/Intensities/BaseCalls/Output/'$NAME$p2 \
 $NAME '--receptor-type trb' > $DIR'script/'$NAME'.sh'
 
 done
@@ -76,9 +76,9 @@ done
 
 # submit individual scripts to queue
 
-cd /well/jknight/users/jln789/mixcr/DONG231120TCR/script
+cd /well/jknight/users/jln789/mixcr/TCR071220_Plate-2/script
 
-for line in $(ls H*.sh); do
+for line in $(ls *.sh); do
 qsub -q short.qc $line
 done
 
