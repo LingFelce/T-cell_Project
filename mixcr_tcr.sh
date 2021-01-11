@@ -5,8 +5,8 @@
 # --3-end c-primers reverse primer to constant region
 # --adapters no-adpaters absent from fastqc/multiqc analysis
 
-cd /t1-data/user/lfelce/MiXCR/1131-TP-1_CD8_new_input/
-DIR=/t1-data/user/lfelce/MiXCR/1131-TP-1_CD8_new_output/
+cd /t1-data/user/lfelce/MiXCR/CD8_ORF3a-28_TCR_Clones_input/
+DIR=/t1-data/user/lfelce/MiXCR/CD8_ORF3a-28_TCR_Clones_output/
 
 for NAME in $(find . -name '*_R1_001.fastq.gz' -printf "%f\n" | sed 's/_R1_001.fastq.gz//'); do
  
@@ -22,17 +22,24 @@ echo -e '#!/bin/sh
 
 module load mixcr
 
-cd /t1-data/user/lfelce/MiXCR/1131-TP-1_CD8_new_output/
+cd /t1-data/user/lfelce/MiXCR/CD8_ORF3a-28_TCR_Clones_output/
 
-mixcr analyze amplicon -s hsa --starting-material rna --5-end no-v-primers --3-end c-primers --adapters no-adapters --contig-assembly --only-productive /t1-data/user/lfelce/MiXCR/1131-TP-1_CD8_new_input/'$NAME$p1 '/t1-data/user/lfelce/MiXCR/1131-TP-1_CD8_new_input/'$NAME$p2 $NAME '--receptor-type tcr' > $DIR'script/'$NAME'.sh'
+mixcr analyze amplicon -s hsa \
+--starting-material rna \
+--5-end no-v-primers \
+--3-end c-primers \
+--adapters no-adapters \
+--contig-assembly \
+--only-productive /t1-data/user/lfelce/MiXCR/CD8_ORF3a-28_TCR_Clones_input/'$NAME$p1 '/t1-data/user/lfelce/MiXCR/CD8_ORF3a-28_TCR_Clones_input/'$NAME$p2 \
+$NAME '--receptor-type tcr' > $DIR'script/'$NAME'.sh'
 
 done
 
 
 #------------- run scripts on server
-cd /t1-data/user/lfelce/MiXCR/1131-TP-1_CD8_new_output/script/
+cd /t1-data/user/lfelce/MiXCR/CD8_ORF3a-28_TCR_Clones_output/script/
 
-for line in $(ls 1131-TP-1_CD8_NP16_B*.sh); do
+for line in $(ls B*.sh); do
 sbatch $line
 done
 
