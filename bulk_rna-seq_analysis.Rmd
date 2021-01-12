@@ -25,6 +25,7 @@ library(DESeq2)
 library(pheatmap)
 library(dplyr)
 library(ggplot2)
+library(ggrepel)
 library (stringi)
 library(AnnotationDbi)
 library(edgeR)
@@ -36,6 +37,7 @@ library("genefilter")
 require(data.table)
 library(tidyverse)
 library(DT)
+library(clusterProfiler)
 
 # to convert to Word document, type in Console >rmarkdown::render("file_name.Rmd")
 ```
@@ -121,7 +123,7 @@ Another use of the transformed data is sample clustering. Here, we apply the dis
 
 A heatmap of this distance matrix gives us an overview over similarities and dissimilarities between samples. We have to provide a hierarchical clustering hc to the heatmap function based on the sample distances, or else the heatmap function would calculate a clustering based on the distances between the rows/columns of the distance matrix.
 
-```{r, fig.width=8, fig.height=6}
+```{r, fig.width=20, fig.height=20}
 library(RColorBrewer)
 sampleDists <- dist(t(assay(vsd)))
 samplDistMatrix <- as.matrix(sampleDists)
@@ -180,33 +182,41 @@ pheatmap(mat, annotation_col = anno)
 
 ```{r}
 # set up meta_data for all experiments (only have 1 comparison/metadata sheet)
-meta_data_1 <- meta_data %>% 
-  filter(T_cell == "CD8") %>% 
-  column_to_rownames("Samples")
-meta_data_2 <- meta_data %>%
-  filter (T_cell =="CD4") %>%
-  column_to_rownames("Samples")
+meta_data_np16 <- meta_data %>% filter(Epitope == "NP16")
+meta_data_np16 <- na.omit(meta_data_np16)
+
+# meta_data_2 <- meta_data %>%
+#   filter (T_cell =="CD4") %>%
+#   column_to_rownames("Samples")
 ```
 
 
 
 ```{r, message=FALSE, eval=FALSE}
-## Set up the DESeq2 object
-df_mRNA <-  txi.mcf
-deseq2_txi <- function(df_mRNA, meta_data, control="dmso", test="sgc", value){
-    dds<- DESeqDataSetFromTximport(df_mRNA, meta_data, ~Condition)
+# Set up the DESeq2 object
+df_mRNA <-  bulk_data
+
+run_deseq2 <- function(df_mRNA, meta_data, control="Negative", test="Positive", value){
+  
+  df_mRNA = df_mRNA[,rownames(meta_data)]
+  
+  
+  dds<- DESeqDataSetFromMatrix(countData=df_mRNA,
+                               colData=meta_data,
+                               design= ~Tetramer)
   
   keep <- rowSums(counts(dds)) >= 10
   dds <- dds[keep,]
   
   dds <- DESeq(dds)
   
-  res <- results(dds, contrast = c(value, test, control))
+  res <- results(dds, contrast = c(value, test,control))
   
   return(res)
 }
-res_24H <- deseq2_txi(df_mRNA, meta_data, control = "DMSO_24H", test="SGC_24H", value="Condition")
-res_7D <- deseq2_txi(df_mRNA, meta_data, control = "DMSO_7D", test="SGC_7D", value="Condition")
+res_np16 <- run_deseq2(df_mRNA, meta_data_np16, control = "Negative", test="Positive", value="Tetramer")
+
+# res_7D <- run_deseq2(df_mRNA, meta_data, control = "DMSO_7D", test="SGC_7D", value="Condition")
 ```
 
 The following describes the analysis of the data using DEseq2. I have separated the analyses into three different contrasts and have plotted summary statistics and MA plots for each.  
@@ -214,99 +224,44 @@ The following describes the analysis of the data using DEseq2. I have separated 
 
 ### Summary of the data
 
-#### DMSO vs SGC at 24 hours
+#### CD8+ NP16-specific T cells, negative vs positive tetramer sorting
+Each sample from each patient is used as biological replicate
 
 ```{r}
-summary(res_24H, alpha=0.05)
+summary(res_np16, alpha=0.05)
 ```
-
-#### DMSO vs SGC at 7 days
-
-```{r}
-summary(res_7D, alpha=0.05)
-```
-
-
 
 ### MA plots 
 
 In DESeq2, the function plotMA shows the log2 fold changes attributable to a given variable over the mean of normalized counts for all the samples in the DESeqDataSet. Points will be colored blue if the adjusted p value is less than 0.01. Points which fall out of the window are plotted as open triangles pointing either up or down.
 
-#### DMSO vs SGC at 24 hours
+#### CD8+ NP16-specific T cells, negative vs positive tetramer sorting
 
-```{r, fig.width=8, fig.height=5}
-DESeq2::plotMA(res_24H)
+```{r, fig.width=6, fig.height=4}
+DESeq2::plotMA(res_np16)
 ```
-
-#### DMSO vs SGC at 7 days
-
-```{r, fig.width=8, fig.height=5}
-DESeq2::plotMA(res_7D)
-```
-
 
 
 ### Volcano plots 
 
-#### DMSO vs SGC at 24 hours
+#### CD8+ NP16-specific T cells, negative vs positive tetramer sorting
 
 ```{r, message=FALSE, , fig.width=6, fig.height=6}
-library("ggplot2") #Best plots
-library("ggrepel") #Avoid overlapping labels
-test <- as.data.frame(res_24H)
-  
-data <- as.vector(rownames(test))
-annots <-  AnnotationDbi::select(org.Hs.eg.db, keys=data,
-                                   columns="SYMBOL", keytype = "ENSEMBL")
-  
-result <- merge(test, annots, by.x="row.names", by.y="ENSEMBL")
-res <- result %>% 
-    dplyr::select(log2FoldChange, SYMBOL, baseMean, padj, Row.names) %>% 
-    na.omit()
-  
-mutateddf <- mutate(res, sig=ifelse(res$padj<0.01, "padj<0.01", "Not Sig")) #Will have different colors depending on significance
-input <- cbind(gene=rownames(mutateddf), mutateddf )
-input <- input %>% 
+
+res <- as.data.frame(res_np16)
+
+mutateddf <- mutate(res, sig=ifelse(res$padj<0.01, "P.adj<0.01", "Not Sig")) #Will have different colors depending on significance
+input <- cbind(gene=rownames(res), mutateddf )
+input <- input %>%
   arrange(input$padj)
 #convert the rownames to a column
 volc = ggplot(input, aes(log2FoldChange, -log10(padj))) + #volcanoplot with log2Foldchange versus pvalue
     geom_point(aes(col=sig)) + #add points colored by significance
-    ggtitle("DMSO v SGC at 24 hours") #e.g. 'Volcanoplot DESeq2'
+    ggtitle("CD8+ NP16-tetramer positive T cells") #e.g. 'Volcanoplot DESeq2'
 volc
-#Save Volcano Plot
+# Save Volcano Plot
 # ggsave("volcano/MCF_DMSOvSGC_24H.jpeg", device="jpeg") #In case you want to easily save to disk
 ```
-
-#### DMSO vs SGC at 7 days
-
-```{r, message=FALSE, fig.width=6, fig.height=6}
-library("ggplot2") #Best plots
-library("ggrepel") #Avoid overlapping labels
-test <- as.data.frame(res_7D)
-  
-data <- as.vector(rownames(test))
-annots <-  AnnotationDbi::select(org.Hs.eg.db, keys=data,
-                                   columns="SYMBOL", keytype = "ENSEMBL")
-  
-result <- merge(test, annots, by.x="row.names", by.y="ENSEMBL")
-res <- result %>% 
-    dplyr::select(log2FoldChange, SYMBOL, baseMean, padj, Row.names) %>% 
-    na.omit()
-  
-mutateddf <- mutate(res, sig=ifelse(res$padj<0.01, "padj<0.01", "Not Sig")) #Will have different colors depending on significance
-input <- cbind(gene=rownames(mutateddf), mutateddf )
-input <- input %>% 
-  arrange(input$padj)
-#convert the rownames to a column
-volc = ggplot(input, aes(log2FoldChange, -log10(padj))) + #volcanoplot with log2Foldchange versus pvalue
-    geom_point(aes(col=sig)) + #add points colored by significance
-    ggtitle("DMSO v SGC at 7 days") #e.g. 'Volcanoplot DESeq2'
-volc
-#Save Volcano Plot
-# ggsave("volcano/MCF_DMSOvSGC_7D.jpeg", device="jpeg") #In case you want to easily save to disk
-```
-
-
 
 
 
@@ -315,17 +270,53 @@ volc
 The folowing results tables show the significant genes (p<0.05). Filtering has been performed with a log2 fold change +/- 2. These have been exported as .csv files where _res.csv is all genes, and _sig.csv is significant genes (p<0.05) with LFC +/-2 (see results folder)
 
 
-#### DMSO vs SGC at 24 hours
+#### CD8+ NP16-specific T cells, negative vs positive tetramer sorting
 
 ```{r, message=FALSE}
-dt <- filter_genes(as.data.frame(res_24H), name="MCF_DMSOvSGC_24H")
+# modify filter_genes function as already have gene names set as row names rather than Ensembl IDs which have to be converted to gene symbols.
+
+dt <- filter_genes(as.data.frame(res_np16), name="cd8_np16")
 datatable(dt$sig)
+
+# quick check using Calli's marker list
+np16_markers <- dt$sig[is.element(dt$sig$Gene,tmarkers$V1),]
 ```
 
+## GO Analysis
 
-#### DMSO vs SGC at 7 days
+#### CD8+ NP16-specific T cells, negative vs positive tetramer sorting
+```{r}
+deg_np16 <- dt$res
 
-```{r, message=FALSE}
-dt <- filter_genes(as.data.frame(res_7D), name="MCF_DMSOvSGC_7D")
-datatable(dt$sig)
+deg_np16$Entrez.Gene <- mapIds(org.Hs.eg.db, keys=as.character(deg_np16$Gene), keytype="SYMBOL", column="ENTREZID")
+
+# Keep only rows from table without NAs
+deg_np16 <- deg_np16[is.na(deg_np16$Entrez.Gene)==FALSE,]
+
+# Remove duplicated entries
+deg_np16 <- deg_np16[!duplicated(deg_np16$Entrez.Gene),]
+
+# Change Entrez IDs from numbers to characters
+geneset <- as.character(deg_np16$Entrez.Gene)
+
+# This will take a little while to run
+ego <- enrichGO(gene = geneset, 
+                universe = NULL, #all available genes in database
+                OrgDb = org.Hs.eg.db, #Hs: homo sapiens
+                ont ="BP", #molecular function, biological process, cellular component
+                pAdjustMethod = "BH",
+                pvalueCutoff = 0.05,
+                qvalueCutoff = 0.05,  # q value is FDR adjusted p value
+                readable = TRUE) #will show gene symbol in images later rather than Entrez Gene ID
+# dimensions - number of GO terms
+dim(ego)
+
+simplify(ego)
+
+dim(ego)
+
+np16_GOgenes <- data.frame(ego$ID, ego$Description, ego$p.adjust, ego$geneID)
+
+#Copy and paste table into Excel
+
 ```
