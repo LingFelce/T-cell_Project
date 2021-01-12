@@ -1,0 +1,331 @@
+---
+title: "Mini-bulk RNA-Seq analysis"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+# Analysis of mini-bulk RNA-Seq samples
+From CD4 and CD8 cells, tetramer-sorted against NP16, ORF3a-28, S34 and M24.
+
+## Clustering 
+
+Data quality assessment and quality control (i.e. the removal of insufficiently good data) are essential steps of any data analysis. These steps should typically be performed very early in the analysis of a new data set, preceding or in parallel to the differential expression testing.
+
+We define the term quality as fitness for purpose. Our purpose is the detection of differentially expressed genes, and we are looking in particular for samples whose experimental treatment suffered from an anormality that renders the data points obtained from these particular samples detrimental to our purpose.
+
+In this page, you will see all of the analysis performed to understand which samples are potentially going to negatively impact the downstream analysis.
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+source('functions.R')
+library(org.Hs.eg.db)
+library(DESeq2)
+library(pheatmap)
+library(dplyr)
+library(ggplot2)
+library (stringi)
+library(AnnotationDbi)
+library(edgeR)
+library(statmod)
+library(BiocParallel)
+library(gplots)
+library (limma)
+library("genefilter")
+require(data.table)
+library(tidyverse)
+library(DT)
+
+# to convert to Word document, type in Console >rmarkdown::render("file_name.Rmd")
+```
+
+```{r}
+# Data wrangling to get bulk samples into 1 counts table/expression matrix
+
+setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
+
+## load data (from featureCounts)
+all_201203 <-  fread('201203_counts.txt', stringsAsFactors = F, header=T)
+
+# remove columns with chromosome, start, end, strand and length info
+all_201203 <- all_201203[,-c(2:6)]
+
+# make Geneid into row names
+all_201203 <-tibble::column_to_rownames(all_201203, "Geneid")
+
+# tidy up sample names
+names(all_201203) <- gsub(x = names(all_201203), pattern = "./", replacement = "")  
+names(all_201203) <- gsub(x = names(all_201203), pattern = ".bam", replacement = "")
+
+# list of sample names
+list_201203 <- as.data.frame(colnames(all_201203))
+
+## load data (from featureCounts)
+all_201221 <-  fread('201221_counts.txt', stringsAsFactors = F, header=T)
+
+# remove columns with chromosome, start, end, strand and length info
+all_201221 <- all_201221[,-c(2:6)]
+
+# make Geneid into row names
+all_201221 <-tibble::column_to_rownames(all_201221, "Geneid")
+
+# tidy up sample names
+names(all_201221) <- gsub(x = names(all_201221), pattern = "./", replacement = "")  
+names(all_201221) <- gsub(x = names(all_201221), pattern = ".bam", replacement = "")
+names(all_201221) <- gsub(x = names(all_201221), pattern = "1131-TP-1_CD8_NP16_", replacement = "")
+
+# list of sample names
+list_201221 <- as.data.frame(colnames(all_201221))
+bulk_orf3a <- all_201203[,c(481:486,774:779, 1404:1408)]
+bulk_np16_s34_m24 <- all_201221[,25:96]
+
+list_bulk_np16_s34_m24 <- as.data.frame(colnames(bulk_np16_s34_m24))
+
+bulk_data <- cbind(bulk_orf3a, bulk_np16_s34_m24)
+
+```
+
+```{r}
+meta_data <- read.table("bulk_metadata.csv", sep=",", header = TRUE)
+rownames(meta_data) <- meta_data$Samples
+colnames(bulk_data) <- rownames(meta_data)
+all(rownames(meta_data) %in% colnames(bulk_data))
+```
+
+```{r, include=FALSE}
+dds <- DESeqDataSetFromMatrix(countData=bulk_data, colData=meta_data, design=~Epitope)
+keep <- rowSums(counts(dds)) >= 10
+dds <- dds[keep,]
+dds <- DESeq(dds, parallel=TRUE)
+
+```
+
+### Heatmap of counts matrix
+
+To explore a count matrix, it is often instructive to look at it as a heatmap. Below we show how to produce such a heatmap for various transformations of the data. I have plotted a heatmap of the top 200 highly expressed genes to determine if the samples cluster together by condition.
+
+```{r, fig.width=30, fig.height=20}
+vsd <- varianceStabilizingTransformation(dds, blind=FALSE)
+select <- order(rowMeans(counts(dds, normalized=FALSE)), decreasing=TRUE)[1:200]
+df <- as.data.frame(colData(dds)[,"Tetramer"])
+annotation <- data.frame(Var1 = meta_data$Epitope, Var2 = meta_data$T_cell)
+rownames(annotation) <- colnames(assay(vsd))
+pheatmap(assay(vsd)[select,], cluster_rows = FALSE, show_rownames = FALSE, cluster_cols = TRUE, annotation =annotation)
+```
+
+
+### Heatmap of sample-to-sample distances
+
+Another use of the transformed data is sample clustering. Here, we apply the dist function to the transpose of the transformed count matrix to get sample-to-sample distances.
+
+A heatmap of this distance matrix gives us an overview over similarities and dissimilarities between samples. We have to provide a hierarchical clustering hc to the heatmap function based on the sample distances, or else the heatmap function would calculate a clustering based on the distances between the rows/columns of the distance matrix.
+
+```{r, fig.width=8, fig.height=6}
+library(RColorBrewer)
+sampleDists <- dist(t(assay(vsd)))
+samplDistMatrix <- as.matrix(sampleDists)
+rownames(samplDistMatrix) <- meta_data$Epitope
+colnames(samplDistMatrix) <- meta_data$Samples
+colors <- colorRampPalette(rev(brewer.pal(9, "Blues")) )(255)
+pheatmap(samplDistMatrix, 
+         clustering_distance_cols = sampleDists, 
+         clustering_distance_rows = sampleDists,
+         color = colors)
+```
+
+
+### PCA analysis of the samples {.tabset .tabset-fade}
+
+Related to the distance matrix is the PCA plot, which shows the samples in the 2D plane spanned by their first two principal components. This type of plot is useful for visualizing the overall effect of experimental covariates and batch effects.
+
+#### PCA - by epitope
+
+```{r, fig.width=8, fig.height=6}
+plotPCA(vsd, intgroup=c("Epitope"))
+```
+
+
+#### PCA - by epitope and patient
+
+```{r, fig.width=8, fig.height=6}
+plotPCA(vsd, intgroup=c("Epitope", "Patient"))
+```
+
+#### PCA - by T cell subtype
+
+```{r, fig.width=8, fig.height=6}
+plotPCA(vsd, intgroup=c("T_cell"))
+```
+
+#### PCA - by tetramer sorting
+
+```{r, fig.width=8, fig.height=6}
+plotPCA(vsd, intgroup=c("Tetramer", "Epitope"))
+```
+
+### Heatmap of gene clustering
+In the sample distance heatmap made previously, the dendrogram at the side shows us a hierarchical clustering of the samples. Such a clustering can also be performed for the genes. Since the clustering is only relevant for genes that actually carry a signal, one usually would only cluster a subset of the most highly variable genes. Here, for demonstration, let us select the 20 genes with the highest variance across samples. We will work with the VST data. The heatmap becomes more interesting if we do not look at absolute expression strength but rather at the amount by which each gene deviates in a specific sample from the gene’s average across all samples. Hence, we center each genes’ values across samples, and plot a heatmap (figure below). We provide a data.frame that instructs the pheatmap function how to label the columns.
+
+```{r, fig.width=20, fig.height=10}
+library("genefilter")
+topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 20)
+mat  <- assay(vsd)[ topVarGenes, ]
+mat  <- mat - rowMeans(mat)
+anno <- as.data.frame(colData(vsd)[, c("Epitope","Tetramer")])
+pheatmap(mat, annotation_col = anno)
+```
+
+## Differential Gene Expression Analysis (DESeq2)
+
+```{r}
+# set up meta_data for all experiments (only have 1 comparison/metadata sheet)
+meta_data_1 <- meta_data %>% 
+  filter(T_cell == "CD8") %>% 
+  column_to_rownames("Samples")
+meta_data_2 <- meta_data %>%
+  filter (T_cell =="CD4") %>%
+  column_to_rownames("Samples")
+```
+
+
+
+```{r, message=FALSE, eval=FALSE}
+## Set up the DESeq2 object
+df_mRNA <-  txi.mcf
+deseq2_txi <- function(df_mRNA, meta_data, control="dmso", test="sgc", value){
+    dds<- DESeqDataSetFromTximport(df_mRNA, meta_data, ~Condition)
+  
+  keep <- rowSums(counts(dds)) >= 10
+  dds <- dds[keep,]
+  
+  dds <- DESeq(dds)
+  
+  res <- results(dds, contrast = c(value, test, control))
+  
+  return(res)
+}
+res_24H <- deseq2_txi(df_mRNA, meta_data, control = "DMSO_24H", test="SGC_24H", value="Condition")
+res_7D <- deseq2_txi(df_mRNA, meta_data, control = "DMSO_7D", test="SGC_7D", value="Condition")
+```
+
+The following describes the analysis of the data using DEseq2. I have separated the analyses into three different contrasts and have plotted summary statistics and MA plots for each.  
+
+
+### Summary of the data
+
+#### DMSO vs SGC at 24 hours
+
+```{r}
+summary(res_24H, alpha=0.05)
+```
+
+#### DMSO vs SGC at 7 days
+
+```{r}
+summary(res_7D, alpha=0.05)
+```
+
+
+
+### MA plots 
+
+In DESeq2, the function plotMA shows the log2 fold changes attributable to a given variable over the mean of normalized counts for all the samples in the DESeqDataSet. Points will be colored blue if the adjusted p value is less than 0.01. Points which fall out of the window are plotted as open triangles pointing either up or down.
+
+#### DMSO vs SGC at 24 hours
+
+```{r, fig.width=8, fig.height=5}
+DESeq2::plotMA(res_24H)
+```
+
+#### DMSO vs SGC at 7 days
+
+```{r, fig.width=8, fig.height=5}
+DESeq2::plotMA(res_7D)
+```
+
+
+
+### Volcano plots 
+
+#### DMSO vs SGC at 24 hours
+
+```{r, message=FALSE, , fig.width=6, fig.height=6}
+library("ggplot2") #Best plots
+library("ggrepel") #Avoid overlapping labels
+test <- as.data.frame(res_24H)
+  
+data <- as.vector(rownames(test))
+annots <-  AnnotationDbi::select(org.Hs.eg.db, keys=data,
+                                   columns="SYMBOL", keytype = "ENSEMBL")
+  
+result <- merge(test, annots, by.x="row.names", by.y="ENSEMBL")
+res <- result %>% 
+    dplyr::select(log2FoldChange, SYMBOL, baseMean, padj, Row.names) %>% 
+    na.omit()
+  
+mutateddf <- mutate(res, sig=ifelse(res$padj<0.01, "padj<0.01", "Not Sig")) #Will have different colors depending on significance
+input <- cbind(gene=rownames(mutateddf), mutateddf )
+input <- input %>% 
+  arrange(input$padj)
+#convert the rownames to a column
+volc = ggplot(input, aes(log2FoldChange, -log10(padj))) + #volcanoplot with log2Foldchange versus pvalue
+    geom_point(aes(col=sig)) + #add points colored by significance
+    ggtitle("DMSO v SGC at 24 hours") #e.g. 'Volcanoplot DESeq2'
+volc
+#Save Volcano Plot
+# ggsave("volcano/MCF_DMSOvSGC_24H.jpeg", device="jpeg") #In case you want to easily save to disk
+```
+
+#### DMSO vs SGC at 7 days
+
+```{r, message=FALSE, fig.width=6, fig.height=6}
+library("ggplot2") #Best plots
+library("ggrepel") #Avoid overlapping labels
+test <- as.data.frame(res_7D)
+  
+data <- as.vector(rownames(test))
+annots <-  AnnotationDbi::select(org.Hs.eg.db, keys=data,
+                                   columns="SYMBOL", keytype = "ENSEMBL")
+  
+result <- merge(test, annots, by.x="row.names", by.y="ENSEMBL")
+res <- result %>% 
+    dplyr::select(log2FoldChange, SYMBOL, baseMean, padj, Row.names) %>% 
+    na.omit()
+  
+mutateddf <- mutate(res, sig=ifelse(res$padj<0.01, "padj<0.01", "Not Sig")) #Will have different colors depending on significance
+input <- cbind(gene=rownames(mutateddf), mutateddf )
+input <- input %>% 
+  arrange(input$padj)
+#convert the rownames to a column
+volc = ggplot(input, aes(log2FoldChange, -log10(padj))) + #volcanoplot with log2Foldchange versus pvalue
+    geom_point(aes(col=sig)) + #add points colored by significance
+    ggtitle("DMSO v SGC at 7 days") #e.g. 'Volcanoplot DESeq2'
+volc
+#Save Volcano Plot
+# ggsave("volcano/MCF_DMSOvSGC_7D.jpeg", device="jpeg") #In case you want to easily save to disk
+```
+
+
+
+
+
+### Results tables
+
+The folowing results tables show the significant genes (p<0.05). Filtering has been performed with a log2 fold change +/- 2. These have been exported as .csv files where _res.csv is all genes, and _sig.csv is significant genes (p<0.05) with LFC +/-2 (see results folder)
+
+
+#### DMSO vs SGC at 24 hours
+
+```{r, message=FALSE}
+dt <- filter_genes(as.data.frame(res_24H), name="MCF_DMSOvSGC_24H")
+datatable(dt$sig)
+```
+
+
+#### DMSO vs SGC at 7 days
+
+```{r, message=FALSE}
+dt <- filter_genes(as.data.frame(res_7D), name="MCF_DMSOvSGC_7D")
+datatable(dt$sig)
+```
