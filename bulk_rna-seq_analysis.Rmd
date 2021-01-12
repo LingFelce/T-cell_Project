@@ -185,9 +185,11 @@ pheatmap(mat, annotation_col = anno)
 meta_data_np16 <- meta_data %>% filter(Epitope == "NP16")
 meta_data_np16 <- na.omit(meta_data_np16)
 
-# meta_data_2 <- meta_data %>%
-#   filter (T_cell =="CD4") %>%
-#   column_to_rownames("Samples")
+meta_data_s34 <- meta_data %>% filter(Epitope == "S34")
+meta_data_s34 <- na.omit(meta_data_s34)
+
+meta_data_m24 <- meta_data %>% filter(Epitope == "M24")
+meta_data_m24 <- na.omit(meta_data_m24)
 ```
 
 
@@ -216,7 +218,10 @@ run_deseq2 <- function(df_mRNA, meta_data, control="Negative", test="Positive", 
 }
 res_np16 <- run_deseq2(df_mRNA, meta_data_np16, control = "Negative", test="Positive", value="Tetramer")
 
-# res_7D <- run_deseq2(df_mRNA, meta_data, control = "DMSO_7D", test="SGC_7D", value="Condition")
+res_s34 <- run_deseq2(df_mRNA, meta_data_s34, control = "Negative", test="Positive", value="Tetramer")
+
+res_m24 <- run_deseq2(df_mRNA, meta_data_m24, control = "Negative", test="Positive", value="Tetramer")
+
 ```
 
 The following describes the analysis of the data using DEseq2. I have separated the analyses into three different contrasts and have plotted summary statistics and MA plots for each.  
@@ -230,7 +235,18 @@ Each sample from each patient is used as biological replicate
 ```{r}
 summary(res_np16, alpha=0.05)
 ```
+#### CD4+ S34-specific T cells, negative vs positive tetramer sorting
+Each sample from each patient is used as biological replicate
 
+```{r}
+summary(res_s34, alpha=0.05)
+```
+#### CD4+ M24-specific T cells, negative vs positive tetramer sorting
+Each sample from each patient is used as biological replicate
+
+```{r}
+summary(res_m24, alpha=0.05)
+```
 ### MA plots 
 
 In DESeq2, the function plotMA shows the log2 fold changes attributable to a given variable over the mean of normalized counts for all the samples in the DESeqDataSet. Points will be colored blue if the adjusted p value is less than 0.01. Points which fall out of the window are plotted as open triangles pointing either up or down.
@@ -240,7 +256,16 @@ In DESeq2, the function plotMA shows the log2 fold changes attributable to a giv
 ```{r, fig.width=6, fig.height=4}
 DESeq2::plotMA(res_np16)
 ```
+#### CD4+ S34-specific T cells, negative vs positive tetramer sorting
 
+```{r, fig.width=6, fig.height=4}
+DESeq2::plotMA(res_s34)
+```
+#### CD4+ M24-specific T cells, negative vs positive tetramer sorting
+
+```{r, fig.width=6, fig.height=4}
+DESeq2::plotMA(res_m24)
+```
 
 ### Volcano plots 
 
@@ -259,10 +284,39 @@ volc = ggplot(input, aes(log2FoldChange, -log10(padj))) + #volcanoplot with log2
     geom_point(aes(col=sig)) + #add points colored by significance
     ggtitle("CD8+ NP16-tetramer positive T cells") #e.g. 'Volcanoplot DESeq2'
 volc
-# Save Volcano Plot
-# ggsave("volcano/MCF_DMSOvSGC_24H.jpeg", device="jpeg") #In case you want to easily save to disk
 ```
+#### CD4+ S34-specific T cells, negative vs positive tetramer sorting
 
+```{r, message=FALSE, , fig.width=6, fig.height=6}
+
+res <- as.data.frame(res_s34)
+
+mutateddf <- mutate(res, sig=ifelse(res$padj<0.01, "P.adj<0.01", "Not Sig")) #Will have different colors depending on significance
+input <- cbind(gene=rownames(res), mutateddf )
+input <- input %>%
+  arrange(input$padj)
+#convert the rownames to a column
+volc = ggplot(input, aes(log2FoldChange, -log10(padj))) + #volcanoplot with log2Foldchange versus pvalue
+    geom_point(aes(col=sig)) + #add points colored by significance
+    ggtitle("CD8+ NP16-tetramer positive T cells") #e.g. 'Volcanoplot DESeq2'
+volc
+```
+#### CD4+ M24-specific T cells, negative vs positive tetramer sorting
+
+```{r, message=FALSE, , fig.width=6, fig.height=6}
+
+res <- as.data.frame(res_m24)
+
+mutateddf <- mutate(res, sig=ifelse(res$padj<0.01, "P.adj<0.01", "Not Sig")) #Will have different colors depending on significance
+input <- cbind(gene=rownames(res), mutateddf )
+input <- input %>%
+  arrange(input$padj)
+#convert the rownames to a column
+volc = ggplot(input, aes(log2FoldChange, -log10(padj))) + #volcanoplot with log2Foldchange versus pvalue
+    geom_point(aes(col=sig)) + #add points colored by significance
+    ggtitle("CD8+ NP16-tetramer positive T cells") #e.g. 'Volcanoplot DESeq2'
+volc
+```
 
 
 ### Results tables
@@ -280,6 +334,30 @@ datatable(dt$sig)
 
 # quick check using Calli's marker list
 np16_markers <- dt$sig[is.element(dt$sig$Gene,tmarkers$V1),]
+```
+
+#### CD4+ S34-specific T cells, negative vs positive tetramer sorting
+
+```{r, message=FALSE}
+# modify filter_genes function as already have gene names set as row names rather than Ensembl IDs which have to be converted to gene symbols.
+
+dt <- filter_genes(as.data.frame(res_s34), name="cd4_s34")
+datatable(dt$sig)
+
+# quick check using Calli's marker list
+s34_markers <- dt$sig[is.element(dt$sig$Gene,tmarkers$V1),]
+```
+
+#### CD4+ M24-specific T cells, negative vs positive tetramer sorting
+
+```{r, message=FALSE}
+# modify filter_genes function as already have gene names set as row names rather than Ensembl IDs which have to be converted to gene symbols.
+
+dt <- filter_genes(as.data.frame(res_m24), name="cd4_m24")
+datatable(dt$sig)
+
+# quick check using Calli's marker list
+m24_markers <- dt$sig[is.element(dt$sig$Gene,tmarkers$V1),]
 ```
 
 ## GO Analysis
