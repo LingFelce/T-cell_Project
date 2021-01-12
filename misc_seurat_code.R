@@ -89,7 +89,68 @@ cd8.anchors <- FindIntegrationAnchors(object.list = cd8.list, normalization.meth
 
 cd8.integrated <- IntegrateData(anchorset = cd8.anchors, normalization.method = "SCT", k.weight=46)
 
+
+cd8.integrated <- RunPCA(cd8.integrated, npcs = 30, verbose = FALSE)
+
+cd8.integrated <- RunUMAP(cd8.integrated, reduction = "pca", dims = 1:10, verbose = FALSE)
+
+
+Idents(cd8.integrated) <- "seurat_clusters"
+UMAP_int_cluster <- DimPlot(cd8.integrated, reduction = "umap", group.by = "seurat_clusters")
+
+UMAP_int_patient <- DimPlot(cd8.integrated, reduction = "umap", group.by = "orig.ident")
+
+UMAP_int_cluster + UMAP_int_patient
+
+
 #########
+# Data wrangling to get bulk samples into 1 counts table/expression matrix
+
+setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
+
+## load data (from featureCounts)
+all_201203 <-  fread('201203_counts.txt', stringsAsFactors = F, header=T)
+
+# remove columns with chromosome, start, end, strand and length info
+all_201203 <- all_201203[,-c(2:6)]
+
+# make Geneid into row names
+all_201203 <-tibble::column_to_rownames(all_201203, "Geneid")
+
+# tidy up sample names
+names(all_201203) <- gsub(x = names(all_201203), pattern = "./", replacement = "")  
+names(all_201203) <- gsub(x = names(all_201203), pattern = ".bam", replacement = "")
+
+# list of sample names
+list_201203 <- as.data.frame(colnames(all_201203))
+
+## load data (from featureCounts)
+all_201221 <-  fread('201221_counts.txt', stringsAsFactors = F, header=T)
+
+# remove columns with chromosome, start, end, strand and length info
+all_201221 <- all_201221[,-c(2:6)]
+
+# make Geneid into row names
+all_201221 <-tibble::column_to_rownames(all_201221, "Geneid")
+
+# tidy up sample names
+names(all_201221) <- gsub(x = names(all_201221), pattern = "./", replacement = "")  
+names(all_201221) <- gsub(x = names(all_201221), pattern = ".bam", replacement = "")
+names(all_201221) <- gsub(x = names(all_201221), pattern = "1131-TP-1_CD8_NP16_", replacement = "")
+
+# list of sample names
+list_201221 <- as.data.frame(colnames(all_201221))
+bulk_orf3a <- all_201203[,c(481:486,774:779, 1404:1408)]
+bulk_np16_s34_m24 <- all_201221[,25:96]
+
+list_bulk_np16_s34_m24 <- as.data.frame(colnames(bulk_np16_s34_m24))
+
+bulk_data <- cbind(bulk_orf3a, bulk_np16_s34_m24)
+
+
+
+
+############################
 
 test <- rep(c("A","B","C"), times =c("1","2","3"))
 
