@@ -364,7 +364,10 @@ m24_markers <- dt$sig[is.element(dt$sig$Gene,tmarkers$V1),]
 
 #### CD8+ NP16-specific T cells, negative vs positive tetramer sorting
 ```{r}
-deg_np16 <- dt$res
+# if just use significant DEGs - only 155, not enough for GO analysis.
+# use all DEGs
+deg_np16 <- read.csv('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/results/cd8_np16_res.csv')
+deg_np16 <- deg_np16 %>% filter (padj < 0.5)
 
 deg_np16$Entrez.Gene <- mapIds(org.Hs.eg.db, keys=as.character(deg_np16$Gene), keytype="SYMBOL", column="ENTREZID")
 
@@ -389,12 +392,151 @@ ego <- enrichGO(gene = geneset,
 # dimensions - number of GO terms
 dim(ego)
 
-simplify(ego)
+simp <- simplify(ego)
 
-dim(ego)
+np16_GOgenes <- data.frame(simp$ID, simp$Description, simp$p.adjust, simp$geneID)
 
-np16_GOgenes <- data.frame(ego$ID, ego$Description, ego$p.adjust, ego$geneID)
-
-#Copy and paste table into Excel
+# Copy and paste table into Excel
 
 ```
+
+```{r,fig.height=4, fig.width=6}
+barplot (simp, showCategory = 10)
+```
+
+```{r, fig.height=8, fig.width=10}
+emapplot(simp)
+```
+
+```{r, fig.height=12, fig.width=14}
+# logFC is optional, but if available will colour-code the nodes
+logFC_np16 <- deg_np16$log2FoldChange
+# set name of object
+names(logFC_np16) <- deg_np16$Entrez.Gene
+ 
+cnetplot(simp, foldChange = logFC_np16, 
+         showCategory = c("T cell activation",
+                          "response to virus", 
+                          "leukocyte cell-cell adhesion", 
+                          "T cell receptor signaling pathway", 
+                          "cell killing", 
+                          "interferon-gamma production",
+                         "lymphocyte proliferation"), 
+         circular = FALSE)
+# show 5 GO terms, if set circular to TRUE then GO terms won't be in middle, will be on edge of circle
+# size = number of genes, fold change = red for upregulated, green for downregulated
+```
+#### CD4+ S34-specific T cells, negative vs positive tetramer sorting
+```{r}
+deg_s34 <- read.csv('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/results/cd4_s34_res.csv')
+
+deg_s34$Entrez.Gene <- mapIds(org.Hs.eg.db, keys=as.character(deg_s34$Gene), keytype="SYMBOL", column="ENTREZID")
+
+# Keep only rows from table without NAs
+deg_s34 <- deg_s34[is.na(deg_s34$Entrez.Gene)==FALSE,]
+
+# Remove duplicated entries
+deg_s34 <- deg_s34[!duplicated(deg_s34$Entrez.Gene),]
+
+# Change Entrez IDs from numbers to characters
+geneset <- as.character(deg_s34$Entrez.Gene)
+
+# This will take a little while to run
+ego <- enrichGO(gene = geneset, 
+                universe = NULL, #all available genes in database
+                OrgDb = org.Hs.eg.db, #Hs: homo sapiens
+                ont ="BP", #molecular function, biological process, cellular component
+                pAdjustMethod = "BH",
+                pvalueCutoff = 0.05,
+                qvalueCutoff = 0.05,  # q value is FDR adjusted p value
+                readable = TRUE) #will show gene symbol in images later rather than Entrez Gene ID
+# dimensions - number of GO terms
+dim(ego)
+
+simp <- simplify(ego)
+
+dim(simp)
+
+s34_GOgenes <- data.frame(simp$ID, simp$Description, simp$p.adjust, simp$geneID)
+
+# Copy and paste table into Excel
+
+```
+
+```{r, fig.height=12, fig.width=14}
+# logFC is optional, but if available will colour-code the nodes
+logFC_s34 <- deg_s34$log2FoldChange
+# set name of object
+names(logFC_s34) <- deg_s34$Entrez.Gene
+ 
+cnetplot(simp, foldChange = logFC_s34, 
+         showCategory = c("T cell activation",
+                         "T cell receptor signaling pathway",
+                         "leukocyte cell-cell adhesion",
+                         "type I interferon production",
+                         "B cell activation"), 
+         circular = FALSE)
+# show 5 GO terms, if set circular to TRUE then GO terms won't be in middle, will be on edge of circle
+# size = number of genes, fold change = red for upregulated, green for downregulated
+```
+
+
+#### CD4+ M24-specific T cells, negative vs positive tetramer sorting
+```{r}
+deg_m24 <- read.csv('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/results/cd4_m24_sig.csv')
+
+deg_m24 <- deg_m24 %>% filter(log2FoldChange < -3 | log2FoldChange > 3)
+
+deg_m24$Entrez.Gene <- mapIds(org.Hs.eg.db, keys=as.character(deg_m24$Gene), keytype="SYMBOL", column="ENTREZID")
+
+# Keep only rows from table without NAs
+deg_m24 <- deg_m24[is.na(deg_m24$Entrez.Gene)==FALSE,]
+
+# Remove duplicated entries
+deg_m24 <- deg_m24[!duplicated(deg_m24$Entrez.Gene),]
+
+# Change Entrez IDs from numbers to characters
+geneset <- as.character(deg_m24$Entrez.Gene)
+
+# This will take a little while to run
+ego <- enrichGO(gene = geneset, 
+                universe = NULL, # all available genes in database
+                OrgDb = org.Hs.eg.db, # Hs: homo sapiens
+                ont ="BP", # molecular function, biological process, cellular component
+                pAdjustMethod = "BH",
+                pvalueCutoff = 0.05,
+                qvalueCutoff = 0.05,  # q value is FDR adjusted p value
+                readable = TRUE) # will show gene symbol in images later rather than Entrez Gene ID
+# dimensions - number of GO terms
+dim(ego)
+
+simp <- simplify(ego)
+
+dim(simp)
+
+m24_GOgenes <- data.frame(simp$ID, simp$Description, simp$p.adjust, simp$geneID)
+
+# Copy and paste table into Excel
+
+```
+
+```{r,fig.height=4, fig.width=6}
+barplot (simp, showCategory = 10)
+```
+```{r, fig.height=8, fig.width=10}
+emapplot(simp, showCategory = 30)
+```
+
+```{r, fig.height=12, fig.width=14}
+# logFC is optional, but if available will colour-code the nodes
+logFC_m24 <- deg_m24$log2FoldChange
+# set name of object
+names(logFC_m24) <- deg_m24$Entrez.Gene
+ 
+cnetplot(simp, foldChange = logFC_m24, 
+         showCategory = 5, 
+         circular = FALSE)
+# show 5 GO terms, if set circular to TRUE then GO terms won't be in middle, will be on edge of circle
+# size = number of genes, fold change = red for upregulated, green for downregulated
+```
+
