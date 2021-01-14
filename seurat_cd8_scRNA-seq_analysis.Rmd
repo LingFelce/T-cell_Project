@@ -3,6 +3,7 @@ title: "Single-cell RNA-Seq analysis of CD8+ SARS-CoV-2 specific T cells"
 output:
   word_document: default
   html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -257,24 +258,19 @@ cd8 <- readRDS("cd8_seurat.rds")
 options(repr.plot.height = 2.5, repr.plot.width = 6)
 cd8 <- cd8 %>% 
     RunHarmony("orig.ident", plot_convergence = TRUE)
-
 # Harmony converged after 8 iterations
-
 # access Harmony embeddings - show top 5 rows and top 5 columns
 harmony_embeddings <- Embeddings(cd8, 'harmony')
-
 ```
 
 ```{r harmony2, fig.height=5, fig.width=12}
 p1 <- DimPlot(object = cd8, reduction = "harmony", group.by = "orig.ident")
 p2 <- VlnPlot(object = cd8, features = "harmony_1", group.by = "orig.ident", pt.size = .1)
-
 p1 + p2
 ```
 ```{r harmony3, fig.height=5, fig.width=12}
 p3 <- DimPlot(object = cd8, reduction = "pca", group.by="orig.ident")
 p3 + p1
-
 ```
 
 Many downstream analyses are performed on low dimensional embeddings, not gene expression. To use the corrected Harmony embeddings rather than PCs, set reduction = 'harmony'. For example, let's perform the UMAP and Nearest Neighbor analyses using the Harmony embeddings.
@@ -284,13 +280,10 @@ cd8 <- cd8 %>%
     FindNeighbors(reduction = "harmony", dims = 1:20) %>% 
     FindClusters(resolution = 0.5) %>% 
     identity()
-
 umap_patient <- DimPlot(cd8, reduction = "umap", group.by = "orig.ident")
 umap_epitope <- DimPlot(cd8, reduction = "umap", group.by = "epitope")
 umap_cluster <- DimPlot(cd8, reduction = "umap", group.by = "seurat_clusters")
-
 umap_patient + umap_epitope + umap_cluster
-
 ```
 
 ```{r harmony_markers}
@@ -300,29 +293,26 @@ cluster_1 <- cd8.markers[cd8.markers$cluster == "1", ]
 cluster_2 <- cd8.markers[cd8.markers$cluster == "2", ]
 cluster_3 <- cd8.markers[cd8.markers$cluster == "3", ]
 cluster_4 <- cd8.markers[cd8.markers$cluster == "4", ]
-
 tmarkers <- read.csv("Markers_for_Ling.csv", header=F)
-
 genes_0 <- tmarkers[is.element(tmarkers$V1, cluster_0$gene),]
 genes_1 <- tmarkers[is.element(tmarkers$V1, cluster_1$gene),]
 genes_2 <- tmarkers[is.element(tmarkers$V1, cluster_2$gene),]
 genes_3 <- tmarkers[is.element(tmarkers$V1, cluster_3$gene),]
 genes_4 <- tmarkers[is.element(tmarkers$V1, cluster_4$gene),]
-
-markers_summary <- rbind(genes_0, genes_1, genes_2)
-
+# markers_summary <- rbind(genes_0, genes_1, genes_2)
 ```
 ## Gene expression by epitope
 
 ```{r, fig.height=32, fig.width=16}
 VlnPlot(object = cd8, features = c("CD27", "IL7R", "S100A4", "PTPRC", 
-                                   "CCR7", "SELL", "CD44", "CD69", 
+                                   "CCR7", "SELL", "PASK","CD44", "CD69", 
                                    "HLA-DRB1", "CCL4", 
                                    "CCL5", "CXCR3", "CXCR4",
                                    "IL16", "IFNG", 
                                    "PRF1", "GNLY", "NKG7", 
                                    "GZMA", "GZMB", "GZMH", "GZMK",
-                                   "FASLG", "ISG15",
+                                   "FASLG", "ISG15", "MX1", "TUBA1B",
+                                   "MKI67",
                                    "PDCD1", "CTLA4", "HAVCR2", "CD244",
                                    "KLRG1", "TIGIT", "BTLA", "CD160"), 
         ncol=4, group.by = "epitope")
@@ -330,16 +320,24 @@ VlnPlot(object = cd8, features = c("CD27", "IL7R", "S100A4", "PTPRC",
 
 ```{r, fig.height=32, fig.width=16}
 VlnPlot(object = cd8, features = c("CD27", "IL7R", "S100A4", "PTPRC", 
-                                   "CCR7", "SELL", "CD44", "CD69", 
+                                   "CCR7", "SELL", "PASK","CD44", "CD69", 
                                    "HLA-DRB1", "CCL4", 
                                    "CCL5", "CXCR3", "CXCR4",
                                    "IL16", "IFNG", 
                                    "PRF1", "GNLY", "NKG7", 
                                    "GZMA", "GZMB", "GZMH", "GZMK",
-                                   "FASLG", "ISG15",
+                                   "FASLG", "ISG15", "MX1", "TUBA1B",
+                                   "MKI67",
                                    "PDCD1", "CTLA4", "HAVCR2", "CD244",
                                    "KLRG1", "TIGIT", "BTLA", "CD160"), 
         ncol=4, group.by = "seurat_clusters")
+```
+```{r}
+# Expression heatmap for top 20 markers for each cluster
+top10 <- cd8.markers %>% group_by(cluster) %>% top_n(10, avg_log2FC)
+# setting slim.col.label to TRUE will print just the cluster IDS instead of every cell name
+DoHeatmap(object = cd8, features = top10$gene, label = TRUE)
+
 ```
 
 
@@ -405,6 +403,137 @@ VlnPlot(object = cd8, features = c("CD27", "IL7R", "S100A4", "PTPRC",
 #         ncol=4, group.by = "epitope")
 ```
 
+# Acute patients
+Analyse acute patients separately - 1131-TP-1 (NP16) and 1525-TP-1 (ORF3a-28)
+## Processing data
+```{r}
+acute_data <- select(cd8_data,contains("TP-1"))
+acute <- CreateSeuratObject(counts = acute_data, min.cells = 3, min.features = 200, project = "CD8 acute T-cell data", assay = "RNA")
+
+# non-UMI data - nUMI represents sum of non-normalised values within cells
+# calculate % mitochondrial genes and store in separate object
+# use object@raw.data represents non-transformed and non-log-normalised counts
+# % of UMI mapping to MT-genes is a common scRNA-seq QC metric
+mito.genes <- grep(pattern = "^MT-", x = rownames(acute@assays[["RNA"]]), value = TRUE)
+
+percent.mito <- Matrix::colSums(acute@assays[["RNA"]][mito.genes, ])/Matrix::colSums(acute@assays[["RNA"]])
+
+acute <- AddMetaData(object = acute, metadata = percent.mito, col.name = "percent.mito")
+
+VlnPlot(object = acute, features = c("nFeature_RNA", "nCount_RNA", "percent.mito"), ncol = 3)
+# all cells have same value % mitochondrial cells?
+```
+
+```{r, fig.height=4, fig.width=6}
+# can use GenePlot to visualise gene-gene relationships and anything else calculated by object
+FeatureScatter(object=acute, feature1="nCount_RNA", feature2="nFeature_RNA")
+```
+
+
+```{r, fig.height=8, fig.width = 16}
+# Filter out cells that have unique gene counts (nFeature_RNA) over 4000 or less than 200 
+# Note that > and < are used to define a'gate'.  
+# -Inf and Inf should be used if don't want a lower or upper threshold.
+acute <- subset(x = acute, subset = nFeature_RNA > 200 & nFeature_RNA < 4000 & percent.mito >  -Inf & percent.mito < 0.05 )
+
+# After removing unwanted cells from dataset, need to normalise data. Use global-scaling normalisation method "LogNormalize" - normalises gene expression measurements for each cell by total expression, multiplies by scale factor (10,000 default) and log-tranforms result.
+
+acute <- NormalizeData(object = acute, normalization.method = "LogNormalize", scale.factor = 10000)
+
+# identify 2000 variable genes - normal parameter settings for UMI data normalised to total of 1e4 molecules
+acute <- FindVariableFeatures(object = acute, mean.function = ExpMean, dispersion.function = LogVMR, x.low.cutoff = 0.0125, x.high.cutoff = 3, y.cutoff = 0.5, nfeatures = 2000)
+
+# Identify the 10 most highly variable genes
+top10 <- head(VariableFeatures(acute), 10)
+
+# plot variable features with and without labels
+plot1 <- VariableFeaturePlot(acute)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot1 + plot2
+```
+
+
+
+```{r, fig.height=4, fig.width=6}
+acute <- ScaleData(object = acute, vars.to.regress = c("nCounts_RNA", "percent.mito"))
+
+acute <- RunPCA(object = acute,  npcs = 30, verbose = FALSE)
+
+# standard PCA plot
+p3 <- DimPlot(object = acute, reduction = "pca")
+p3
+```
+## Harmony integration 
+```{r}
+acute <- acute %>% 
+    RunHarmony("orig.ident", plot_convergence = TRUE)
+# Harmony converged after 3 iterations
+harmony_embeddings <- Embeddings(acute, 'harmony')
+
+```
+
+```{r harmony2, fig.height=5, fig.width=20}
+p1 <- DimPlot(object = acute, reduction = "harmony", group.by = "orig.ident")
+p2 <- VlnPlot(object = acute, features = "harmony_1", group.by = "orig.ident", pt.size = .1)
+p3 + p1 + p2
+```
+```{r, fig.height=5, fig.width=12}
+acute <- acute %>% 
+    RunUMAP(reduction = "harmony", dims = 1:20) %>% 
+    FindNeighbors(reduction = "harmony", dims = 1:20) %>% 
+    FindClusters(resolution = 0.5) %>% 
+    identity()
+umap_patient <- DimPlot(acute, reduction = "umap", group.by = "orig.ident")
+umap_cluster <- DimPlot(acute, reduction = "umap", group.by = "seurat_clusters")
+umap_patient + umap_cluster
+```
+
+```{r}
+acute.markers <- FindAllMarkers(object = acute, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
+
+cluster_0 <- acute.markers[acute.markers$cluster == "0", ]
+cluster_1 <- acute.markers[acute.markers$cluster == "1", ]
+
+tmarkers <- read.csv("Markers_for_Ling.csv", header=F)
+
+genes_0 <- tmarkers[is.element(tmarkers$V1, cluster_0$gene),]
+genes_1 <- tmarkers[is.element(tmarkers$V1, cluster_1$gene),]
+
+
+```
+
+## Gene expression by patient
+
+```{r, fig.height=32, fig.width=16}
+VlnPlot(object = acute, features = c("CD27", "IL7R", "S100A4", "PTPRC", 
+                                   "CCR7", "SELL", "CD44", "CD69", 
+                                   "HLA-DRB1", "CCL4", 
+                                   "CCL5", "CXCR3", "CXCR4",
+                                   "IL16", "IFNG", 
+                                   "PRF1", "GNLY", "NKG7", 
+                                   "GZMA", "GZMB", "GZMH", "GZMK",
+                                   "FASLG", "ISG15",
+                                   "PDCD1", "CTLA4", "HAVCR2", "CD244",
+                                   "KLRG1", "TIGIT", "CD160"), 
+        ncol=4, group.by = "orig.ident")
+```
+
+
+## Gene expression by cluster
+```{r, fig.height=32, fig.width=16}
+VlnPlot(object = acute, features = c("CD27", "IL7R", "S100A4", "PTPRC", 
+                                   "CCR7", "SELL", "CD44", "CD69", 
+                                   "HLA-DRB1", "CCL4", 
+                                   "CCL5", "CXCR3", "CXCR4",
+                                   "IL16", "IFNG", 
+                                   "PRF1", "GNLY", "NKG7", 
+                                   "GZMA", "GZMB", "GZMH", "GZMK",
+                                   "FASLG", "ISG15",
+                                   "PDCD1", "CTLA4", "HAVCR2", "CD244",
+                                   "KLRG1", "TIGIT", "CD160"), 
+        ncol=4, group.by = "seurat_clusters")
+```
+
 
 # Save file
 
@@ -413,4 +542,5 @@ VlnPlot(object = cd8, features = c("CD27", "IL7R", "S100A4", "PTPRC",
 # saveRDS(cd8, file = "cd8_seurat.rds")
 # saveRDS(cd8.integrated, file="cd8_integrated_seurat.rds")
 saveRDS(cd8, file="cd8_harmony.rds")
+saveRDS(acute, file="acute_harmony.rds")
 ```
