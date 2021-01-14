@@ -11,12 +11,6 @@ From CD4 and CD8 cells, tetramer-sorted against NP16, ORF3a-28, S34 and M24.
 
 ## Clustering 
 
-Data quality assessment and quality control (i.e. the removal of insufficiently good data) are essential steps of any data analysis. These steps should typically be performed very early in the analysis of a new data set, preceding or in parallel to the differential expression testing.
-
-We define the term quality as fitness for purpose. Our purpose is the detection of differentially expressed genes, and we are looking in particular for samples whose experimental treatment suffered from an anormality that renders the data points obtained from these particular samples detrimental to our purpose.
-
-In this page, you will see all of the analysis performed to understand which samples are potentially going to negatively impact the downstream analysis.
-
 ```{r, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 source('functions.R')
@@ -38,13 +32,11 @@ require(data.table)
 library(tidyverse)
 library(DT)
 library(clusterProfiler)
-
 # to convert to Word document, type in Console >rmarkdown::render("file_name.Rmd")
 ```
 
 ```{r}
 # Data wrangling to get bulk samples into 1 counts table/expression matrix
-
 setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
 
 ## load data (from featureCounts)
@@ -79,103 +71,154 @@ names(all_201221) <- gsub(x = names(all_201221), pattern = "1131-TP-1_CD8_NP16_"
 
 # list of sample names
 list_201221 <- as.data.frame(colnames(all_201221))
+
+# separate orf3a-28 samples
 bulk_orf3a <- all_201203[,c(481:486,774:779, 1404:1408)]
+
+# separate np16, s34 and m24 samples
 bulk_np16_s34_m24 <- all_201221[,25:96]
 
-list_bulk_np16_s34_m24 <- as.data.frame(colnames(bulk_np16_s34_m24))
-
-bulk_data <- cbind(bulk_orf3a, bulk_np16_s34_m24)
-
-```
-
-```{r}
+# relabel columns based on patient details
 meta_data <- read.table("bulk_metadata.csv", sep=",", header = TRUE)
-rownames(meta_data) <- meta_data$Samples
-colnames(bulk_data) <- rownames(meta_data)
-all(rownames(meta_data) %in% colnames(bulk_data))
+meta_data_1 <- meta_data[-c(1:17),]
+rownames(meta_data_1) <- meta_data_1$Samples
+colnames(bulk_np16_s34_m24) <- rownames(meta_data_1)
+
+bulk_np16_s34_m24 <- bulk_np16_s34_m24[,-c(1:3, 6, 13, 18, 55, 56, 67, 68)]
+
+bulk_np16 <- select(bulk_np16_s34_m24,contains("NP16"))
+bulk_s34 <- select(bulk_np16_s34_m24,contains("S34"))
+bulk_m24 <- select(bulk_np16_s34_m24,contains("M24"))
+
+# separate metadata file
+meta_data_2 <- na.omit(meta_data_1)
+
+meta_data_np16 <- meta_data_2 %>% filter(Epitope == "NP16") 
+meta_data_orf3a <- meta_data %>% filter(Epitope== "ORF3a-28")
+meta_data_s34 <- meta_data_2 %>% filter(Epitope == "S34")
+meta_data_m24 <- meta_data_2 %>% filter(Epitope == "M24")
+
+# meta_data <- read.table("bulk_metadata.csv", sep=",", header = TRUE)
+# rownames(meta_data) <- meta_data$Samples
+# colnames(bulk_data) <- rownames(meta_data)
+# all(rownames(meta_data) %in% colnames(bulk_data))
 ```
+
 
 ```{r, include=FALSE}
-dds <- DESeqDataSetFromMatrix(countData=bulk_data, colData=meta_data, design=~Epitope)
-keep <- rowSums(counts(dds)) >= 10
-dds <- dds[keep,]
-dds <- DESeq(dds, parallel=TRUE)
+dds_np16 <- DESeqDataSetFromMatrix(countData=bulk_np16, colData=meta_data_np16, design=~Tetramer)
+keep <- rowSums(counts(dds_np16)) >= 10
+dds_np16 <- dds_np16[keep,]
+dds_np16 <- DESeq(dds_np16, parallel=TRUE)
 
+dds_orf3a <- DESeqDataSetFromMatrix(countData=bulk_orf3a, colData=meta_data_orf3a, design=~Tetramer)
+keep <- rowSums(counts(dds_orf3a)) >= 10
+dds_orf3a <- dds_orf3a[keep,]
+dds_orf3a <- DESeq(dds_orf3a, parallel=TRUE)
+
+dds_s34 <- DESeqDataSetFromMatrix(countData=bulk_s34, colData=meta_data_s34, design=~Tetramer)
+keep <- rowSums(counts(dds_s34)) >= 10
+dds_s34 <- dds_s34[keep,]
+dds_s34 <- DESeq(dds_s34, parallel=TRUE)
+
+dds_m24 <- DESeqDataSetFromMatrix(countData=bulk_m24, colData=meta_data_m24, design=~Tetramer)
+keep <- rowSums(counts(dds_m24)) >= 10
+dds_m24 <- dds_m24[keep,]
+dds_m24 <- DESeq(dds_m24, parallel=TRUE)
 ```
 
 ### Heatmap of counts matrix
 
-To explore a count matrix, it is often instructive to look at it as a heatmap. Below we show how to produce such a heatmap for various transformations of the data. I have plotted a heatmap of the top 200 highly expressed genes to determine if the samples cluster together by condition.
+```{r, fig.width=10, fig.height=8}
+vsd_np16 <- varianceStabilizingTransformation(dds_np16, blind=FALSE)
+select <- order(rowMeans(counts(dds_np16, normalized=FALSE)), decreasing=TRUE)[1:200]
+df <- as.data.frame(colData(dds_np16)[,"Tetramer"])
+annotation <- data.frame(Var1 = meta_data_np16$Tetramer, Var2 = meta_data_np16$Patient)
+rownames(annotation) <- colnames(assay(vsd_np16))
+pheatmap(assay(vsd_np16)[select,], cluster_rows = FALSE, show_rownames = FALSE, cluster_cols = TRUE, annotation =annotation)
 
-```{r, fig.width=30, fig.height=20}
-vsd <- varianceStabilizingTransformation(dds, blind=FALSE)
-select <- order(rowMeans(counts(dds, normalized=FALSE)), decreasing=TRUE)[1:200]
-df <- as.data.frame(colData(dds)[,"Tetramer"])
-annotation <- data.frame(Var1 = meta_data$Epitope, Var2 = meta_data$T_cell)
-rownames(annotation) <- colnames(assay(vsd))
-pheatmap(assay(vsd)[select,], cluster_rows = FALSE, show_rownames = FALSE, cluster_cols = TRUE, annotation =annotation)
+vsd_orf3a <- varianceStabilizingTransformation(dds_orf3a, blind=FALSE)
+select <- order(rowMeans(counts(dds_orf3a, normalized=FALSE)), decreasing=TRUE)[1:200]
+df <- as.data.frame(colData(dds_orf3a)[,"Tetramer"])
+annotation <- data.frame(Var1 = meta_data_orf3a$Tetramer, Var2 = meta_data_orf3a$Patient)
+rownames(annotation) <- colnames(assay(vsd_orf3a))
+pheatmap(assay(vsd_orf3a)[select,], cluster_rows = FALSE, show_rownames = FALSE, cluster_cols = TRUE, annotation =annotation)
+
+vsd_s34 <- varianceStabilizingTransformation(dds_s34, blind=FALSE)
+select <- order(rowMeans(counts(dds_s34, normalized=FALSE)), decreasing=TRUE)[1:200]
+df <- as.data.frame(colData(dds_s34)[,"Tetramer"])
+annotation <- data.frame(Var1 = meta_data_s34$Tetramer, Var2 = meta_data_s34$Patient)
+rownames(annotation) <- colnames(assay(vsd_s34))
+pheatmap(assay(vsd_s34)[select,], cluster_rows = FALSE, show_rownames = FALSE, cluster_cols = TRUE, annotation =annotation)
+
+vsd_m24 <- varianceStabilizingTransformation(dds_m24, blind=FALSE)
+select <- order(rowMeans(counts(dds_m24, normalized=FALSE)), decreasing=TRUE)[1:200]
+df <- as.data.frame(colData(dds_m24)[,"Tetramer"])
+annotation <- data.frame(Var1 = meta_data_m24$Tetramer, Var2 = meta_data_m24$Patient)
+rownames(annotation) <- colnames(assay(vsd_m24))
+pheatmap(assay(vsd_m24)[select,], cluster_rows = FALSE, show_rownames = FALSE, cluster_cols = TRUE, annotation =annotation)
+
+
 ```
 
 
-### Heatmap of sample-to-sample distances
 
-Another use of the transformed data is sample clustering. Here, we apply the dist function to the transpose of the transformed count matrix to get sample-to-sample distances.
+### PCA analysis of the samples 
 
-A heatmap of this distance matrix gives us an overview over similarities and dissimilarities between samples. We have to provide a hierarchical clustering hc to the heatmap function based on the sample distances, or else the heatmap function would calculate a clustering based on the distances between the rows/columns of the distance matrix.
+#### PCA - NP16
 
-```{r, fig.width=20, fig.height=20}
-library(RColorBrewer)
-sampleDists <- dist(t(assay(vsd)))
-samplDistMatrix <- as.matrix(sampleDists)
-rownames(samplDistMatrix) <- meta_data$Epitope
-colnames(samplDistMatrix) <- meta_data$Samples
-colors <- colorRampPalette(rev(brewer.pal(9, "Blues")) )(255)
-pheatmap(samplDistMatrix, 
-         clustering_distance_cols = sampleDists, 
-         clustering_distance_rows = sampleDists,
-         color = colors)
+```{r, fig.width=6, fig.height=4}
+plotPCA(vsd_np16, intgroup=c("Patient"))
+plotPCA(vsd_np16, intgroup=c("Tetramer"))
+```
+#### PCA - ORF3a-28
+
+```{r, fig.width=8, fig.height=3}
+plotPCA(vsd_orf3a, intgroup=c("Patient"))
+plotPCA(vsd_orf3a, intgroup=c("Tetramer"))
 ```
 
+#### PCA - S34
 
-### PCA analysis of the samples {.tabset .tabset-fade}
+```{r, fig.width=6, fig.height=3}
+plotPCA(vsd_s34, intgroup=c("Patient"))
+plotPCA(vsd_s34, intgroup=c("Tetramer"))
+```
+#### PCA - M24
 
-Related to the distance matrix is the PCA plot, which shows the samples in the 2D plane spanned by their first two principal components. This type of plot is useful for visualizing the overall effect of experimental covariates and batch effects.
-
-#### PCA - by epitope
-
-```{r, fig.width=8, fig.height=6}
-plotPCA(vsd, intgroup=c("Epitope"))
+```{r, fig.width=6, fig.height=3}
+plotPCA(vsd_m24, intgroup=c("Patient"))
+plotPCA(vsd_m24, intgroup=c("Tetramer"))
 ```
 
-
-#### PCA - by epitope and patient
-
-```{r, fig.width=8, fig.height=6}
-plotPCA(vsd, intgroup=c("Epitope", "Patient"))
-```
-
-#### PCA - by T cell subtype
-
-```{r, fig.width=8, fig.height=6}
-plotPCA(vsd, intgroup=c("T_cell"))
-```
-
-#### PCA - by tetramer sorting
-
-```{r, fig.width=8, fig.height=6}
-plotPCA(vsd, intgroup=c("Tetramer", "Epitope"))
-```
 
 ### Heatmap of gene clustering
-In the sample distance heatmap made previously, the dendrogram at the side shows us a hierarchical clustering of the samples. Such a clustering can also be performed for the genes. Since the clustering is only relevant for genes that actually carry a signal, one usually would only cluster a subset of the most highly variable genes. Here, for demonstration, let us select the 20 genes with the highest variance across samples. We will work with the VST data. The heatmap becomes more interesting if we do not look at absolute expression strength but rather at the amount by which each gene deviates in a specific sample from the gene’s average across all samples. Hence, we center each genes’ values across samples, and plot a heatmap (figure below). We provide a data.frame that instructs the pheatmap function how to label the columns.
 
-```{r, fig.width=20, fig.height=10}
-library("genefilter")
-topVarGenes <- head(order(rowVars(assay(vsd)), decreasing = TRUE), 20)
-mat  <- assay(vsd)[ topVarGenes, ]
+```{r, fig.width=10, fig.height=8}
+topVarGenes <- head(order(rowVars(assay(vsd_np16)), decreasing = TRUE), 20)
+mat  <- assay(vsd_np16)[ topVarGenes, ]
 mat  <- mat - rowMeans(mat)
-anno <- as.data.frame(colData(vsd)[, c("Epitope","Tetramer")])
+anno <- as.data.frame(colData(vsd_np16)[, c("Patient","Tetramer")])
 pheatmap(mat, annotation_col = anno)
+
+topVarGenes <- head(order(rowVars(assay(vsd_orf3a)), decreasing = TRUE), 20)
+mat  <- assay(vsd_orf3a)[ topVarGenes, ]
+mat  <- mat - rowMeans(mat)
+anno <- as.data.frame(colData(vsd_orf3a)[, c("Patient","Tetramer")])
+pheatmap(mat, annotation_col = anno)
+
+topVarGenes <- head(order(rowVars(assay(vsd_s34)), decreasing = TRUE), 20)
+mat  <- assay(vsd_s34)[ topVarGenes, ]
+mat  <- mat - rowMeans(mat)
+anno <- as.data.frame(colData(vsd_s34)[, c("Patient","Tetramer")])
+pheatmap(mat, annotation_col = anno)
+
+topVarGenes <- head(order(rowVars(assay(vsd_m24)), decreasing = TRUE), 20)
+mat  <- assay(vsd_m24)[ topVarGenes, ]
+mat  <- mat - rowMeans(mat)
+anno <- as.data.frame(colData(vsd_m24)[, c("Patient","Tetramer")])
+pheatmap(mat, annotation_col = anno)
+
 ```
 
 ## Differential Gene Expression Analysis (DESeq2)
@@ -184,10 +227,8 @@ pheatmap(mat, annotation_col = anno)
 # set up meta_data for all experiments (only have 1 comparison/metadata sheet)
 meta_data_np16 <- meta_data %>% filter(Epitope == "NP16")
 meta_data_np16 <- na.omit(meta_data_np16)
-
 meta_data_s34 <- meta_data %>% filter(Epitope == "S34")
 meta_data_s34 <- na.omit(meta_data_s34)
-
 meta_data_m24 <- meta_data %>% filter(Epitope == "M24")
 meta_data_m24 <- na.omit(meta_data_m24)
 ```
@@ -197,7 +238,6 @@ meta_data_m24 <- na.omit(meta_data_m24)
 ```{r, message=FALSE, eval=FALSE}
 # Set up the DESeq2 object
 df_mRNA <-  bulk_data
-
 run_deseq2 <- function(df_mRNA, meta_data, control="Negative", test="Positive", value){
   
   df_mRNA = df_mRNA[,rownames(meta_data)]
@@ -217,11 +257,8 @@ run_deseq2 <- function(df_mRNA, meta_data, control="Negative", test="Positive", 
   return(res)
 }
 res_np16 <- run_deseq2(df_mRNA, meta_data_np16, control = "Negative", test="Positive", value="Tetramer")
-
 res_s34 <- run_deseq2(df_mRNA, meta_data_s34, control = "Negative", test="Positive", value="Tetramer")
-
 res_m24 <- run_deseq2(df_mRNA, meta_data_m24, control = "Negative", test="Positive", value="Tetramer")
-
 ```
 
 The following describes the analysis of the data using DEseq2. I have separated the analyses into three different contrasts and have plotted summary statistics and MA plots for each.  
@@ -272,9 +309,7 @@ DESeq2::plotMA(res_m24)
 #### CD8+ NP16-specific T cells, negative vs positive tetramer sorting
 
 ```{r, message=FALSE, , fig.width=6, fig.height=6}
-
 res <- as.data.frame(res_np16)
-
 mutateddf <- mutate(res, sig=ifelse(res$padj<0.01, "P.adj<0.01", "Not Sig")) #Will have different colors depending on significance
 input <- cbind(gene=rownames(res), mutateddf )
 input <- input %>%
@@ -288,9 +323,7 @@ volc
 #### CD4+ S34-specific T cells, negative vs positive tetramer sorting
 
 ```{r, message=FALSE, , fig.width=6, fig.height=6}
-
 res <- as.data.frame(res_s34)
-
 mutateddf <- mutate(res, sig=ifelse(res$padj<0.01, "P.adj<0.01", "Not Sig")) #Will have different colors depending on significance
 input <- cbind(gene=rownames(res), mutateddf )
 input <- input %>%
@@ -304,9 +337,7 @@ volc
 #### CD4+ M24-specific T cells, negative vs positive tetramer sorting
 
 ```{r, message=FALSE, , fig.width=6, fig.height=6}
-
 res <- as.data.frame(res_m24)
-
 mutateddf <- mutate(res, sig=ifelse(res$padj<0.01, "P.adj<0.01", "Not Sig")) #Will have different colors depending on significance
 input <- cbind(gene=rownames(res), mutateddf )
 input <- input %>%
@@ -328,10 +359,8 @@ The folowing results tables show the significant genes (p<0.05). Filtering has b
 
 ```{r, message=FALSE}
 # modify filter_genes function as already have gene names set as row names rather than Ensembl IDs which have to be converted to gene symbols.
-
 dt <- filter_genes(as.data.frame(res_np16), name="cd8_np16")
 datatable(dt$sig)
-
 # quick check using Calli's marker list
 np16_markers <- dt$sig[is.element(dt$sig$Gene,tmarkers$V1),]
 ```
@@ -340,10 +369,8 @@ np16_markers <- dt$sig[is.element(dt$sig$Gene,tmarkers$V1),]
 
 ```{r, message=FALSE}
 # modify filter_genes function as already have gene names set as row names rather than Ensembl IDs which have to be converted to gene symbols.
-
 dt <- filter_genes(as.data.frame(res_s34), name="cd4_s34")
 datatable(dt$sig)
-
 # quick check using Calli's marker list
 s34_markers <- dt$sig[is.element(dt$sig$Gene,tmarkers$V1),]
 ```
@@ -352,10 +379,8 @@ s34_markers <- dt$sig[is.element(dt$sig$Gene,tmarkers$V1),]
 
 ```{r, message=FALSE}
 # modify filter_genes function as already have gene names set as row names rather than Ensembl IDs which have to be converted to gene symbols.
-
 dt <- filter_genes(as.data.frame(res_m24), name="cd4_m24")
 datatable(dt$sig)
-
 # quick check using Calli's marker list
 m24_markers <- dt$sig[is.element(dt$sig$Gene,tmarkers$V1),]
 ```
@@ -368,18 +393,13 @@ m24_markers <- dt$sig[is.element(dt$sig$Gene,tmarkers$V1),]
 # use all DEGs
 deg_np16 <- read.csv('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/results/cd8_np16_res.csv')
 deg_np16 <- deg_np16 %>% filter (padj < 0.5)
-
 deg_np16$Entrez.Gene <- mapIds(org.Hs.eg.db, keys=as.character(deg_np16$Gene), keytype="SYMBOL", column="ENTREZID")
-
 # Keep only rows from table without NAs
 deg_np16 <- deg_np16[is.na(deg_np16$Entrez.Gene)==FALSE,]
-
 # Remove duplicated entries
 deg_np16 <- deg_np16[!duplicated(deg_np16$Entrez.Gene),]
-
 # Change Entrez IDs from numbers to characters
 geneset <- as.character(deg_np16$Entrez.Gene)
-
 # This will take a little while to run
 ego <- enrichGO(gene = geneset, 
                 universe = NULL, #all available genes in database
@@ -391,13 +411,9 @@ ego <- enrichGO(gene = geneset,
                 readable = TRUE) #will show gene symbol in images later rather than Entrez Gene ID
 # dimensions - number of GO terms
 dim(ego)
-
 simp <- simplify(ego)
-
 np16_GOgenes <- data.frame(simp$ID, simp$Description, simp$p.adjust, simp$geneID)
-
 # Copy and paste table into Excel
-
 ```
 
 ```{r,fig.height=4, fig.width=6}
@@ -429,18 +445,13 @@ cnetplot(simp, foldChange = logFC_np16,
 #### CD4+ S34-specific T cells, negative vs positive tetramer sorting
 ```{r}
 deg_s34 <- read.csv('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/results/cd4_s34_res.csv')
-
 deg_s34$Entrez.Gene <- mapIds(org.Hs.eg.db, keys=as.character(deg_s34$Gene), keytype="SYMBOL", column="ENTREZID")
-
 # Keep only rows from table without NAs
 deg_s34 <- deg_s34[is.na(deg_s34$Entrez.Gene)==FALSE,]
-
 # Remove duplicated entries
 deg_s34 <- deg_s34[!duplicated(deg_s34$Entrez.Gene),]
-
 # Change Entrez IDs from numbers to characters
 geneset <- as.character(deg_s34$Entrez.Gene)
-
 # This will take a little while to run
 ego <- enrichGO(gene = geneset, 
                 universe = NULL, #all available genes in database
@@ -452,15 +463,10 @@ ego <- enrichGO(gene = geneset,
                 readable = TRUE) #will show gene symbol in images later rather than Entrez Gene ID
 # dimensions - number of GO terms
 dim(ego)
-
 simp <- simplify(ego)
-
 dim(simp)
-
 s34_GOgenes <- data.frame(simp$ID, simp$Description, simp$p.adjust, simp$geneID)
-
 # Copy and paste table into Excel
-
 ```
 
 ```{r, fig.height=12, fig.width=14}
@@ -484,20 +490,14 @@ cnetplot(simp, foldChange = logFC_s34,
 #### CD4+ M24-specific T cells, negative vs positive tetramer sorting
 ```{r}
 deg_m24 <- read.csv('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/results/cd4_m24_sig.csv')
-
 deg_m24 <- deg_m24 %>% filter(log2FoldChange < -3 | log2FoldChange > 3)
-
 deg_m24$Entrez.Gene <- mapIds(org.Hs.eg.db, keys=as.character(deg_m24$Gene), keytype="SYMBOL", column="ENTREZID")
-
 # Keep only rows from table without NAs
 deg_m24 <- deg_m24[is.na(deg_m24$Entrez.Gene)==FALSE,]
-
 # Remove duplicated entries
 deg_m24 <- deg_m24[!duplicated(deg_m24$Entrez.Gene),]
-
 # Change Entrez IDs from numbers to characters
 geneset <- as.character(deg_m24$Entrez.Gene)
-
 # This will take a little while to run
 ego <- enrichGO(gene = geneset, 
                 universe = NULL, # all available genes in database
@@ -509,15 +509,10 @@ ego <- enrichGO(gene = geneset,
                 readable = TRUE) # will show gene symbol in images later rather than Entrez Gene ID
 # dimensions - number of GO terms
 dim(ego)
-
 simp <- simplify(ego)
-
 dim(simp)
-
 m24_GOgenes <- data.frame(simp$ID, simp$Description, simp$p.adjust, simp$geneID)
-
 # Copy and paste table into Excel
-
 ```
 
 ```{r,fig.height=4, fig.width=6}
@@ -539,4 +534,3 @@ cnetplot(simp, foldChange = logFC_m24,
 # show 5 GO terms, if set circular to TRUE then GO terms won't be in middle, will be on edge of circle
 # size = number of genes, fold change = red for upregulated, green for downregulated
 ```
-
