@@ -232,37 +232,18 @@ bulk_np16.1 <- bulk_np16 %>% select(!(contains("1131-TP-1")))
 # remove from metadata
 meta_data_np16.1 <- meta_data_np16 %>% filter(Patient != "1131-TP-1_CD8_NP16") 
 
+all(rownames(meta_data_np16.1) %in% colnames(bulk_np16.1))
+
 ```
 
 
 
 ```{r, message=FALSE, eval=FALSE}
-# Set up the DESeq2 object
+# changed functions.R ~Condition to ~Tetramer
 
-run_deseq2 <- function(df_mRNA, meta_data, control="Negative", test="Positive", value){
+res_np16 <- run_deseq2(bulk_np16.1, meta_data_np16.1, control = "Negative", test="Positive", value="Tetramer")
 
-  df_mRNA = df_mRNA[,rownames(meta_data)]
-
-
-  dds<- DESeqDataSetFromMatrix(countData=df_mRNA,
-                               colData=meta_data,
-                               design= ~Tetramer)
-
-  keep <- rowSums(counts(dds)) >= 10
-  dds <- dds[keep,]
-
-  dds <- DESeq(dds)
-
-  res <- results(dds, contrast = c(value, test,control))
-
-  return(res)
-}
-
-df_mRNA <-bulk_np16.1
-res_np16 <- run_deseq2(df_mRNA, meta_data_np16.1, control = "Negative", test="Positive", value="Tetramer")
-
-df_mRNA <- bulk_m24
-res_m24 <- run_deseq2(df_mRNA, meta_data_m24, control = "Negative", test="Positive", value="Tetramer")
+res_m24 <- run_deseq2(bulk_m24, meta_data_m24, control = "Negative", test="Positive", value="Tetramer")
 ```
 
 
@@ -340,8 +321,7 @@ The folowing results tables show the significant genes (p<0.05). Filtering has b
 # modify filter_genes function as already have gene names set as row names rather than Ensembl IDs which have to be converted to gene symbols.
 dt <- filter_genes(as.data.frame(res_np16), name="cd8_np16")
 datatable(dt$sig)
-# quick check using Calli's marker list
-np16_markers <- dt$sig[is.element(dt$sig$Gene,tmarkers$V1),]
+
 ```
 
 #### CD4+ M24-specific T cells, negative vs positive tetramer sorting
@@ -350,8 +330,7 @@ np16_markers <- dt$sig[is.element(dt$sig$Gene,tmarkers$V1),]
 # modify filter_genes function as already have gene names set as row names rather than Ensembl IDs which have to be converted to gene symbols.
 dt <- filter_genes(as.data.frame(res_m24), name="cd4_m24")
 datatable(dt$sig)
-# quick check using Calli's marker list
-m24_markers <- dt$sig[is.element(dt$sig$Gene,tmarkers$V1),]
+
 ```
 
 ## GO Analysis
