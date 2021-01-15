@@ -454,7 +454,8 @@ cnetplot(simp, foldChange = logFC_m24,
                           "cell killing",
                           "leukocyte cell-cell adhesion", 
                           "T cell activation",
-                          "regulation of leukocyte differentiation"),
+                          "regulation of leukocyte differentiation",
+                          "positive regulation of lymphocyte chemotaxis"),
          circular = FALSE)
 # show 5 GO terms, if set circular to TRUE then GO terms won't be in middle, will be on edge of circle
 # size = number of genes, fold change = red for upregulated, green for downregulated
