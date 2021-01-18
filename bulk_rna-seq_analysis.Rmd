@@ -236,11 +236,33 @@ all(rownames(meta_data_np16.1) %in% colnames(bulk_np16.1))
 
 ```
 
+### repeat clustering for NP16 without 1131-TP-1
+```{r, fig.height=4, fig.width=6}
+dds_np16 <- DESeqDataSetFromMatrix(countData=bulk_np16.1, colData=meta_data_np16.1, design=~Tetramer)
+keep <- rowSums(counts(dds_np16)) >= 10
+dds_np16 <- dds_np16[keep,]
+dds_np16 <- DESeq(dds_np16, parallel=TRUE)
+
+vsd_np16 <- varianceStabilizingTransformation(dds_np16, blind=FALSE)
+
+plotPCA(vsd_np16, intgroup=c("Patient"))
+plotPCA(vsd_np16, intgroup=c("Tetramer"))
+
+```
+
+``` {r, fig.height=7, fig.width=10}
+topVarGenes <- head(order(rowVars(assay(vsd_np16)), decreasing = TRUE), 20)
+mat  <- assay(vsd_np16)[ topVarGenes, ]
+mat  <- mat - rowMeans(mat)
+anno <- as.data.frame(colData(vsd_np16)[, c("Patient","Tetramer")])
+pheatmap(mat, annotation_col = anno)
+```
 
 
-```{r, message=FALSE, eval=FALSE}
+
+
+```{r}
 # changed functions.R ~Condition to ~Tetramer
-
 res_np16 <- run_deseq2(bulk_np16.1, meta_data_np16.1, control = "Negative", test="Positive", value="Tetramer")
 
 res_m24 <- run_deseq2(bulk_m24, meta_data_m24, control = "Negative", test="Positive", value="Tetramer")
@@ -281,32 +303,49 @@ DESeq2::plotMA(res_m24)
 
 #### CD8+ NP16-specific T cells, negative vs positive tetramer sorting
 
-```{r, message=FALSE, , fig.width=6, fig.height=6}
+```{r, message=FALSE, , fig.width=6, fig.height=5}
 res <- as.data.frame(res_np16)
-mutateddf <- mutate(res, sig=ifelse(res$padj<0.01, "P.adj<0.01", "Not Sig")) #Will have different colors depending on significance
+mutateddf <- mutate(res, sig=ifelse(res$padj<0.05, "P.adj < 0.05", "Not Sig")) # Will have different colors depending on significance
+
 input <- cbind(gene=rownames(res), mutateddf )
 input <- input %>%
   arrange(input$padj)
-#convert the rownames to a column
-volc = ggplot(input, aes(log2FoldChange, -log10(padj))) + #volcanoplot with log2Foldchange versus pvalue
-    geom_point(aes(col=sig)) + #add points colored by significance
-    ggtitle("CD8+ NP16-tetramer positive T cells") #e.g. 'Volcanoplot DESeq2'
-volc
+
+symbol_data <- input %>% 
+  filter(gene == "CCL5" | gene == "GNLY" | gene == "GZMA")
+
+volc = ggplot(input, aes(log2FoldChange, -log10(padj))) + # volcanoplot with log2Foldchange versus pvalue
+    geom_point(aes(col=sig)) + # add points colored by significance
+    geom_point(data=symbol_data, aes(log2FoldChange, -log10(padj)), colour="red") +
+    ggtitle("CD8+ NP16-tetramer positive T cells") 
+
+volc+geom_text_repel(data=symbol_data, size = 10 / .pt, aes(label=`gene`, fontface=3)) + scale_colour_Publication() + theme_bw()# adding text for the genes
 ```
 
 #### CD4+ M24-specific T cells, negative vs positive tetramer sorting
 
-```{r, message=FALSE, , fig.width=6, fig.height=6}
+```{r, message=FALSE, , fig.width=10, fig.height=7}
 res <- as.data.frame(res_m24)
-mutateddf <- mutate(res, sig=ifelse(res$padj<0.01, "P.adj<0.01", "Not Sig")) #Will have different colors depending on significance
+mutateddf <- mutate(res, sig=ifelse(res$padj<0.01, "P.adj<0.01", "Not Sig")) # Will have different colors depending on significance
+
 input <- cbind(gene=rownames(res), mutateddf )
 input <- input %>%
   arrange(input$padj)
-#convert the rownames to a column
-volc = ggplot(input, aes(log2FoldChange, -log10(padj))) + #volcanoplot with log2Foldchange versus pvalue
-    geom_point(aes(col=sig)) + #add points colored by significance
-    ggtitle("CD8+ NP16-tetramer positive T cells") #e.g. 'Volcanoplot DESeq2'
-volc
+
+symbol_data <- input %>% 
+  filter(gene == "PTPRC" | gene == "CCR7" | gene == "SELL" | gene == "IL7R"|
+         gene == "CD44" | gene == "CD69" | gene == "CCL4"|
+         gene == "IL21" | gene == "CD200" | gene == "IFNG" | gene == "IL2"|
+         gene == "TNF" | gene == "LTA" | gene == "TUBA1B" | gene == "BTLA"|
+         gene == "GNLY" | gene == "NKG7" | gene == "GZMA" | gene == "GZMB"|
+         gene == "GZMH" | gene == "XCL1" | gene == "XCL2" |
+         gene == "PDCD1"|gene == "CTLA4"|gene == "TIGIT")
+
+volc = ggplot(input, aes(log2FoldChange, -log10(padj))) + # volcanoplot with log2Foldchange versus pvalue
+    geom_point(aes(col=sig)) + # add points colored by significance
+    geom_point(data=symbol_data, aes(log2FoldChange, -log10(padj)), colour="red") +
+    ggtitle("CD4+ M24-tetramer positive T cells") 
+volc+geom_text_repel(data=symbol_data, size = 10 / .pt, aes(label=`gene`, fontface=3)) + scale_colour_Publication() + theme_bw()# adding text for the genes
 ```
 
 
@@ -319,17 +358,15 @@ The folowing results tables show the significant genes (p<0.05). Filtering has b
 
 ```{r, message=FALSE}
 # modify filter_genes function as already have gene names set as row names rather than Ensembl IDs which have to be converted to gene symbols.
-dt <- filter_genes(as.data.frame(res_np16), name="cd8_np16")
-datatable(dt$sig)
+# dt <- filter_genes(as.data.frame(res_np16), name="cd8_np16")
 
 ```
 
-#### CD4+ M24-specific T cells, negative vs positive tetramer sorting
+#### CD4+ M24-specific T cells, cytokine expression negative vs positive
 
 ```{r, message=FALSE}
 # modify filter_genes function as already have gene names set as row names rather than Ensembl IDs which have to be converted to gene symbols.
-dt <- filter_genes(as.data.frame(res_m24), name="cd4_m24")
-datatable(dt$sig)
+# dt <- filter_genes(as.data.frame(res_m24), name="cd4_m24")
 
 ```
 
@@ -337,126 +374,126 @@ datatable(dt$sig)
 
 #### CD8+ NP16-specific T cells, negative vs positive tetramer sorting
 ```{r}
-# if just use significant DEGs - only 127, not enough for GO analysis.
-deg_np16 <- read.csv('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/results/cd8_np16_res.csv')
+# # if just use significant DEGs - only 127, not enough for GO analysis.
+# deg_np16 <- read.csv('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/results/cd8_np16_res.csv')
+# 
+# # select only upregulated genes
+# deg_np16 <- deg_np16 %>% filter (log2FoldChange > 0)
+# 
+# deg_np16$Entrez.Gene <- mapIds(org.Hs.eg.db, keys=as.character(deg_np16$Gene), keytype="SYMBOL", column="ENTREZID")
+# 
+# # Keep only rows from table without NAs
+# deg_np16 <- deg_np16[is.na(deg_np16$Entrez.Gene)==FALSE,]
+# # Remove duplicated entries
+# deg_np16 <- deg_np16[!duplicated(deg_np16$Entrez.Gene),]
+# # Change Entrez IDs from numbers to characters
+# geneset <- as.character(deg_np16$Entrez.Gene)
+# 
+# # This will take a little while to run
+# ego <- enrichGO(gene = geneset,
+#                 universe = NULL, #all available genes in database
+#                 OrgDb = org.Hs.eg.db, #Hs: homo sapiens
+#                 ont ="BP", #molecular function, biological process, cellular component
+#                 pAdjustMethod = "BH",
+#                 pvalueCutoff = 0.05,
+#                 qvalueCutoff = 0.05,  # q value is FDR adjusted p value
+#                 readable = TRUE) #will show gene symbol in images later rather than Entrez Gene ID
+# # dimensions - number of GO terms
+# dim(ego)
+# 
+# np16_GOgenes <- data.frame(ego$ID, ego$Description, ego$p.adjust, ego$geneID)
+# 
+# simp <- simplify(ego)
+# 
+# dim(simp)
+# 
+# np16_GOgenes <- data.frame(simp$ID, simp$Description, simp$p.adjust, simp$geneID)
 
-# select only upregulated genes
-deg_np16 <- deg_np16 %>% filter (log2FoldChange > 0)
-
-deg_np16$Entrez.Gene <- mapIds(org.Hs.eg.db, keys=as.character(deg_np16$Gene), keytype="SYMBOL", column="ENTREZID")
-
-# Keep only rows from table without NAs
-deg_np16 <- deg_np16[is.na(deg_np16$Entrez.Gene)==FALSE,]
-# Remove duplicated entries
-deg_np16 <- deg_np16[!duplicated(deg_np16$Entrez.Gene),]
-# Change Entrez IDs from numbers to characters
-geneset <- as.character(deg_np16$Entrez.Gene)
-
-# This will take a little while to run
-ego <- enrichGO(gene = geneset,
-                universe = NULL, #all available genes in database
-                OrgDb = org.Hs.eg.db, #Hs: homo sapiens
-                ont ="BP", #molecular function, biological process, cellular component
-                pAdjustMethod = "BH",
-                pvalueCutoff = 0.05,
-                qvalueCutoff = 0.05,  # q value is FDR adjusted p value
-                readable = TRUE) #will show gene symbol in images later rather than Entrez Gene ID
-# dimensions - number of GO terms
-dim(ego)
-
-np16_GOgenes <- data.frame(ego$ID, ego$Description, ego$p.adjust, ego$geneID)
-
-simp <- simplify(ego)
-
-dim(simp)
-
-np16_GOgenes <- data.frame(simp$ID, simp$Description, simp$p.adjust, simp$geneID)
-# Copy and paste table into Excel
 ```
 
 ```{r,fig.height=5, fig.width=10}
-barplot (simp, showCategory = 20)
+# barplot (simp, showCategory = 20)
 ```
 
 ```{r, fig.height=8, fig.width=10}
-emapplot(simp)
+# emapplot(simp)
 ```
 
 ```{r, fig.height=12, fig.width=14}
-# logFC is optional, but if available will colour-code the nodes
-logFC_np16 <- deg_np16$log2FoldChange
-# set name of object
-names(logFC_np16) <- deg_np16$Entrez.Gene
-
-cnetplot(simp, foldChange = logFC_np16,
-         showCategory = c("defense response to virus",
-                          "T cell receptor signaling pathway",
-                          "antigen processing and presentation",
-                          "neutrophil degranulation"),
-         circular = FALSE)
-# show 5 GO terms, if set circular to TRUE then GO terms won't be in middle, will be on edge of circle
-# size = number of genes, fold change = red for upregulated, green for downregulated
+# # logFC is optional, but if available will colour-code the nodes
+# logFC_np16 <- deg_np16$log2FoldChange
+# # set name of object
+# names(logFC_np16) <- deg_np16$Entrez.Gene
+# 
+# cnetplot(simp, foldChange = logFC_np16,
+#          showCategory = c("defense response to virus",
+#                           "T cell receptor signaling pathway",
+#                           "antigen processing and presentation",
+#                           "neutrophil degranulation"),
+#          circular = FALSE)
+# # show 5 GO terms, if set circular to TRUE then GO terms won't be in middle, will be on edge of circle
+# # size = number of genes, fold change = red for upregulated, green for downregulated
 ```
 
 
 
-#### CD4+ M24-specific T cells, negative vs positive tetramer sorting
+#### CD4+ M24-specific T cells, cytokine expression negative vs positive
 ```{r}
-deg_m24 <- read.csv('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/results/cd4_m24_sig.csv')
+# deg_m24 <- read.csv('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/results/cd4_m24_sig.csv')
+# 
+# # select only upregulated genes
+# deg_m24 <- deg_m24 %>% filter(log2FoldChange > 2)
+# 
+# deg_m24$Entrez.Gene <- mapIds(org.Hs.eg.db, keys=as.character(deg_m24$Gene), keytype="SYMBOL", column="ENTREZID")
+# # Keep only rows from table without NAs
+# deg_m24 <- deg_m24[is.na(deg_m24$Entrez.Gene)==FALSE,]
+# # Remove duplicated entries
+# deg_m24 <- deg_m24[!duplicated(deg_m24$Entrez.Gene),]
+# # Change Entrez IDs from numbers to characters
+# geneset <- as.character(deg_m24$Entrez.Gene)
+# # This will take a little while to run
+# ego <- enrichGO(gene = geneset,
+#                 universe = NULL, # all available genes in database
+#                 OrgDb = org.Hs.eg.db, # Hs: homo sapiens
+#                 ont ="BP", # molecular function, biological process, cellular component
+#                 pAdjustMethod = "BH",
+#                 pvalueCutoff = 0.05,
+#                 qvalueCutoff = 0.05,  # q value is FDR adjusted p value
+#                 readable = TRUE) # will show gene symbol in images later rather than Entrez Gene ID
+# # dimensions - number of GO terms
+# dim(ego)
+# 
+# m24_GOgenes <- data.frame(ego$ID, ego$Description, ego$p.adjust, ego$geneID)
+# 
+# simp <- simplify(ego)
+# dim(simp)
+# 
+# m24_GOgenes <- data.frame(simp$ID, simp$Description, simp$p.adjust, simp$geneID)
 
-# select only upregulated genes
-deg_m24 <- deg_m24 %>% filter(log2FoldChange > 2)
-
-deg_m24$Entrez.Gene <- mapIds(org.Hs.eg.db, keys=as.character(deg_m24$Gene), keytype="SYMBOL", column="ENTREZID")
-# Keep only rows from table without NAs
-deg_m24 <- deg_m24[is.na(deg_m24$Entrez.Gene)==FALSE,]
-# Remove duplicated entries
-deg_m24 <- deg_m24[!duplicated(deg_m24$Entrez.Gene),]
-# Change Entrez IDs from numbers to characters
-geneset <- as.character(deg_m24$Entrez.Gene)
-# This will take a little while to run
-ego <- enrichGO(gene = geneset,
-                universe = NULL, # all available genes in database
-                OrgDb = org.Hs.eg.db, # Hs: homo sapiens
-                ont ="BP", # molecular function, biological process, cellular component
-                pAdjustMethod = "BH",
-                pvalueCutoff = 0.05,
-                qvalueCutoff = 0.05,  # q value is FDR adjusted p value
-                readable = TRUE) # will show gene symbol in images later rather than Entrez Gene ID
-# dimensions - number of GO terms
-dim(ego)
-
-m24_GOgenes <- data.frame(ego$ID, ego$Description, ego$p.adjust, ego$geneID)
-
-simp <- simplify(ego)
-dim(simp)
-
-m24_GOgenes <- data.frame(simp$ID, simp$Description, simp$p.adjust, simp$geneID)
-# Copy and paste table into Excel
 ```
 
 ```{r,fig.height=5, fig.width=12}
-barplot (simp, showCategory = 20)
+# barplot (simp, showCategory = 20)
 ```
 ```{r, fig.height=8, fig.width=10}
-emapplot(simp)
+# emapplot(simp)
 ```
 
 ```{r, fig.height=12, fig.width=14}
-# logFC is optional, but if available will colour-code the nodes
-logFC_m24 <- deg_m24$log2FoldChange
-# set name of object
-names(logFC_m24) <- deg_m24$Entrez.Gene
-
-cnetplot(simp, foldChange = logFC_m24,
-         showCategory = c("regulation of B cell mediated immunity",
-                          "cytokine production involved in immune response",
-                          "cell killing",
-                          "leukocyte cell-cell adhesion", 
-                          "T cell activation",
-                          "regulation of leukocyte differentiation",
-                          "positive regulation of lymphocyte chemotaxis"),
-         circular = FALSE)
-# show 5 GO terms, if set circular to TRUE then GO terms won't be in middle, will be on edge of circle
+# # logFC is optional, but if available will colour-code the nodes
+# logFC_m24 <- deg_m24$log2FoldChange
+# # set name of object
+# names(logFC_m24) <- deg_m24$Entrez.Gene
+# 
+# cnetplot(simp, foldChange = logFC_m24,
+#          showCategory = c("regulation of B cell mediated immunity",
+#                           "cytokine production involved in immune response",
+#                           "cell killing",
+#                           "leukocyte cell-cell adhesion", 
+#                           "T cell activation",
+#                           "regulation of leukocyte differentiation",
+#                           "positive regulation of lymphocyte chemotaxis"),
+#          circular = FALSE)
+# # show 5 GO terms, if set circular to TRUE then GO terms won't be in middle, will be on edge of circle
 # size = number of genes, fold change = red for upregulated, green for downregulated
 ```
