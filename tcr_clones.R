@@ -6,6 +6,7 @@
 
 library(data.table)
 library(tidyverse)
+library(circlize)
 
 ########## CD8 NP16 CLONES #################
 
@@ -176,6 +177,45 @@ shared_tcr <- merge(cd8_np16, tcr_freq, by.x=c("alpha","beta"), by.y=c("Var1","V
 
 write.csv(shared_tcr, "cd8_np16_clones_shared_tcr.csv")
 
+# circle plots by patient
+# separate by patient 
+# or could also use patient_005 <- cd8_np16[cd8_np16$cell_name %like% "005",]
+cd8_005 <- cd8_np16[grep("005", cd8_np16$CloneName), ]
+cd8_1131 <- cd8_np16[grep("1131", cd8_np16$CloneName), ]
+cd8_1153 <- cd8_np16[grep("1153", cd8_np16$CloneName), ]
+cd8_1201 <- cd8_np16[grep("1201", cd8_np16$CloneName), ]
+
+table_005 <- as.matrix(as.data.frame.matrix(table(cd8_005$alpha, cd8_005$beta)))
+table_1131 <- as.matrix(as.data.frame.matrix(table(cd8_1131$alpha, cd8_1131$beta)))
+table_1153 <- as.matrix(as.data.frame.matrix(table(cd8_1153$alpha, cd8_1153$beta)))
+table_1201 <- as.matrix(as.data.frame.matrix(table(cd8_1201$alpha, cd8_1201$beta)))
+
+freq_005 <- as.data.frame(table(cd8_005$alpha, cd8_005$beta))
+freq_1131 <- as.data.frame(table(cd8_1131$alpha, cd8_1131$beta))
+freq_1153 <- as.data.frame(table(cd8_1153$alpha, cd8_1153$beta))
+freq_1201 <- as.data.frame(table(cd8_1201$alpha, cd8_1201$beta))
+
+
+setwd("/t1-data/user/lfelce/TCR_analysis/tcr_clones_results/")
+
+list <- c("table_005", "table_1131", "table_1153", "table_1201")
+
+for (i in 1:length(list)) {
+  circos.clear()
+  set.seed(999)
+  pdf(paste((list[i]), "_chorddiagram.pdf", sep=""), width = 16, height = 12, useDingbats = FALSE)
+  chordDiagram(get(list[i]), annotationTrack = "grid", preAllocateTracks = 1)
+  circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+    xlim = get.cell.meta.data("xlim")
+    ylim = get.cell.meta.data("ylim")
+    sector.name = get.cell.meta.data("sector.index")
+    circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+    circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+  }, bg.border = NA)
+  dev.off()
+}
+
+
 ################### CD8 ORF3a-28 TCR CLONES ############################
 
 library(tcR)
@@ -283,3 +323,42 @@ tcr_freq <- as.data.frame(table(cd8_orf3a$alpha, cd8_orf3a$beta))
 shared_tcr <- merge(cd8_orf3a, tcr_freq, by.x=c("alpha","beta"), by.y=c("Var1","Var2"))
 
 write.csv(shared_tcr, "cd8_orf3a-28_clones_shared_tcr.csv")
+
+
+# circle plots by patient
+# separate by patient 
+# or could also use patient_005 <- cd8_np16[cd8_np16$cell_name %like% "005",]
+cd8_1134TP1 <- cd8_orf3a[grep("1134-TP1", cd8_orf3a$CloneName), ]
+cd8_1134TP2 <- cd8_orf3a[grep("1134-TP2", cd8_orf3a$CloneName), ]
+cd8_1525TP1 <- cd8_orf3a[grep("1525-TP1", cd8_orf3a$CloneName), ]
+cd8_1525TP2 <- cd8_orf3a[grep("1525-TP2", cd8_orf3a$CloneName), ]
+
+table_1134TP1 <- as.matrix(as.data.frame.matrix(table(cd8_1134TP1$alpha, cd8_1134TP1$beta)))
+table_1134TP2 <- as.matrix(as.data.frame.matrix(table(cd8_1134TP2$alpha, cd8_1134TP2$beta)))
+table_1525TP1 <- as.matrix(as.data.frame.matrix(table(cd8_1525TP1$alpha, cd8_1525TP1$beta)))
+table_1525TP2 <- as.matrix(as.data.frame.matrix(table(cd8_1525TP2$alpha, cd8_1525TP2$beta)))
+
+freq_1134TP1 <- as.data.frame(table(cd8_1134TP1$alpha, cd8_1134TP1$beta))
+freq_1134TP2 <- as.data.frame(table(cd8_1134TP2$alpha, cd8_1134TP2$beta))
+freq_1525TP1 <- as.data.frame(table(cd8_1525TP1$alpha, cd8_1525TP1$beta))
+freq_1525TP2 <- as.data.frame(table(cd8_1525TP2$alpha, cd8_1525TP2$beta))
+
+
+setwd("/t1-data/user/lfelce/TCR_analysis/tcr_clones_results/")
+
+list <- c("table_1134TP1", "table_1134TP2", "table_1525TP1", "table_1525TP2")
+
+for (i in 1:length(list)) {
+  circos.clear()
+  set.seed(999)
+  pdf(paste((list[i]), "_chorddiagram.pdf", sep=""), width = 16, height = 12, useDingbats = FALSE)
+  chordDiagram(get(list[i]), annotationTrack = "grid", preAllocateTracks = 1)
+  circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+    xlim = get.cell.meta.data("xlim")
+    ylim = get.cell.meta.data("ylim")
+    sector.name = get.cell.meta.data("sector.index")
+    circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+    circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+  }, bg.border = NA)
+  dev.off()
+}
