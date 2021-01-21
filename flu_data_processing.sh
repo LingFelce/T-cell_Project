@@ -15,6 +15,15 @@ cd /t1-data/user/ypeng/P170665/fastq_files/
 
 featureCounts -p -a /databank/igenomes/Homo_sapiens/UCSC/hg19/Annotation/Genes/genes.gtf -o /t1-data/user/lfelce/210121_counts.txt ./*.bam
 
+########## FEATURE COUNTS FOR DONOR 1 ##############
+
+module load subread/2.0.0 
+
+cd /t1-data/user/ypeng/P170335/downloaded_files/lane2/
+
+featureCounts -p -a /databank/igenomes/Homo_sapiens/UCSC/hg19/Annotation/Genes/genes.gtf -o /t1-data/user/lfelce/D1_210121_counts.txt ./*.bam
+
+
 
 
 ########## OLD CODE, NOT SURE IF CORRECT FILES! ###############
