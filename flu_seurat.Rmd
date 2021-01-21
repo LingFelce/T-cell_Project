@@ -1,0 +1,142 @@
+---
+title: "Single-cell RNA-Seq analysis of CD8+ Flu specific T cells"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(Seurat)
+library(plyr)
+library(dplyr)
+library(patchwork)
+library(cowplot)
+library(ggplot2)
+library(data.table)
+library(tidyverse)
+library(harmony)
+library(org.Hs.eg.db)
+library(AnnotationDbi)
+```
+
+Analysis of Flu CD8 samples from 2 donors
+Follow guided clustering tutorial https://satijalab.org/seurat/v3.2/pbmc3k_tutorial.html and this one https://scrnaseq-course.cog.sanger.ac.uk/website/seurat-chapter.html
+
+## Load counts matrix and create Seurat object
+```{r}
+setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_Flu/')
+# load data (from featureCounts)
+d1_counts_old <-  fread('D1_ensembl_genes_gtf.txt', stringsAsFactors = F, header=T)
+d1_counts <-  fread('D1_210121_counts.txt', stringsAsFactors = F, header=T)
+d2_counts <-  fread('D2_210121_counts.txt', stringsAsFactors = F, header=T)
+
+# remove columns with chromosome, start, end, strand and length info
+d1_counts <- d1_counts[,-c(2:6)]
+d2_counts <- d2_counts[,-c(2:6)]
+
+# make Geneid into row names
+d1_counts <-tibble::column_to_rownames(d1_counts, "Geneid")
+d2_counts <-tibble::column_to_rownames(d2_counts, "Geneid")
+
+# tidy up sample names
+names(d1_counts) <- gsub(x = names(d1_counts), pattern = "./", replacement = "")
+names(d1_counts) <- gsub(x = names(d1_counts), pattern = ".bam", replacement = "")
+
+names(d2_counts) <- gsub(x = names(d2_counts), pattern = "./", replacement = "")
+names(d2_counts) <- gsub(x = names(d2_counts), pattern = ".bam", replacement = "")
+
+# rename file names based on sample names
+d1_names <- read.csv("donor1_names.csv", header=F)
+d1_names$V2 <- gsub(x = d1_names$V2, pattern = "Sample:", replacement = "")
+colnames(d1_counts) <- d1_names$V2
+
+d2_names <- read.csv("donor2_names.csv", header=F)
+colnames(d2_counts) <- d2_names$V2
+
+# combine columns
+flu_counts <- cbind(d1_counts, d2_counts)
+
+# Initialise Seurat object with raw (non-normalised?) data
+# min.cells = include features detected in at least this many cells
+# min.features includes cells where at least this many features detected
+
+flu <- CreateSeuratObject(counts = flu_counts, min.cells = 3, min.features = 200, project = "Flu CD8+ T-cell data", assay = "RNA")
+
+# assign metadata - donor
+donor <- rep(c("Donor 1", "Donor 2"), times = c("192", "192"))
+flu@meta.data$'donor' <- as.factor(donor)
+Idents(flu) <- "donor"
+
+
+# assign metadata - timepoint
+d1_names$timepoint <- str_sub(d1_names$V2, -5)
+d2_names$timepoint <- str_sub(d2_names$V2, -5)
+
+timepoint <- as.factor(as.matrix(c(d1_names$timepoint, d2_names$timepoint)))
+# flu@meta.data$'timepoint' <- timepoint
+
+```
+
+## Standard pre-processing workflow
+```{r, fig.height=5, fig.width=16}
+# non-UMI data - nUMI represents sum of non-normalised values within cells
+# calculate % mitochondrial genes and store in separate object
+# use object@raw.data represents non-transformed and non-log-normalised counts
+# % of UMI mapping to MT-genes is a common scRNA-seq QC metric
+mito.genes <- grep(pattern = "^MT-", x = rownames(flu@assays[["RNA"]]), value = TRUE)
+
+percent.mito <- Matrix::colSums(flu@assays[["RNA"]][mito.genes, ])/Matrix::colSums(flu@assays[["RNA"]])
+
+flu <- AddMetaData(object = flu, metadata = percent.mito, col.name = "percent.mito")
+
+VlnPlot(object = flu, features = c("nFeature_RNA", "nCount_RNA", "percent.mito"), ncol = 3)
+# all cells have same value % mitochondrial cells?
+```
+
+```{r, fig.height=4, fig.width=6}
+# can use GenePlot to visualise gene-gene relationships and anything else calculated by object
+FeatureScatter(object=flu, feature1="nCount_RNA", feature2="nFeature_RNA")
+```
+
+
+```{r}
+# Filter out cells that have unique gene counts (nFeature_RNA) over 4000 or less than 200 
+# Note that > and < are used to define a'gate'.  
+# -Inf and Inf should be used if don't want a lower or upper threshold.
+flu <- subset(x = flu, subset = nFeature_RNA > 200 & nFeature_RNA < 5000 & percent.mito >  -Inf & percent.mito < 0.05 )
+
+flu <- NormalizeData(object = flu, normalization.method = "LogNormalize", scale.factor = 10000)
+```
+
+
+```{r, fig.height=5, fig.width = 12}
+# identify 2000 variable genes - normal parameter settings for UMI data normalised to total of 1e4 molecules
+flu <- FindVariableFeatures(object = flu, mean.function = ExpMean, dispersion.function = LogVMR, x.low.cutoff = 0.0125, x.high.cutoff = 3, y.cutoff = 0.5, nfeatures = 2000)
+# Identify the 10 most highly variable genes
+top10 <- head(VariableFeatures(flu), 10)
+# plot variable features with and without labels
+plot1 <- VariableFeaturePlot(flu)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot1 + plot2
+```
+
+## PCA
+
+
+```{r pca, fig.height=4, fig.width=6}
+flu <- ScaleData(object = flu, vars.to.regress = c("nCounts_RNA", "percent.mito"))
+
+flu <- RunPCA(object = flu,  npcs = 30, verbose = FALSE)
+
+# standard PCA plot
+pca_1 <- DimPlot(object = flu, reduction = "pca")
+
+pca_1
+```
+
+## Harmony integration
+
+
+
