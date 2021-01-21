@@ -134,9 +134,91 @@ flu <- RunPCA(object = flu,  npcs = 30, verbose = FALSE)
 pca_1 <- DimPlot(object = flu, reduction = "pca")
 
 pca_1
+
+saveRDS(flu, file="flu_seurat.rds")
 ```
 
 ## Harmony integration
 
+```{r, fig.width=6, fig.height=4}
+flu <- readRDS("flu_seurat.rds")
 
+flu <- flu %>%
+    RunHarmony("donor", plot_convergence = TRUE)
+# Harmony converged after 3 iterations
+# access Harmony embeddings - show top 5 rows and top 5 columns
+harmony_embeddings <- Embeddings(flu, 'harmony')
+
+```
+
+```{r harmony2, fig.height=5, fig.width=12}
+p1 <- DimPlot(object = flu, reduction = "harmony", group.by = "donor")
+p2 <- VlnPlot(object = flu, features = "harmony_1", group.by = "donor", pt.size = .1)
+p1 + p2
+```
+```{r harmony3, fig.height=5, fig.width=12}
+pca_1 + p1
+```
+
+Many downstream analyses are performed on low dimensional embeddings, not gene expression. To use the corrected Harmony embeddings rather than PCs, set reduction = 'harmony'. For example, let's perform the UMAP and Nearest Neighbor analyses using the Harmony embeddings.
+```{r harmony_umap, fig.height=5, fig.width=12}
+flu <- flu %>%
+    RunUMAP(reduction = "harmony", dims = 1:15) %>%
+    FindNeighbors(reduction = "harmony", dims = 1:15) %>%
+    FindClusters(resolution = 0.5) %>%
+    identity()
+umap_donor <- DimPlot(flu, reduction = "umap", group.by = "donor")
+umap_cluster <- DimPlot(flu, reduction = "umap", group.by = "seurat_clusters")
+umap_donor + umap_cluster
+```
+
+```{r harmony_markers}
+flu.markers <- FindAllMarkers(object = flu, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
+cluster_0 <- flu.markers[flu.markers$cluster == "0", ]
+cluster_1 <- flu.markers[flu.markers$cluster == "1", ]
+cluster_2 <- flu.markers[flu.markers$cluster == "2", ]
+
+tmarkers <- read.csv("/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/Markers_for_Ling.csv", header=F)
+genes_0 <- tmarkers[is.element(tmarkers$V1, cluster_0$gene),]
+genes_1 <- tmarkers[is.element(tmarkers$V1, cluster_1$gene),]
+genes_2 <- tmarkers[is.element(tmarkers$V1, cluster_2$gene),]
+
+
+```
+## Gene expression by donor
+
+```{r, fig.height=46, fig.width=30}
+tgenes <- read.csv("t-marker_genes.csv", header=F)
+VlnPlot(object = flu, features = as.vector(tgenes$V1),ncol=6, group.by = "donor")
+```
+
+```{r, fig.height=46, fig.width=30}
+VlnPlot(object = flu, features = as.vector(tgenes$V1),ncol=6, group.by = "seurat_clusters")
+
+```
+
+```{r}
+# Expression heatmap for top 20 markers for each cluster
+top10 <- flu.markers %>% group_by(cluster) %>% top_n(10, avg_log2FC)
+# setting slim.col.label to TRUE will print just the cluster IDS instead of every cell name
+DoHeatmap(object = flu, features = top10$gene, label = TRUE)
+```
+
+```{r}
+# How many cells for each patient?
+Idents(flu) <- "donor"
+table(Idents(flu))
+# How many cells in each cluster?
+Idents(flu) <- "seurat_clusters"
+table(Idents(flu))
+```
+
+# Save file
+
+```{r save}
+# saveRDS(flu, file="flu_seurat.rds")
+
+saveRDS(flu, file="flu_harmony.rds")
+
+```
 
