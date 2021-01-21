@@ -698,6 +698,30 @@ VlnPlot(object = conv, features = c("CD27", "IL7R", "S100A4", "PTPRC",
 ```
 
 
+# Chemokine/cytokine expression on UMAPs
+Load each previously saved .rds file - no need to repeat harmony integration, clustering etc.
+
+## All 9 CD8+ patients
+```{r, fig.height=8, fig.width=12}
+setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
+cd8 <- readRDS("cd8_harmony.rds")
+
+FeaturePlot(object = cd8, features = c("CCL4", "CCL5", "CXCR3", "CXCR4"), cols = c("grey", "blue"), reduction = "umap")
+```
+
+## Acute patients
+```{r, fig.height=6, fig.width=10}
+acute <- readRDS("acute_harmony.rds")
+
+FeaturePlot(object = acute, features = c("CCL4", "CCL5", "CXCR3", "CXCR4"), cols = c("grey", "blue"), reduction = "umap")
+```
+
+## Convalescent patients
+```{r, fig.height=8, fig.width=12}
+conv <- readRDS("convalescent_harmony.rds")
+
+FeaturePlot(object = conv, features = c("CCL4", "CCL5", "CXCR3", "CXCR4"), cols = c("grey", "blue"), reduction = "umap")
+```
 
 
 # Save file
