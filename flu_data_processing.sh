@@ -1,3 +1,24 @@
+###### FEATURE COUNTS FOR DONOR 2 #########
+
+#!/bin/bash
+#SBATCH --partition=batch
+#SBATCH --job-name=featurecounts
+#SBATCH --nodes=1
+#SBATCH --mem=128G
+#SBATCH --time=07-00:00:00
+#SBATCH --output=%j_%x.out
+#SBATCH --error=%j_%x.err
+
+module load subread/2.0.0 
+
+cd /t1-data/user/ypeng/P170665/fastq_files/
+
+featureCounts -p -a /databank/igenomes/Homo_sapiens/UCSC/hg19/Annotation/Genes/genes.gtf -o /t1-data/user/lfelce/210121_counts.txt ./*.bam
+
+
+
+########## OLD CODE, NOT SURE IF CORRECT FILES! ###############
+
 # soft link all .fastq.gz files from Peng's folder (lane 1 and lane 2) to my folder
 find /t1-data/user/ypeng/P170335/downloaded_files/lane1 -name "*.fastq.gz" | xargs -I v_f ln -s v_f
 find /t1-data/user/ypeng/P170335/downloaded_files/lane2 -name "*.fastq.gz" | xargs -I v_f ln -s v_f
