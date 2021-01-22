@@ -100,7 +100,7 @@ for (i in (1:length(mixcr_a))) {
 }
 # combine columns for each cell, select only cells with only 2 rows (dual alpha)
 big_data = do.call(rbind, datalist)
-tra <- big_data %>% group_by(i) %>% filter(n() ==1)
+tra <- big_data %>% group_by(i) %>% filter(n() <= 2)
 colnames(tra) <- c("TRAV", "TRAJ", "cell_number")
 tra <- merge(tra, mixcr_a_names, by="cell_number")
 
@@ -124,9 +124,9 @@ cd8_np16 <- mutate(cd8_np16, alpha=paste(TRAV, TRAJ, sep="_"))
 
 cd8_np16 <- mutate(cd8_np16, beta=paste(TRBV, TRBJ, sep="_"))
 
-setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
+setwd('/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/')
 
-write.csv(cd8_np16, "cd8_np16_tcr.csv")
+write.csv(cd8_np16, "cd8_np16_sc_tcr.csv")
 
 # tabulate to get dominant alpha-beta pairing
 # 005 
@@ -232,7 +232,7 @@ for (i in (1:(length(mixcr_a)))) {
 }
 # combine columns for each cell, select only cells with only 2 rows (dual receptor)
 big_data = do.call(rbind, datalist)
-tra <- big_data %>% group_by(i) %>% filter(n() == 1)
+tra <- big_data %>% group_by(i) %>% filter(n() <= 2)
 colnames(tra) <- c("TRAV", "TRAJ", "cell_number")
 tra <- merge(tra, mixcr_a_names, by="cell_number")
 
@@ -256,9 +256,9 @@ cd8_orf <- mutate(cd8_orf, alpha=paste(TRAV, TRAJ, sep="_"))
 
 cd8_orf <- mutate(cd8_orf, beta=paste(TRBV, TRBJ, sep="_"))
 
-setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
+setwd('/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/')
 
-write.csv(cd8_orf, "cd8_orf_tcr.csv") 
+write.csv(cd8_orf, "cd8_orf_sc_tcr.csv")
 
 # tabulate to get dominant alpha-beta pairing
 # 1105 rows 
@@ -364,7 +364,7 @@ for (i in (1:(length(mixcr_a)))) {
 }
 # combine columns for each cell, select only cells with only 2 rows (dual alpha)
 big_data = do.call(rbind, datalist)
-tra <- big_data %>% group_by(i) %>% filter(n() == 1)
+tra <- big_data %>% group_by(i) %>% filter(n() <= 2)
 colnames(tra) <- c("TRAV", "TRAJ", "cell_number")
 tra <- merge(tra, mixcr_a_names, by="cell_number")
 
@@ -388,9 +388,9 @@ cd4 <- mutate(cd4, alpha=paste(TRAV, TRAJ, sep="_"))
 
 cd4 <- mutate(cd4, beta=paste(TRBV, TRBJ, sep="_"))
 
-setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
+setwd('/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/')
 
-write.csv(cd4, "cd4_tcr.csv")
+write.csv(cd4, "cd4_sc_tcr.csv")
 
 
 # tabulate to get dominant alpha-beta pairing
@@ -588,6 +588,7 @@ setwd('/t1-data/user/lfelce/TCR_analysis/1131-TP-1_cd8_new')
 
 library(stringr)
 library(data.table)
+library(circlize)
 
 # read in TRA names and convert to list
 tra_names <- fread('/t1-data/user/lfelce/TCR_analysis/1131-TP-1_cd8_new/tra_names.txt', stringsAsFactors = F, header=F)
@@ -690,6 +691,22 @@ big_data = do.call(rbind, datalist)
 
 # top alpha-beta pairing
 top_ab <- as.data.frame(table(big_data$alpha, big_data$beta))
+top_ab_mat <- as.matrix(as.data.frame.matrix(table(big_data$alpha, big_data$beta)))
+
+setwd('/t1-data/user/lfelce/TCR_analysis/new_mixcr_results')
+# circle plot
+circos.clear()
+set.seed(999)
+pdf('cd8_1131-TP1_new_chorddiagram.pdf', width = 16, height = 12, useDingbats = FALSE)
+chordDiagram(top_ab_mat, annotationTrack = "grid", preAllocateTracks = 1)
+circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
+  xlim = get.cell.meta.data("xlim")
+  ylim = get.cell.meta.data("ylim")
+  sector.name = get.cell.meta.data("sector.index")
+  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
+  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
+}, bg.border = NA)
+dev.off()
 
 
 --------------------------------
