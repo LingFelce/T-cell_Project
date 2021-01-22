@@ -215,6 +215,35 @@ for (i in 1:length(list)) {
   dev.off()
 }
 
+library(stringdist)
+
+# calculate similarity score using Levenshtein distance
+sim_cdr3 <- stringsim(cd8_np16$CDR3_aa.x, cd8_np16$CDR3_aa.y, method="lv")
+
+# add to data frame as separate column
+cd8_np16$sim_score <- sim_cdr3                              
+
+# create list of cell names
+list <- clone_names[,3]
+
+# loop - select rows containing same cell name and make new object dat
+# re-order rows by similarity score putting highest one at the top
+# select top row only for each cell, make list of cells
+datalist = list()
+
+for (i in (1:length(list))) {
+  dat <- cd8_np16[cd8_np16$CloneName == list[i],]
+  dat <- dat[order(dat$sim_score, decreasing=TRUE),]
+  # dat <- dat[2,]
+  datalist[[i]] <- dat # add it to list
+}
+
+# make one big data frame where each row is cell with highest similarity score for a-b pair
+big_data = do.call(rbind, datalist)
+
+cd8_np16_sim_ab <- big_data
+
+write.csv(cd8_np16_sim_ab, "cd8_np16_ab_pairs_by_similarity.csv")
 
 ################### CD8 ORF3a-28 TCR CLONES ############################
 
