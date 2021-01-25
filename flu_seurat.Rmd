@@ -234,6 +234,13 @@ VlnPlot(object = flu, features = as.vector(tgenes$V1),ncol=6, group.by = "seurat
 
 ```
 
+```{r, fig.height=50, fig.width=25}
+FeaturePlot(object = flu, features = as.vector(tgenes$V1), cols = c("grey", "blue"), reduction = "umap")
+```
+
+
+
+
 ```{r}
 # Expression heatmap for top 20 markers for each cluster
 top10 <- flu.markers %>% group_by(cluster) %>% top_n(10, avg_log2FC)
