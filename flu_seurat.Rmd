@@ -90,16 +90,6 @@ flu_ercc_counts <- cbind(d1_counts_ercc, d2_counts_ercc)
 
 flu <- CreateSeuratObject(counts = flu_counts, min.cells = 3, min.features = 200, project = "Flu CD8+ T-cell data", assay = "RNA")
 
-# assign metadata - donor
-# already added D1 and D2 to sample names, so Seurat will automatically find them assigned as orig.ident
-
-# assign metadata - timepoint - will probably have to do manually, as some cells filtered after adding to object
-# d1_names$timepoint <- str_sub(d1_names$V2, -5)
-# d2_names$timepoint <- str_sub(d2_names$V2, -5)
-# 
-# timepoint <- as.factor(as.matrix(c(d1_names$timepoint, d2_names$timepoint)))
-# flu@meta.data$'timepoint' <- timepoint
-
 # non-UMI data - nUMI represents sum of non-normalised values within cells
 # calculate % mitochondrial genes and store in separate object
 # use object@raw.data represents non-transformed and non-log-normalised counts
@@ -178,8 +168,28 @@ p1 + p2
 pca_1 + p1
 ```
 
+```{r}
+# How many cells for each patient?
+Idents(flu) <- "orig.ident"
+table(Idents(flu))
+# How many cells in each cluster?
+Idents(flu) <- "seurat_clusters"
+table(Idents(flu))
+
+# assign metadata - donor
+# already added D1 and D2 to sample names, so Seurat will automatically find them assigned as orig.ident
+
+# assign timepoint
+flu_filtered_samples <- as.data.frame(flu@active.ident)
+flu_filtered_samples <-tibble::rownames_to_column(flu_filtered_samples, "Sample")
+# get year from last 4 digits of sample name
+flu_filtered_samples$timepoint <- str_sub(flu_filtered_samples$Sample, -4)
+# add to metadata
+flu@meta.data$"timepoint" <- as.factor(flu_filtered_samples$timepoint)
+```
+
 Many downstream analyses are performed on low dimensional embeddings, not gene expression. To use the corrected Harmony embeddings rather than PCs, set reduction = 'harmony'. For example, let's perform the UMAP and Nearest Neighbor analyses using the Harmony embeddings.
-```{r harmony_umap, fig.height=5, fig.width=12}
+```{r harmony_umap, fig.height=5, fig.width=18}
 flu <- flu %>%
     RunUMAP(reduction = "harmony", dims = 1:15) %>%
     FindNeighbors(reduction = "harmony", dims = 1:15) %>%
@@ -187,7 +197,8 @@ flu <- flu %>%
     identity()
 umap_donor <- DimPlot(flu, reduction = "umap", group.by = "orig.ident")
 umap_cluster <- DimPlot(flu, reduction = "umap", group.by = "seurat_clusters")
-umap_donor + umap_cluster
+umap_time <- DimPlot(flu, reduction = "umap", group.by = "timepoint")
+umap_donor + umap_cluster + umap_time
 ```
 
 ```{r harmony_markers}
@@ -209,10 +220,13 @@ genes_2 <- tmarkers[is.element(tmarkers$V1, cluster_2$gene),]
 tgenes <- read.csv("t-marker_genes.csv", header=F)
 VlnPlot(object = flu, features = as.vector(tgenes$V1),ncol=6, group.by = "orig.ident")
 ```
-
+### Gene expression by cluster
 ```{r, fig.height=46, fig.width=30}
 VlnPlot(object = flu, features = as.vector(tgenes$V1),ncol=6, group.by = "seurat_clusters")
-
+```
+### Gene expression by time
+```{r, fig.height=46, fig.width=30}
+VlnPlot(object = flu, features = as.vector(tgenes$V1),ncol=6, group.by = "timepoint")
 ```
 
 ```{r, fig.height=50, fig.width=25}
@@ -224,15 +238,6 @@ FeaturePlot(object = flu, features = as.vector(tgenes$V1), cols = c("grey", "blu
 top10 <- flu.markers %>% group_by(cluster) %>% top_n(10, avg_log2FC)
 # setting slim.col.label to TRUE will print just the cluster IDS instead of every cell name
 DoHeatmap(object = flu, features = top10$gene, label = TRUE)
-```
-
-```{r}
-# How many cells for each patient?
-Idents(flu) <- "orig.ident"
-table(Idents(flu))
-# How many cells in each cluster?
-Idents(flu) <- "seurat_clusters"
-table(Idents(flu))
 ```
 
 
