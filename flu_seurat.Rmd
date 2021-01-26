@@ -216,21 +216,67 @@ genes_2 <- tmarkers[is.element(tmarkers$V1, cluster_2$gene),]
 ```
 ### Gene expression by donor
 
-```{r, fig.height=46, fig.width=30}
-tgenes <- read.csv("t-marker_genes.csv", header=F)
-VlnPlot(object = flu, features = as.vector(tgenes$V1),ncol=6, group.by = "orig.ident")
+```{r, fig.height=40, fig.width=25}
+# tgenes <- read.csv("t-marker_genes.csv", header=F)
+VlnPlot(object = flu, features = 
+          c("IFNG", "TNF", "LTA", "IL2", 
+            "PTPRC", "CCR7", "SELL", "TCF7",
+            "CD44", "IL7R", "S100A4", "CD38", 
+            "CD27", "CD28", "CD69", "HLA-DRB1",
+            "ITGAE", "ITGB1", "ITGA4", "ITGB2",
+            "CCL3", "CCL4", "CCL5", "CXCR3",
+            "CXCR4", "CXCR6", "CXCR5", "CCL20",
+            "OAS1", "MX1", "IFIT3", "ISG15",
+            "GZMA", "GZMB", "PRF1", "GNLY",
+            "PDCD1", "CTLA4", "HAVCR2", "CD244",
+            "KLRG1", "TIGIT", "BTLA", "CD160")
+        ,ncol=4, group.by = "orig.ident")
 ```
 ### Gene expression by cluster
-```{r, fig.height=46, fig.width=30}
-VlnPlot(object = flu, features = as.vector(tgenes$V1),ncol=6, group.by = "seurat_clusters")
+```{r, fig.height=40, fig.width=25}
+VlnPlot(object = flu, features = 
+          c("IFNG, TNF", "LTA", "IL2", 
+            "PTPRC", "CCR7", "SELL", "TCF7",
+            "CD44", "IL7R", "S100A4", "CD38", 
+            "CD27", "CD28", "CD69", "HLA-DRB1",
+            "ITGAE", "ITGB1", "ITGA4", "ITGB2",
+            "CCL3", "CCL4", "CCL5", "CXCR3",
+            "CXCR4", "CXCR6", "CXCR5", "CCL20",
+            "OAS1", "MX1", "IFIT3", "ISG15",
+            "GZMA", "GZMB", "PRF1", "GNLY",
+            "PDCD1", "CTLA4", "HAVCR2", "CD244",
+            "KLRG1", "TIGIT", "BTLA", "CD160")
+        ,ncol=4, group.by = "seurat_clusters")
 ```
 ### Gene expression by time
-```{r, fig.height=46, fig.width=30}
-VlnPlot(object = flu, features = as.vector(tgenes$V1),ncol=6, group.by = "timepoint")
+```{r, fig.height=40, fig.width=20}
+VlnPlot(object = flu, features = 
+          c("IFNG", "TNF", "LTA", "IL2", 
+            "PTPRC", "CCR7", "SELL", "TCF7",
+            "CD44", "IL7R", "S100A4", "CD38", 
+            "CD27", "CD28", "CD69", "HLA-DRB1",
+            "ITGAE", "ITGB1", "ITGA4", "ITGB2",
+            "CCL3", "CCL4", "CCL5", "CXCR3",
+            "CXCR4", "CXCR6", "CXCR5", "CCL20",
+            "OAS1", "MX1", "IFIT3", "ISG15",
+            "GZMA", "GZMB", "PRF1", "GNLY",
+            "PDCD1", "CTLA4", "HAVCR2", "CD244",
+            "KLRG1", "TIGIT", "BTLA", "CD160")
+        ,ncol=4, group.by = "timepoint")
 ```
 
 ```{r, fig.height=50, fig.width=25}
-FeaturePlot(object = flu, features = as.vector(tgenes$V1), cols = c("grey", "blue"), reduction = "umap")
+FeaturePlot(object = flu, features = c("IFNG", "TNF", "LTA", "IL2", 
+            "PTPRC", "CCR7", "SELL", "TCF7",
+            "CD44", "IL7R", "S100A4", "CD38", 
+            "CD27", "CD28", "CD69", "HLA-DRB1",
+            "ITGAE", "ITGB1", "ITGA4", "ITGB2",
+            "CCL3", "CCL4", "CCL5", "CXCR3",
+            "CXCR4", "CXCR6", "CXCR5", "CCL20",
+            "OAS1", "MX1", "IFIT3", "ISG15",
+            "GZMA", "GZMB", "PRF1", "GNLY",
+            "PDCD1", "CTLA4", "HAVCR2", "CD244",
+            "KLRG1", "TIGIT", "BTLA", "CD160"), cols = c("grey", "blue"), reduction = "umap")
 ```
 
 ```{r}
