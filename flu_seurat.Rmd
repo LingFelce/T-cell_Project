@@ -184,12 +184,17 @@ flu_filtered_samples <- as.data.frame(flu@active.ident)
 flu_filtered_samples <-tibble::rownames_to_column(flu_filtered_samples, "Sample")
 # get year from last 4 digits of sample name
 flu_filtered_samples$timepoint <- str_sub(flu_filtered_samples$Sample, -4)
+# put TP1 or TP2 to group 2015/2016 timepoint together
+flu_filtered_samples$time <- ifelse(grepl("2006", flu_filtered_samples$timepoint),"TP1", 
+                             ifelse(grepl("2015|2016", flu_filtered_samples$timepoint),"TP2",
+                             ifelse(grepl("lCtr", flu_filtered_samples$timepoint), "No Cell Control", "")))
+
 # add to metadata
-flu@meta.data$"timepoint" <- as.factor(flu_filtered_samples$timepoint)
+flu@meta.data$"timepoint" <- as.factor(flu_filtered_samples$time)
 ```
 
 Many downstream analyses are performed on low dimensional embeddings, not gene expression. To use the corrected Harmony embeddings rather than PCs, set reduction = 'harmony'. For example, let's perform the UMAP and Nearest Neighbor analyses using the Harmony embeddings.
-```{r harmony_umap, fig.height=5, fig.width=18}
+```{r harmony_umap, fig.height=5, fig.width=20}
 flu <- flu %>%
     RunUMAP(reduction = "harmony", dims = 1:15) %>%
     FindNeighbors(reduction = "harmony", dims = 1:15) %>%
@@ -249,7 +254,7 @@ VlnPlot(object = flu, features =
         ,ncol=4, group.by = "seurat_clusters")
 ```
 ### Gene expression by time
-```{r, fig.height=40, fig.width=20}
+```{r, fig.height=50, fig.width=20}
 VlnPlot(object = flu, features = 
           c("IFNG", "TNF", "LTA", "IL2", 
             "PTPRC", "CCR7", "SELL", "TCF7",
