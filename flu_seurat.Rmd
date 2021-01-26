@@ -168,14 +168,7 @@ p1 + p2
 pca_1 + p1
 ```
 
-```{r}
-# How many cells for each patient?
-Idents(flu) <- "orig.ident"
-table(Idents(flu))
-# How many cells in each cluster?
-Idents(flu) <- "seurat_clusters"
-table(Idents(flu))
-
+```{r metadata}
 # assign metadata - donor
 # already added D1 and D2 to sample names, so Seurat will automatically find them assigned as orig.ident
 
@@ -191,6 +184,7 @@ flu_filtered_samples$time <- ifelse(grepl("2006", flu_filtered_samples$timepoint
 
 # add to metadata
 flu@meta.data$"timepoint" <- as.factor(flu_filtered_samples$time)
+
 ```
 
 Many downstream analyses are performed on low dimensional embeddings, not gene expression. To use the corrected Harmony embeddings rather than PCs, set reduction = 'harmony'. For example, let's perform the UMAP and Nearest Neighbor analyses using the Harmony embeddings.
@@ -207,6 +201,16 @@ umap_donor + umap_cluster + umap_time
 ```
 
 ```{r harmony_markers}
+# How many cells for each patient?
+Idents(flu) <- "orig.ident"
+table(Idents(flu))
+# How many cells for each timepoint?
+Idents(flu) <- "timepoint"
+table(Idents(flu))
+# How many cells in each cluster?
+Idents(flu) <- "seurat_clusters"
+table(Idents(flu))
+
 flu.markers <- FindAllMarkers(object = flu, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
 cluster_0 <- flu.markers[flu.markers$cluster == "0", ]
 cluster_1 <- flu.markers[flu.markers$cluster == "1", ]
