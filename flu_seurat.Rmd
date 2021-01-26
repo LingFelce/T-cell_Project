@@ -79,45 +79,27 @@ colnames(d2_counts_ercc) <- d2_names$V2
 # combine columns
 flu_counts <- cbind(d1_counts, d2_counts)
 flu_ercc_counts <- cbind(d1_counts_ercc, d2_counts_ercc)
+```
 
+## Non-ERCC Flu Data
+
+```{r,fig.height=5, fig.width=16}
 # Initialise Seurat object with raw (non-normalised?) data
 # min.cells = include features detected in at least this many cells
 # min.features includes cells where at least this many features detected
 
 flu <- CreateSeuratObject(counts = flu_counts, min.cells = 3, min.features = 200, project = "Flu CD8+ T-cell data", assay = "RNA")
 
-flu_ercc <- CreateSeuratObject(counts = flu_ercc_counts,  min.cells = 3, min.features = 200, project = "Flu CD8+ T-cell data", assay = "RNA")
-
 # assign metadata - donor
 # already added D1 and D2 to sample names, so Seurat will automatically find them assigned as orig.ident
 
-# assign metadata - timepoint
-d1_names$timepoint <- str_sub(d1_names$V2, -5)
-d2_names$timepoint <- str_sub(d2_names$V2, -5)
-
-timepoint <- as.factor(as.matrix(c(d1_names$timepoint, d2_names$timepoint)))
+# assign metadata - timepoint - will probably have to do manually, as some cells filtered after adding to object
+# d1_names$timepoint <- str_sub(d1_names$V2, -5)
+# d2_names$timepoint <- str_sub(d2_names$V2, -5)
+# 
+# timepoint <- as.factor(as.matrix(c(d1_names$timepoint, d2_names$timepoint)))
 # flu@meta.data$'timepoint' <- timepoint
 
-```
-
-## Standard pre-processing workflow
-
-```{r, fig.height=5, fig.width=16}
-# non-UMI data - nUMI represents sum of non-normalised values within cells
-# calculate % mitochondrial genes and store in separate object
-# use object@raw.data represents non-transformed and non-log-normalised counts
-# % of UMI mapping to MT-genes is a common scRNA-seq QC metric
-ercc.genes <- grep(pattern = "^ERCC-", x = rownames(flu_ercc@assays[["RNA"]]), value = TRUE)
-
-percent.ercc <- Matrix::colSums(flu_ercc@assays[["RNA"]][ercc.genes, ])/Matrix::colSums(flu_ercc@assays[["RNA"]])
-
-flu_ercc <- AddMetaData(object = flu_ercc, metadata = percent.ercc, col.name = "percent.ercc")
-
-VlnPlot(object = flu_ercc, features = c("nFeature_RNA", "nCount_RNA", "percent.ercc"), ncol = 3)
-
-```
-
-```{r, fig.height=5, fig.width=16}
 # non-UMI data - nUMI represents sum of non-normalised values within cells
 # calculate % mitochondrial genes and store in separate object
 # use object@raw.data represents non-transformed and non-log-normalised counts
@@ -159,8 +141,7 @@ plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
 plot1 + plot2
 ```
 
-## PCA
-
+### PCA
 
 ```{r pca, fig.height=4, fig.width=6}
 flu <- ScaleData(object = flu, vars.to.regress = c("nCounts_RNA", "percent.mito"))
@@ -175,7 +156,7 @@ pca_1
 saveRDS(flu, file="flu_seurat.rds")
 ```
 
-## Harmony integration
+### Harmony integration
 
 ```{r, fig.width=6, fig.height=3}
 flu <- readRDS("flu_seurat.rds")
@@ -222,7 +203,7 @@ genes_2 <- tmarkers[is.element(tmarkers$V1, cluster_2$gene),]
 
 
 ```
-## Gene expression by donor
+### Gene expression by donor
 
 ```{r, fig.height=46, fig.width=30}
 tgenes <- read.csv("t-marker_genes.csv", header=F)
@@ -237,9 +218,6 @@ VlnPlot(object = flu, features = as.vector(tgenes$V1),ncol=6, group.by = "seurat
 ```{r, fig.height=50, fig.width=25}
 FeaturePlot(object = flu, features = as.vector(tgenes$V1), cols = c("grey", "blue"), reduction = "umap")
 ```
-
-
-
 
 ```{r}
 # Expression heatmap for top 20 markers for each cluster
@@ -256,6 +234,43 @@ table(Idents(flu))
 Idents(flu) <- "seurat_clusters"
 table(Idents(flu))
 ```
+
+
+## ERCC Flu Data
+
+```{r}
+flu_ercc_counts <- cbind(d1_counts_ercc, d2_counts_ercc)
+
+# Calculate ERCC abundances on the raw counts before creating a Seurat object
+ERCC.WT.index <- grep(pattern = "^ERCC-", x = rownames(flu_ercc_counts), value = FALSE) 
+# Select row indices and not ERCC names 
+percent.ERCC.WT <- Matrix::colSums(flu_ercc_counts[ERCC.WT.index, ])/Matrix::colSums(flu_ercc_counts)
+
+# Remove ERCC from flu_ercc_counts
+flu_ercc_counts <- flu_ercc_counts[-ERCC.WT.index, ]
+
+# convert Enzembl ID to gene symbols and merge with counts matrix
+annots <-  AnnotationDbi::select(org.Hs.eg.db, keys=rownames(flu_ercc_counts),
+                                   columns="SYMBOL", keytype = "ENSEMBL")
+flu_ercc_counts <- merge(flu_ercc_counts, annots, by.x="row.names", by.y="ENSEMBL")
+# Move SYMBOL to first column and remove Ensembl IDs
+flu_ercc_counts <- flu_ercc_counts[,c(386, 2:385)]
+
+# keep only rows which have a sum of 1 or more
+keep <- rowSums(flu_ercc_counts[,2:385]) >= 20
+flu_ercc_counts <- flu_ercc_counts[keep,]
+
+# Convert SYMBOL to row names - cannot convert as duplicate row names
+# ‘ARHGEF18’, ‘ARL17A’, ‘BAZ2B’, ‘C1orf50’, ‘CHURC1-FNTB’, ‘CLN3’, ‘CYB561D2’, ‘DDTL’, ‘DNAJC9-AS1’, ‘GTF2H2C’, ‘HLA-DQA1’, ‘IFNAR2’, ‘LMF1’, ‘MATR3’, ‘POLR2J2’, ‘PRH1’, ‘RAD54B’, ‘RGS5’, ‘RLN1’, ‘SMN1’, ‘ST6GALNAC6’, ‘TAB2’, ‘TRIM74’, ‘TUT1’, ‘ZNF320’, ‘ZNF724’#
+
+# rownames(flu_ercc_counts) <- NULL
+# flu_ercc_counts <-tibble::column_to_rownames(flu_ercc_counts, "SYMBOL")
+
+
+# Create Seurat object, and add percent.ERCC.WT to object@meta.data in the percent.ERCC column
+# flu_ercc <- CreateSeuratObject(counts = flu_ercc_counts, meta.data = data.frame(percent.ERCC = percent.ERCC.WT, min.cells = 3, min.features = 200, project = "Flu CD8+ T-cell data", assay = "RNA"))
+```
+
 
 # Save file
 
