@@ -26,309 +26,316 @@ Follow guided clustering tutorial https://satijalab.org/seurat/v3.2/pbmc3k_tutor
 
 ## Load counts matrix and create Seurat object
 ```{r}
-# ERCC from Charlotte's alignment (not sure where .bam files)
-# no ERCC from my alignment (used .bam from WTCHG)
-
-setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_Flu/')
-# load data (from featureCounts)
-d1_counts_ercc <-  fread('D1_ensembl_genes_gtf.txt', stringsAsFactors = F, header=T)
-d2_counts_ercc <-  fread('D2_ensembl_genes_gtf.txt', stringsAsFactors = F, header=T)
-
-d1_counts <-  fread('D1_210121_counts.txt', stringsAsFactors = F, header=T)
-d2_counts <-  fread('D2_210121_counts.txt', stringsAsFactors = F, header=T)
-
-# remove columns with chromosome, start, end, strand and length info
-d1_counts_ercc <- d1_counts_ercc[,-c(2:6)]
-d2_counts_ercc <- d2_counts_ercc[,-c(2:6)]
-
-d1_counts <- d1_counts[,-c(2:6)]
-d2_counts <- d2_counts[,-c(2:6)]
-
-# make Geneid into row names
-d1_counts_ercc <-tibble::column_to_rownames(d1_counts_ercc, "Geneid")
-d2_counts_ercc <-tibble::column_to_rownames(d2_counts_ercc, "Geneid")
-
-d1_counts <-tibble::column_to_rownames(d1_counts, "Geneid")
-d2_counts <-tibble::column_to_rownames(d2_counts, "Geneid")
-
-# tidy up sample names
-names(d2_counts_ercc) <- gsub(x = names(d2_counts_ercc), pattern = "/t1-data/user/crich/Peng_Project/Donor2/bam_files/", replacement = "")
-names(d2_counts_ercc) <- gsub(x = names(d2_counts_ercc), 
-                              pattern = "_m_dup.bam", replacement = "")
-
-names(d1_counts) <- gsub(x = names(d1_counts), pattern = "./", replacement = "")
-names(d1_counts) <- gsub(x = names(d1_counts), pattern = ".bam", replacement = "")
-
-names(d2_counts) <- gsub(x = names(d2_counts), pattern = "./", replacement = "")
-names(d2_counts) <- gsub(x = names(d2_counts), pattern = ".bam", replacement = "")
-
-# rename file names based on sample names
-d1_names <- read.csv("donor1_names.csv", header=F)
-d1_names$V2 <- gsub(x = d1_names$V2, pattern = "Sample:", replacement = "")
-d1_names$V2 <- paste("D1", d1_names$V2, sep="_")
-
-colnames(d1_counts) <- d1_names$V2
-colnames(d1_counts_ercc) <- d1_names$V2
-
-d2_names <- read.csv("donor2_names.csv", header=F)
-d2_names$V2 <- paste("D2", d2_names$V2, sep="_")
-
-colnames(d2_counts) <- d2_names$V2
-colnames(d2_counts_ercc) <- d2_names$V2
-
-# combine columns
-flu_counts <- cbind(d1_counts, d2_counts)
-flu_ercc_counts <- cbind(d1_counts_ercc, d2_counts_ercc)
+# # ERCC from Charlotte's alignment (not sure where .bam files)
+# # no ERCC from my alignment (used .bam from WTCHG)
+# 
+# setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_Flu/')
+# # load data (from featureCounts)
+# d1_counts_ercc <-  fread('D1_ensembl_genes_gtf.txt', stringsAsFactors = F, header=T)
+# d2_counts_ercc <-  fread('D2_ensembl_genes_gtf.txt', stringsAsFactors = F, header=T)
+# 
+# d1_counts <-  fread('D1_210121_counts.txt', stringsAsFactors = F, header=T)
+# d2_counts <-  fread('D2_210121_counts.txt', stringsAsFactors = F, header=T)
+# 
+# # remove columns with chromosome, start, end, strand and length info
+# d1_counts_ercc <- d1_counts_ercc[,-c(2:6)]
+# d2_counts_ercc <- d2_counts_ercc[,-c(2:6)]
+# 
+# d1_counts <- d1_counts[,-c(2:6)]
+# d2_counts <- d2_counts[,-c(2:6)]
+# 
+# # make Geneid into row names
+# d1_counts_ercc <-tibble::column_to_rownames(d1_counts_ercc, "Geneid")
+# d2_counts_ercc <-tibble::column_to_rownames(d2_counts_ercc, "Geneid")
+# 
+# d1_counts <-tibble::column_to_rownames(d1_counts, "Geneid")
+# d2_counts <-tibble::column_to_rownames(d2_counts, "Geneid")
+# 
+# # tidy up sample names
+# names(d2_counts_ercc) <- gsub(x = names(d2_counts_ercc), pattern = "/t1-data/user/crich/Peng_Project/Donor2/bam_files/", replacement = "")
+# names(d2_counts_ercc) <- gsub(x = names(d2_counts_ercc), 
+#                               pattern = "_m_dup.bam", replacement = "")
+# 
+# names(d1_counts) <- gsub(x = names(d1_counts), pattern = "./", replacement = "")
+# names(d1_counts) <- gsub(x = names(d1_counts), pattern = ".bam", replacement = "")
+# 
+# names(d2_counts) <- gsub(x = names(d2_counts), pattern = "./", replacement = "")
+# names(d2_counts) <- gsub(x = names(d2_counts), pattern = ".bam", replacement = "")
+# 
+# # rename file names based on sample names
+# d1_names <- read.csv("donor1_names.csv", header=F)
+# d1_names$V2 <- gsub(x = d1_names$V2, pattern = "Sample:", replacement = "")
+# d1_names$V2 <- paste("D1", d1_names$V2, sep="_")
+# 
+# colnames(d1_counts) <- d1_names$V2
+# colnames(d1_counts_ercc) <- d1_names$V2
+# 
+# d2_names <- read.csv("donor2_names.csv", header=F)
+# d2_names$V2 <- paste("D2", d2_names$V2, sep="_")
+# 
+# colnames(d2_counts) <- d2_names$V2
+# colnames(d2_counts_ercc) <- d2_names$V2
+# 
+# # combine columns
+# flu_counts <- cbind(d1_counts, d2_counts)
+# flu_ercc_counts <- cbind(d1_counts_ercc, d2_counts_ercc)
 ```
 
 ## Non-ERCC Flu Data
 
 ```{r,fig.height=5, fig.width=16}
-# Initialise Seurat object with raw (non-normalised?) data
-# min.cells = include features detected in at least this many cells
-# min.features includes cells where at least this many features detected
-
-flu <- CreateSeuratObject(counts = flu_counts, min.cells = 3, min.features = 200, project = "Flu CD8+ T-cell data", assay = "RNA")
-
-# non-UMI data - nUMI represents sum of non-normalised values within cells
-# calculate % mitochondrial genes and store in separate object
-# use object@raw.data represents non-transformed and non-log-normalised counts
-# % of UMI mapping to MT-genes is a common scRNA-seq QC metric
-mito.genes <- grep(pattern = "^MT-", x = rownames(flu@assays[["RNA"]]), value = TRUE)
-
-percent.mito <- Matrix::colSums(flu@assays[["RNA"]][mito.genes, ])/Matrix::colSums(flu@assays[["RNA"]])
-
-flu <- AddMetaData(object = flu, metadata = percent.mito, col.name = "percent.mito")
-
-VlnPlot(object = flu, features = c("nFeature_RNA", "nCount_RNA", "percent.mito"), ncol = 3)
-# all cells have same value % mitochondrial cells?
+# # Initialise Seurat object with raw (non-normalised?) data
+# # min.cells = include features detected in at least this many cells
+# # min.features includes cells where at least this many features detected
+# 
+# flu <- CreateSeuratObject(counts = flu_counts, min.cells = 3, min.features = 200, project = "Flu CD8+ T-cell data", assay = "RNA")
+# 
+# # non-UMI data - nUMI represents sum of non-normalised values within cells
+# # calculate % mitochondrial genes and store in separate object
+# # use object@raw.data represents non-transformed and non-log-normalised counts
+# # % of UMI mapping to MT-genes is a common scRNA-seq QC metric
+# mito.genes <- grep(pattern = "^MT-", x = rownames(flu@assays[["RNA"]]), value = TRUE)
+# 
+# percent.mito <- Matrix::colSums(flu@assays[["RNA"]][mito.genes, ])/Matrix::colSums(flu@assays[["RNA"]])
+# 
+# flu <- AddMetaData(object = flu, metadata = percent.mito, col.name = "percent.mito")
+# 
+# VlnPlot(object = flu, features = c("nFeature_RNA", "nCount_RNA", "percent.mito"), ncol = 3)
+# # all cells have same value % mitochondrial cells?
 ```
 
 ```{r, fig.height=4, fig.width=6}
 # can use GenePlot to visualise gene-gene relationships and anything else calculated by object
-FeatureScatter(object=flu, feature1="nCount_RNA", feature2="nFeature_RNA")
+# FeatureScatter(object=flu, feature1="nCount_RNA", feature2="nFeature_RNA")
 ```
 
 
 ```{r}
-# Filter out cells that have unique gene counts (nFeature_RNA) over 4000 or less than 200 
-# Note that > and < are used to define a'gate'.  
-# -Inf and Inf should be used if don't want a lower or upper threshold.
-flu <- subset(x = flu, subset = nFeature_RNA > 200 & nFeature_RNA < 5000 & percent.mito >  -Inf & percent.mito < 0.05 )
-
-flu <- NormalizeData(object = flu, normalization.method = "LogNormalize", scale.factor = 10000)
+# # Filter out cells that have unique gene counts (nFeature_RNA) over 4000 or less than 200 
+# # Note that > and < are used to define a'gate'.  
+# # -Inf and Inf should be used if don't want a lower or upper threshold.
+# flu <- subset(x = flu, subset = nFeature_RNA > 200 & nFeature_RNA < 5000 & percent.mito >  -Inf & percent.mito < 0.05 )
+# 
+# flu <- NormalizeData(object = flu, normalization.method = "LogNormalize", scale.factor = 10000)
 ```
 
 
 ```{r, fig.height=5, fig.width = 12}
-# identify 2000 variable genes - normal parameter settings for UMI data normalised to total of 1e4 molecules
-flu <- FindVariableFeatures(object = flu, mean.function = ExpMean, dispersion.function = LogVMR, x.low.cutoff = 0.0125, x.high.cutoff = 3, y.cutoff = 0.5, nfeatures = 2000)
-# Identify the 10 most highly variable genes
-top10 <- head(VariableFeatures(flu), 10)
-# plot variable features with and without labels
-plot1 <- VariableFeaturePlot(flu)
-plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
-plot1 + plot2
+# # identify 2000 variable genes - normal parameter settings for UMI data normalised to total of 1e4 molecules
+# flu <- FindVariableFeatures(object = flu, mean.function = ExpMean, dispersion.function = LogVMR, x.low.cutoff = 0.0125, x.high.cutoff = 3, y.cutoff = 0.5, nfeatures = 2000)
+# # Identify the 10 most highly variable genes
+# top10 <- head(VariableFeatures(flu), 10)
+# # plot variable features with and without labels
+# plot1 <- VariableFeaturePlot(flu)
+# plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+# plot1 + plot2
 ```
 
 ### PCA
 
 ```{r pca, fig.height=4, fig.width=6}
-flu <- ScaleData(object = flu, vars.to.regress = c("nCounts_RNA", "percent.mito"))
-
-flu <- RunPCA(object = flu,  npcs = 30, verbose = FALSE)
-
-# standard PCA plot
-pca_1 <- DimPlot(object = flu, reduction = "pca")
-
-pca_1
-
-saveRDS(flu, file="flu_seurat.rds")
+# flu <- ScaleData(object = flu, vars.to.regress = c("nCounts_RNA", "percent.mito"))
+# 
+# flu <- RunPCA(object = flu,  npcs = 30, verbose = FALSE)
+# 
+# # standard PCA plot
+# pca_1 <- DimPlot(object = flu, reduction = "pca")
+# 
+# pca_1
+# 
+# saveRDS(flu, file="flu_seurat.rds")
 ```
 
 ### Harmony integration
 
 ```{r, fig.width=6, fig.height=3}
-flu <- readRDS("flu_seurat.rds")
-
-flu <- flu %>%
-    RunHarmony("orig.ident", plot_convergence = TRUE)
-# Harmony converged after 3 iterations
-# access Harmony embeddings - show top 5 rows and top 5 columns
-harmony_embeddings <- Embeddings(flu, 'harmony')
+# flu <- readRDS("flu_seurat.rds")
+# 
+# flu <- flu %>%
+#     RunHarmony("orig.ident", plot_convergence = TRUE)
+# # Harmony converged after 3 iterations
+# # access Harmony embeddings - show top 5 rows and top 5 columns
+# harmony_embeddings <- Embeddings(flu, 'harmony')
 
 ```
 
 ```{r harmony2, fig.height=5, fig.width=12}
-p1 <- DimPlot(object = flu, reduction = "harmony", group.by = "orig.ident")
-p2 <- VlnPlot(object = flu, features = "harmony_1", group.by = "orig.ident", pt.size = .1)
-p1 + p2
-```
-```{r harmony3, fig.height=5, fig.width=12}
-pca_1 + p1
+# p1 <- DimPlot(object = flu, reduction = "harmony", group.by = "orig.ident")
+# p2 <- VlnPlot(object = flu, features = "harmony_1", group.by = "orig.ident", pt.size = .1)
+# p1 + p2
+# ```
+# ```{r harmony3, fig.height=5, fig.width=12}
+# pca_1 + p1
 ```
 
 ```{r metadata}
-# assign metadata - donor
-# already added D1 and D2 to sample names, so Seurat will automatically find them assigned as orig.ident
-
-# assign timepoint
-flu_filtered_samples <- as.data.frame(flu@active.ident)
-flu_filtered_samples <-tibble::rownames_to_column(flu_filtered_samples, "Sample")
-# get year from last 4 digits of sample name
-flu_filtered_samples$timepoint <- str_sub(flu_filtered_samples$Sample, -4)
-# put TP1 or TP2 to group 2015/2016 timepoint together
-flu_filtered_samples$time <- ifelse(grepl("2006", flu_filtered_samples$timepoint),"TP1", 
-                             ifelse(grepl("2015|2016", flu_filtered_samples$timepoint),"TP2",
-                             ifelse(grepl("lCtr", flu_filtered_samples$timepoint), "No Cell Control", "")))
-
-# add to metadata
-flu@meta.data$"timepoint" <- as.factor(flu_filtered_samples$time)
+# # assign metadata - donor
+# # already added D1 and D2 to sample names, so Seurat will automatically find them assigned as orig.ident
+# 
+# # assign timepoint
+# flu_filtered_samples <- as.data.frame(flu@active.ident)
+# flu_filtered_samples <-tibble::rownames_to_column(flu_filtered_samples, "Sample")
+# # get year from last 4 digits of sample name
+# flu_filtered_samples$timepoint <- str_sub(flu_filtered_samples$Sample, -4)
+# # put TP1 or TP2 to group 2015/2016 timepoint together
+# flu_filtered_samples$time <- ifelse(grepl("2006", flu_filtered_samples$timepoint),"TP1", 
+#                              ifelse(grepl("2015|2016", flu_filtered_samples$timepoint),"TP2",
+#                              ifelse(grepl("lCtr", flu_filtered_samples$timepoint), "No Cell Control", "")))
+# 
+# # add to metadata
+# flu@meta.data$"timepoint" <- as.factor(flu_filtered_samples$time)
 
 ```
 
 Many downstream analyses are performed on low dimensional embeddings, not gene expression. To use the corrected Harmony embeddings rather than PCs, set reduction = 'harmony'. For example, let's perform the UMAP and Nearest Neighbor analyses using the Harmony embeddings.
 ```{r harmony_umap, fig.height=5, fig.width=20}
-flu <- flu %>%
-    RunUMAP(reduction = "harmony", dims = 1:15) %>%
-    FindNeighbors(reduction = "harmony", dims = 1:15) %>%
-    FindClusters(resolution = 0.5) %>%
-    identity()
-umap_donor <- DimPlot(flu, reduction = "umap", group.by = "orig.ident")
-umap_cluster <- DimPlot(flu, reduction = "umap", group.by = "seurat_clusters")
-umap_time <- DimPlot(flu, reduction = "umap", group.by = "timepoint")
-umap_donor + umap_cluster + umap_time
+# flu <- flu %>%
+#     RunUMAP(reduction = "harmony", dims = 1:15) %>%
+#     FindNeighbors(reduction = "harmony", dims = 1:15) %>%
+#     FindClusters(resolution = 0.5) %>%
+#     identity()
+# umap_donor <- DimPlot(flu, reduction = "umap", group.by = "orig.ident")
+# umap_cluster <- DimPlot(flu, reduction = "umap", group.by = "seurat_clusters")
+# umap_time <- DimPlot(flu, reduction = "umap", group.by = "timepoint")
+# umap_donor + umap_cluster + umap_time
 ```
 
 ```{r harmony_markers}
-# How many cells for each patient?
-Idents(flu) <- "orig.ident"
-table(Idents(flu))
-# How many cells for each timepoint?
-Idents(flu) <- "timepoint"
-table(Idents(flu))
-# How many cells in each cluster?
-Idents(flu) <- "seurat_clusters"
-table(Idents(flu))
-
-flu.markers <- FindAllMarkers(object = flu, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
-cluster_0 <- flu.markers[flu.markers$cluster == "0", ]
-cluster_1 <- flu.markers[flu.markers$cluster == "1", ]
-cluster_2 <- flu.markers[flu.markers$cluster == "2", ]
-
-tmarkers <- read.csv("/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/Markers_for_Ling.csv", header=F)
-genes_0 <- tmarkers[is.element(tmarkers$V1, cluster_0$gene),]
-genes_1 <- tmarkers[is.element(tmarkers$V1, cluster_1$gene),]
-genes_2 <- tmarkers[is.element(tmarkers$V1, cluster_2$gene),]
+# # How many cells for each patient?
+# Idents(flu) <- "orig.ident"
+# table(Idents(flu))
+# # How many cells for each timepoint?
+# Idents(flu) <- "timepoint"
+# table(Idents(flu))
+# # How many cells in each cluster?
+# Idents(flu) <- "seurat_clusters"
+# table(Idents(flu))
+# 
+# flu.markers <- FindAllMarkers(object = flu, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
+# cluster_0 <- flu.markers[flu.markers$cluster == "0", ]
+# cluster_1 <- flu.markers[flu.markers$cluster == "1", ]
+# cluster_2 <- flu.markers[flu.markers$cluster == "2", ]
+# 
+# tmarkers <- read.csv("/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/Markers_for_Ling.csv", header=F)
+# genes_0 <- tmarkers[is.element(tmarkers$V1, cluster_0$gene),]
+# genes_1 <- tmarkers[is.element(tmarkers$V1, cluster_1$gene),]
+# genes_2 <- tmarkers[is.element(tmarkers$V1, cluster_2$gene),]
 
 
 ```
 ### Gene expression by donor
 
-```{r, fig.height=40, fig.width=25}
+```{r, fig.height=48, fig.width=25}
 # tgenes <- read.csv("t-marker_genes.csv", header=F)
+
+flu <- readRDS("flu_harmony.rds")
+
 VlnPlot(object = flu, features = 
           c("IFNG", "TNF", "LTA", "IL2", 
             "PTPRC", "CCR7", "SELL", "TCF7",
             "CD44", "IL7R", "S100A4", "CD38", 
             "CD27", "CD28", "CD69", "HLA-DRB1",
             "ITGAE", "ITGB1", "ITGA4", "ITGB2",
-            "CCL3", "CCL4", "CCL5", "CXCR3",
-            "CXCR4", "CXCR6", "CXCR5", "CCL20",
-            "OAS1", "MX1", "IFIT3", "ISG15",
+            "SELP", "CCL3", "CCL4", "CCL5",
+            "CCL20", "CXCR3", "CXCR4","CXCR5",
+            "CXCR6", "CCR5","OAS1", "MX1",
+            "MX2", "IRF3", "IFIT3", "ISG15",
             "GZMA", "GZMB", "PRF1", "GNLY",
-            "PDCD1", "CTLA4", "HAVCR2", "CD244",
+            "PDCD1", "CTLA4", "HAVCR2", "CD244", 
             "KLRG1", "TIGIT", "BTLA", "CD160")
         ,ncol=4, group.by = "orig.ident")
 ```
 ### Gene expression by cluster
-```{r, fig.height=40, fig.width=25}
-VlnPlot(object = flu, features = 
-          c("IFNG, TNF", "LTA", "IL2", 
-            "PTPRC", "CCR7", "SELL", "TCF7",
-            "CD44", "IL7R", "S100A4", "CD38", 
-            "CD27", "CD28", "CD69", "HLA-DRB1",
-            "ITGAE", "ITGB1", "ITGA4", "ITGB2",
-            "CCL3", "CCL4", "CCL5", "CXCR3",
-            "CXCR4", "CXCR6", "CXCR5", "CCL20",
-            "OAS1", "MX1", "IFIT3", "ISG15",
-            "GZMA", "GZMB", "PRF1", "GNLY",
-            "PDCD1", "CTLA4", "HAVCR2", "CD244",
-            "KLRG1", "TIGIT", "BTLA", "CD160")
-        ,ncol=4, group.by = "seurat_clusters")
-```
-### Gene expression by time
-```{r, fig.height=50, fig.width=20}
+```{r, fig.height=48, fig.width=25}
 VlnPlot(object = flu, features = 
           c("IFNG", "TNF", "LTA", "IL2", 
             "PTPRC", "CCR7", "SELL", "TCF7",
             "CD44", "IL7R", "S100A4", "CD38", 
             "CD27", "CD28", "CD69", "HLA-DRB1",
             "ITGAE", "ITGB1", "ITGA4", "ITGB2",
-            "CCL3", "CCL4", "CCL5", "CXCR3",
-            "CXCR4", "CXCR6", "CXCR5", "CCL20",
-            "OAS1", "MX1", "IFIT3", "ISG15",
+            "SELP", "CCL3", "CCL4", "CCL5",
+            "CCL20", "CXCR3", "CXCR4","CXCR5",
+            "CXCR6", "CCR5","OAS1", "MX1",
+            "MX2", "IRF3", "IFIT3", "ISG15",
             "GZMA", "GZMB", "PRF1", "GNLY",
-            "PDCD1", "CTLA4", "HAVCR2", "CD244",
+            "PDCD1", "CTLA4", "HAVCR2", "CD244", 
+            "KLRG1", "TIGIT", "BTLA", "CD160")
+        ,ncol=4, group.by = "seurat_clusters")
+```
+### Gene expression by time
+```{r, fig.height=58, fig.width=25}
+VlnPlot(object = flu, features = 
+          c("IFNG", "TNF", "LTA", "IL2", 
+            "PTPRC", "CCR7", "SELL", "TCF7",
+            "CD44", "IL7R", "S100A4", "CD38", 
+            "CD27", "CD28", "CD69", "HLA-DRB1",
+            "ITGAE", "ITGB1", "ITGA4", "ITGB2",
+            "SELP", "CCL3", "CCL4", "CCL5",
+            "CCL20", "CXCR3", "CXCR4","CXCR5",
+            "CXCR6", "CCR5","OAS1", "MX1",
+            "MX2", "IRF3", "IFIT3", "ISG15",
+            "GZMA", "GZMB", "PRF1", "GNLY",
+            "PDCD1", "CTLA4", "HAVCR2", "CD244", 
             "KLRG1", "TIGIT", "BTLA", "CD160")
         ,ncol=4, group.by = "timepoint")
 ```
 
-```{r, fig.height=50, fig.width=25}
+```{r, fig.height=55, fig.width=25}
 FeaturePlot(object = flu, features = c("IFNG", "TNF", "LTA", "IL2", 
             "PTPRC", "CCR7", "SELL", "TCF7",
             "CD44", "IL7R", "S100A4", "CD38", 
             "CD27", "CD28", "CD69", "HLA-DRB1",
             "ITGAE", "ITGB1", "ITGA4", "ITGB2",
-            "CCL3", "CCL4", "CCL5", "CXCR3",
-            "CXCR4", "CXCR6", "CXCR5", "CCL20",
-            "OAS1", "MX1", "IFIT3", "ISG15",
+            "SELP", "CCL3", "CCL4", "CCL5",
+            "CCL20", "CXCR3", "CXCR4","CXCR5",
+            "CXCR6", "CCR5","OAS1", "MX1",
+            "MX2", "IRF3", "IFIT3", "ISG15",
             "GZMA", "GZMB", "PRF1", "GNLY",
-            "PDCD1", "CTLA4", "HAVCR2", "CD244",
+            "PDCD1", "CTLA4", "HAVCR2", "CD244", 
             "KLRG1", "TIGIT", "BTLA", "CD160"), cols = c("grey", "blue"), reduction = "umap")
 ```
 
 ```{r}
-# Expression heatmap for top 20 markers for each cluster
-top10 <- flu.markers %>% group_by(cluster) %>% top_n(10, avg_log2FC)
-# setting slim.col.label to TRUE will print just the cluster IDS instead of every cell name
-DoHeatmap(object = flu, features = top10$gene, label = TRUE)
+# # Expression heatmap for top 20 markers for each cluster
+# top10 <- flu.markers %>% group_by(cluster) %>% top_n(10, avg_log2FC)
+# # setting slim.col.label to TRUE will print just the cluster IDS instead of every cell name
+# DoHeatmap(object = flu, features = top10$gene, label = TRUE)
 ```
 
 
 ## ERCC Flu Data
 
 ```{r}
-flu_ercc_counts <- cbind(d1_counts_ercc, d2_counts_ercc)
-
-# Calculate ERCC abundances on the raw counts before creating a Seurat object
-ERCC.WT.index <- grep(pattern = "^ERCC-", x = rownames(flu_ercc_counts), value = FALSE) 
-# Select row indices and not ERCC names 
-percent.ERCC.WT <- Matrix::colSums(flu_ercc_counts[ERCC.WT.index, ])/Matrix::colSums(flu_ercc_counts)
-
-# Remove ERCC from flu_ercc_counts
-flu_ercc_counts <- flu_ercc_counts[-ERCC.WT.index, ]
-
-# convert Enzembl ID to gene symbols and merge with counts matrix
-annots <-  AnnotationDbi::select(org.Hs.eg.db, keys=rownames(flu_ercc_counts),
-                                   columns="SYMBOL", keytype = "ENSEMBL")
-flu_ercc_counts <- merge(flu_ercc_counts, annots, by.x="row.names", by.y="ENSEMBL")
-# Move SYMBOL to first column and remove Ensembl IDs
-flu_ercc_counts <- flu_ercc_counts[,c(386, 2:385)]
-
-# keep only rows which have a sum of 1 or more
-keep <- rowSums(flu_ercc_counts[,2:385]) >= 20
-flu_ercc_counts <- flu_ercc_counts[keep,]
-
-# Convert SYMBOL to row names - cannot convert as duplicate row names
-# ‘ARHGEF18’, ‘ARL17A’, ‘BAZ2B’, ‘C1orf50’, ‘CHURC1-FNTB’, ‘CLN3’, ‘CYB561D2’, ‘DDTL’, ‘DNAJC9-AS1’, ‘GTF2H2C’, ‘HLA-DQA1’, ‘IFNAR2’, ‘LMF1’, ‘MATR3’, ‘POLR2J2’, ‘PRH1’, ‘RAD54B’, ‘RGS5’, ‘RLN1’, ‘SMN1’, ‘ST6GALNAC6’, ‘TAB2’, ‘TRIM74’, ‘TUT1’, ‘ZNF320’, ‘ZNF724’#
-
-# rownames(flu_ercc_counts) <- NULL
-# flu_ercc_counts <-tibble::column_to_rownames(flu_ercc_counts, "SYMBOL")
-
-
-# Create Seurat object, and add percent.ERCC.WT to object@meta.data in the percent.ERCC column
-# flu_ercc <- CreateSeuratObject(counts = flu_ercc_counts, meta.data = data.frame(percent.ERCC = percent.ERCC.WT, min.cells = 3, min.features = 200, project = "Flu CD8+ T-cell data", assay = "RNA"))
+# flu_ercc_counts <- cbind(d1_counts_ercc, d2_counts_ercc)
+# 
+# # Calculate ERCC abundances on the raw counts before creating a Seurat object
+# ERCC.WT.index <- grep(pattern = "^ERCC-", x = rownames(flu_ercc_counts), value = FALSE) 
+# # Select row indices and not ERCC names 
+# percent.ERCC.WT <- Matrix::colSums(flu_ercc_counts[ERCC.WT.index, ])/Matrix::colSums(flu_ercc_counts)
+# 
+# # Remove ERCC from flu_ercc_counts
+# flu_ercc_counts <- flu_ercc_counts[-ERCC.WT.index, ]
+# 
+# # convert Enzembl ID to gene symbols and merge with counts matrix
+# annots <-  AnnotationDbi::select(org.Hs.eg.db, keys=rownames(flu_ercc_counts),
+#                                    columns="SYMBOL", keytype = "ENSEMBL")
+# flu_ercc_counts <- merge(flu_ercc_counts, annots, by.x="row.names", by.y="ENSEMBL")
+# # Move SYMBOL to first column and remove Ensembl IDs
+# flu_ercc_counts <- flu_ercc_counts[,c(386, 2:385)]
+# 
+# # keep only rows which have a sum of 1 or more
+# keep <- rowSums(flu_ercc_counts[,2:385]) >= 20
+# flu_ercc_counts <- flu_ercc_counts[keep,]
+# 
+# # Convert SYMBOL to row names - cannot convert as duplicate row names
+# # ‘ARHGEF18’, ‘ARL17A’, ‘BAZ2B’, ‘C1orf50’, ‘CHURC1-FNTB’, ‘CLN3’, ‘CYB561D2’, ‘DDTL’, ‘DNAJC9-AS1’, ‘GTF2H2C’, ‘HLA-DQA1’, ‘IFNAR2’, ‘LMF1’, ‘MATR3’, ‘POLR2J2’, ‘PRH1’, ‘RAD54B’, ‘RGS5’, ‘RLN1’, ‘SMN1’, ‘ST6GALNAC6’, ‘TAB2’, ‘TRIM74’, ‘TUT1’, ‘ZNF320’, ‘ZNF724’#
+# 
+# # rownames(flu_ercc_counts) <- NULL
+# # flu_ercc_counts <-tibble::column_to_rownames(flu_ercc_counts, "SYMBOL")
+# 
+# 
+# # Create Seurat object, and add percent.ERCC.WT to object@meta.data in the percent.ERCC column
+# # flu_ercc <- CreateSeuratObject(counts = flu_ercc_counts, meta.data = data.frame(percent.ERCC = percent.ERCC.WT, min.cells = 3, min.features = 200, project = "Flu CD8+ T-cell data", assay = "RNA"))
 ```
 
 
@@ -337,7 +344,7 @@ flu_ercc_counts <- flu_ercc_counts[keep,]
 ```{r save}
 # saveRDS(flu, file="flu_seurat.rds")
 
-saveRDS(flu, file="flu_harmony.rds")
+# saveRDS(flu, file="flu_harmony.rds")
 
 ```
 
