@@ -1,6 +1,13 @@
 ##### Updated MiXCR-SmartSeq.sh output####
 # Isar modified MiXCR script so that .txt output for each cell is TRA.txt, TRB.txt, TRD.txt, TRG.txt file
 library(tcR)
+library(tidyverse)
+library(data.table)
+library(stringr)
+library(vegan)
+library(plyr)
+library(dplyr)
+
 
 #-------------  List of human of TCR and Ig gene segments ----------------------
 
@@ -33,14 +40,9 @@ HUMAN_IGLJ
 genesegments$TRBV[1:10,]
 
 
-library(data.table)
-library(stringr)
-
 #------------- CD8 NP16 -------------------------
 
 setwd('/t1-data/user/lfelce/TCR_analysis/cd8_np16_new/')
-
-
 
 # create list of file names
 tra_list <- list.files(path = ".", recursive = TRUE,
@@ -83,28 +85,28 @@ colnames(mixcr_b_names) <- c("cell_number", "cell_name")
 # mixcr_a
 datalist = list()
 for (i in (1:length(mixcr_a))) {
-  dat <- data.frame(c(mixcr_a[[i]][3], mixcr_a[[i]][4],mixcr_a[[i]][7], mixcr_a[[i]][8]))
+  dat <- data.frame(c(mixcr_a[[i]][3], mixcr_a[[i]][4], mixcr_a[[i]][6],mixcr_a[[i]][7], mixcr_a[[i]][8]))
   dat$i <- i # keep track of which iteration produced it
   datalist[[i]] <- dat # add it to list
 }
 # combine columns for each cell and filter to keep cells with 1 or 2 alphas
 big_data = do.call(rbind, datalist)
 tra <- big_data %>% group_by(i) %>% filter(n() <= 2)
-colnames(tra) <- c("clone_count", "clone_fraction", "TRAV", "TRAJ", "cell_number")
+colnames(tra) <- c("clone_count", "clone_fraction", "CDR3_alpha", "TRAV", "TRAJ", "cell_number")
 tra <- merge(tra, mixcr_a_names, by="cell_number")
 
 
 # mixcr_b
 datalist = list()
 for (i in (1:length(mixcr_b))) {
-  dat <- data.frame(c(mixcr_b[[i]][3], mixcr_b[[i]][4], mixcr_b[[i]][7], mixcr_b[[i]][8]))
+  dat <- data.frame(c(mixcr_b[[i]][3], mixcr_b[[i]][4], mixcr_b[[i]][6], mixcr_b[[i]][7], mixcr_b[[i]][8]))
   dat$i <- i # keep track of which iteration produced it
   datalist[[i]] <- dat # add it to list
 }
 # combine columns for each cell
 big_data = do.call(rbind, datalist)
 trb <- big_data %>% group_by(i) %>% filter(n() == 1)
-colnames(trb) <- c("clone_count", "clone_fraction", "TRBV", "TRBJ", "cell_number")
+colnames(trb) <- c("clone_count", "clone_fraction","CDR3_beta", "TRBV", "TRBJ", "cell_number")
 trb <- merge(trb, mixcr_b_names, by="cell_number")
 
 
@@ -118,10 +120,6 @@ cd8_np16 <- mutate(cd8_np16, beta=paste(TRBV, TRBJ, sep="_"))
 setwd('/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/')
 
 write.csv(cd8_np16, "cd8_np16_all_sc_tcr.csv")
-
-# filtering to tidy up single cell TCR list
-cd8_np16_tidy <- cd8_np16[,c(1, 12, 13)]
-
 
 # tabulate to get dominant alpha-beta pairing
 # 005 
@@ -165,36 +163,18 @@ for (i in 1:length(list)) {
 #------------- CD8 ORF3a-28 -------------------------
 
 setwd('/t1-data/user/lfelce/TCR_analysis/cd8_orf_new/')
-listFiles = list.files()
 
-# revise the structure of input files
-for(i in 1:length(listFiles))
-{
-  DT = fread(listFiles[i])
-  write.table(DT,listFiles[i],quote = F, row.names = F, sep = '\t')
-}
+tra_list <- list.files(path = ".", recursive = TRUE,
+                       pattern = "\\TRA.txt$", 
+                       full.names = TRUE)
+tra_list <- tra_list %>% str_replace("./*", "")
+tra_list <-tra_list[!str_detect(tra_list,pattern="minibulk")]
 
-library(stringr)
-
-# read in TRA names and convert to list
-tra_names <- fread('/t1-data/user/lfelce/TCR_analysis/cd8_orf_tra_names.txt', stringsAsFactors = F, header=F)
-
-tra_names <- as.list(as.data.frame(t(tra_names)))
-
-# remove ./ at start of name and replace with file path
-tra_names <- tra_names %>% str_replace("./*", "")
-
-tra_names <- paste("/t1-data/user/lfelce/TCR_analysis/cd8_orf_new/", tra_names, sep="")
-
-# read in TRB names and convert to list
-trb_names <- fread('/t1-data/user/lfelce/TCR_analysis/cd8_orf_trb_names.txt', stringsAsFactors = F, header=F)
-
-trb_names <- as.list(as.data.frame(t(trb_names)))
-
-# remove ./ at start of name and replace with file path
-trb_names <- trb_names %>% str_replace("./*", "")
-
-trb_names <- paste("/t1-data/user/lfelce/TCR_analysis/cd8_orf_new/", trb_names, sep="")
+trb_list <- list.files(path = ".", recursive = TRUE,
+                       pattern = "\\TRB.txt$", 
+                       full.names = TRUE)
+trb_list <- trb_list %>% str_replace("./*", "")
+trb_list <-trb_list[!str_detect(trb_list,pattern="minibulk")]
 
 # parse mixcr files
 mixcr_a <- parse.file.list(tra_names, "mixcr")
@@ -569,283 +549,109 @@ circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
 dev.off()
 
 
+#------------------- Shannon Diversity Index -------------------------
 
+# CD8 NP16
+# alpha
+cd8_np16_diversity <- as.data.frame(repDiversity(.data = mixcr_a, 
+                                                 .method = "entropy",
+                                                 .quant = "read.count"))
 
-#------------- CD8 NP16 1131-TP-1 -------------------------
+cd8_np16_div_a <- tibble::rownames_to_column(cd8_np16_diversity, "cell_name")
+colnames(cd8_np16_div_a ) <- c("cell_name", "diversity_index")
 
-# separate TCR sequencing repeat sample 
-# Peng carried out targeted scTCR sequencing -> bcl2fastq -> new MiXCR analyze amplicon
-# filter by cloneCounts to get top alpha and beta chains per cell
-# assess similarity between alpha and beta CDR3s 
-# most similar CDR3s shared between alpha and beta in same cell = top alpha-beta pair for that cell
 
-setwd('/t1-data/user/lfelce/TCR_analysis/1131-TP-1_cd8_new')
+cd8_np16_div_a$patient <- ifelse(grepl("005", cd8_np16_div_a$cell_name), "005", 
+                          ifelse(grepl("1131-TP-1",cd8_np16_div_a$cell_name), "1131-TP-1", 
+                          ifelse(grepl("1131-TP-2", cd8_np16_div_a$cell_name), "1131-TP-2", 
+                          ifelse(grepl("1153", cd8_np16_div_a$cell_name), "1153",
+                          ifelse(grepl("1201", cd8_np16_div_a$cell_name), "1201", "")))))
+cd8_np16_div_a$timepoint <- ifelse(grepl("1131-TP-1", cd8_np16_div_a$patient), "acute",
+                            ifelse(grepl("005|1131-TP-2|1153|1201", cd8_np16_div_a$patient), "convalescent",""))
 
-library(stringr)
-library(data.table)
-library(circlize)
 
-# read in TRA names and convert to list
-tra_names <- fread('/t1-data/user/lfelce/TCR_analysis/1131-TP-1_cd8_new/tra_names.txt', stringsAsFactors = F, header=F)
+p <- ggplot(cd8_np16_div_a, aes(x=timepoint, y=diversity_index)) + 
+  geom_boxplot()
+p
 
-tra_names <- as.list(as.data.frame(t(tra_names)))
+# beta
+cd8_np16_diversity <- as.data.frame(repDiversity(.data = mixcr_b, 
+                                                 .method = "entropy",
+                                                 .quant = "read.count"))
 
-# remove ./ at start of name and replace with file path
-tra_names <- tra_names %>% str_replace("./*", "")
+cd8_np16_div_b <- tibble::rownames_to_column(cd8_np16_diversity, "cell_name")
+colnames(cd8_np16_div_b ) <- c("cell_name", "diversity_index")
 
-# read in TRB names and convert to list
-trb_names <- fread('/t1-data/user/lfelce/TCR_analysis/1131-TP-1_cd8_new/trb_names.txt', stringsAsFactors = F, header=F)
-
-trb_names <- as.list(as.data.frame(t(trb_names)))
-
-# remove ./ at start of name and replace with file path
-trb_names <- trb_names %>% str_replace("./*", "")
-
-# parse mixcr files
-mixcr_a <- parse.file.list(tra_names, "mixcr")
-mixcr_b <- parse.file.list(trb_names, "mixcr")
-
-# sort alphabetically
-mixcr_a <- mixcr_a[order(names(mixcr_a))]
-mixcr_b <- mixcr_b[order(names(mixcr_b))]
 
-# create list of cell numbers and cell names
-# different lengths so same cell will be different number in a or b
-mixcr_a_names <- as.data.frame(names(mixcr_a))
-mixcr_b_names <- as.data.frame(names(mixcr_b))
+cd8_np16_div_b$patient <- ifelse(grepl("005", cd8_np16_div_b$cell_name), "005", 
+                                 ifelse(grepl("1131-TP-1",cd8_np16_div_b$cell_name), "1131-TP-1", 
+                                        ifelse(grepl("1131-TP-2", cd8_np16_div_b$cell_name), "1131-TP-2", 
+                                               ifelse(grepl("1153", cd8_np16_div_b$cell_name), "1153",
+                                                      ifelse(grepl("1201", cd8_np16_div_b$cell_name), "1201", "")))))
+cd8_np16_div_b$timepoint <- ifelse(grepl("1131-TP-1", cd8_np16_div_b$patient), "acute",
+                                   ifelse(grepl("005|1131-TP-2|1153|1201", cd8_np16_div_b$patient), "convalescent",""))
 
-mixcr_a_names <-tibble::rownames_to_column(mixcr_a_names, "cell_number")
-mixcr_b_names <- tibble::rownames_to_column(mixcr_b_names, "cell_number")
-
-# rename columns
-colnames(mixcr_a_names) <- c("cell_number", "cell_name")
-colnames(mixcr_b_names) <- c("cell_number", "cell_name")
 
-# convert mixcr lists to dataframe with just V.gene and J.gene info
-
-# mixcr_a
-datalist = list()
-for (i in (1:length(mixcr_a))) {
-  dat <- data.frame(c(mixcr_a[[i]][3],mixcr_a[[i]][4],mixcr_a[[i]][6],mixcr_a[[i]][7], mixcr_a[[i]][8]))
-  dat$i <- i # keep track of which iteration produced it
-  datalist[[i]] <- dat # add it to list
-}
-# combine columns for each cell, select chains with clone count more than 5
-big_data = do.call(rbind, datalist)
-tra <- big_data
-tra <- tra[tra$Read.count > 5,]
-colnames(tra) <- c("clone_count", "clone_fraction", "CDR3_aa", "TRAV", "TRAJ", "cell_number")
-tra <- merge(tra, mixcr_a_names, by="cell_number")
+p <- ggplot(cd8_np16_div_b, aes(x=patient, y=diversity_index)) + 
+  geom_boxplot()
+p
 
-# mixcr_b
-datalist = list()
-for (i in (1:length(mixcr_b))) {
-  dat <- data.frame(c(mixcr_b[[i]][3],mixcr_b[[i]][4],mixcr_b[[i]][6],mixcr_b[[i]][7], mixcr_b[[i]][8]))
-  dat$i <- i # keep track of which iteration produced it
-  datalist[[i]] <- dat # add it to list
-}
-# combine columns for each cell, select chains with clone count more than 5
-big_data = do.call(rbind, datalist)
-trb <- big_data
-trb <- trb[trb$Read.count > 5,]
-colnames(trb) <- c("clone_count", "clone_fraction", "CDR3_aa", "TRBV", "TRBJ", "cell_number")
-trb <- merge(trb, mixcr_b_names, by="cell_number")
+# how to combine columns of unequal length to make dataframe
+# n <- max(length(div_005$diversity_index), length(div_1131TP1$diversity_index), 
+#          length(div_1131TP2$diversity_index), length(div_1153$diversity_index),
+#          length(div_1201$diversity_index))
+# div_a <- data.frame(div_005$diversity_index[1:n],div_1131TP1$diversity_index[1:n],
+#                     div_1131TP2$diversity_index[1:n], div_1153$diversity_index[1:n],
+#                     div_1201$diversity_index[1:n])
 
-# combine TRA and TRB dataframes
-cd8_1131_TP1 <- merge(tra,trb, by="cell_name")
+# CD8 ORF3a-28
+# alpha
+cd8_orf3a_diversity <- as.data.frame(repDiversity(.data = mixcr_a, 
+                                                 .method = "entropy",
+                                                 .quant = "read.count"))
 
-cd8_1131_TP1 <- mutate(cd8_1131_TP1, alpha=paste(TRAV, TRAJ, sep="_"))
+cd8_orf3a_div_a <- tibble::rownames_to_column(cd8_orf3a_diversity, "cell_name")
+colnames(cd8_orf3a_div_a ) <- c("cell_name", "diversity_index")
 
-cd8_1131_TP1 <- mutate(cd8_1131_TP1, beta=paste(TRBV, TRBJ, sep="_"))
 
-library(stringdist)
+cd8_orf3a_div_a$patient <- ifelse(grepl("1134-TP-2", cd8_orf3a_div_a$cell_name), "1134-TP-2", 
+                                 ifelse(grepl("1525-TP-1",cd8_orf3a_div_a$cell_name), "1525-TP-1", 
+                                        ifelse(grepl("1525-TP-2", cd8_orf3a_div_a$cell_name), "1525-TP-2", 
+                                               ifelse(grepl("1105", cd8_orf3a_div_a$cell_name), "1105",""))))
 
-# calculate similarity score using Levenshtein distance
-shared_cdr3 <- stringsim(cd8_1131_TP1$CDR3_aa.x, cd8_1131_TP1$CDR3_aa.y, method="lv")
+cd8_orf3a_div_a$timepoint <- ifelse(grepl("1525-TP-1", cd8_orf3a_div_a$patient), "acute",
+                                   ifelse(grepl("1134-TP-2|1525-TP-2|1105", cd8_orf3a_div_a$patient), "convalescent",""))
 
-# add to data frame as separate column
-cd8_1131_TP1$sim_score <- shared_cdr3                              
 
-# create list of cell  names
-list <- mixcr_a_names[,2]
+p <- ggplot(cd8_orf3a_div_a, aes(x=timepoint, y=diversity_index)) + 
+  geom_boxplot()
+p
 
-# loop - select rows containing same cell name and make new object dat
-# re-order rows by similarity score putting highest one at the top
-# select top row only for each cell, make list of cells
-datalist = list()
-
-for (i in (1:length(list))) {
-  dat <- cd8_1131_TP1[cd8_1131_TP1$cell_name == list[i],]
-  dat <- dat[order(dat$sim_score, decreasing=TRUE),]
-  dat <- dat[1,]
-  datalist[[i]] <- dat # add it to list
-}
-
-# make one big data frame where each row is cell with highest similarity score for a-b pair
-big_data = do.call(rbind, datalist)
-
-# top alpha-beta pairing
-top_ab <- as.data.frame(table(big_data$alpha, big_data$beta))
-top_ab_mat <- as.matrix(as.data.frame.matrix(table(big_data$alpha, big_data$beta)))
-
-setwd('/t1-data/user/lfelce/TCR_analysis/new_mixcr_results')
-# circle plot
-circos.clear()
-set.seed(999)
-pdf('cd8_1131-TP1_new_chorddiagram.pdf', width = 16, height = 12, useDingbats = FALSE)
-chordDiagram(top_ab_mat, annotationTrack = "grid", preAllocateTracks = 1)
-circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
-  xlim = get.cell.meta.data("xlim")
-  ylim = get.cell.meta.data("ylim")
-  sector.name = get.cell.meta.data("sector.index")
-  circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
-  circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
-}, bg.border = NA)
-dev.off()
-
-
---------------------------------
-
-# previous attempt - just selecting top alpha and top beta row per cell
-
-setwd('/t1-data/user/lfelce/TCR_analysis/1131-TP-1_cd8_new')
-listFiles = list.files()
-
-# revise the structure of input files
-for(i in 1:length(listFiles))
-{
-  DT = fread(listFiles[i])
-  write.table(DT,listFiles[i],quote = F, row.names = F, sep = '\t')
-}
-
-library(stringr)
-
-# read in TRA names and convert to list
-tra_names <- fread('/t1-data/user/lfelce/TCR_analysis/1131-TP-1_cd8_new/tra_names.txt', stringsAsFactors = F, header=F)
-
-tra_names <- as.list(as.data.frame(t(tra_names)))
-
-# remove ./ at start of name
-tra_names <- tra_names %>% str_replace("./*", "")
-
-# read in TRB names and convert to list
-trb_names <- fread('/t1-data/user/lfelce/TCR_analysis/1131-TP-1_cd8_new/trb_names.txt', stringsAsFactors = F, header=F)
-
-trb_names <- as.list(as.data.frame(t(trb_names)))
-
-# remove ./ at start of name
-trb_names <- trb_names %>% str_replace("./*", "")
-
-
-# parse mixcr files
-# for some reason MiXCR makes clone count numeric rather than integer
-# have modified code for parse.mixcr and saved in separated file
-# call function parse.mixcr.ling
-source('/t1-data/user/lfelce/TCR_analysis/parse_mixcr.R')
-
-# TRA: generate list of lists (like mixcr parsed into R)
-datalist = list()
-for (i in (1:length(tra_names))) {
-  dat <- parse.mixcr.ling(tra_names[i])
-  datalist[[i]] <- dat # add it to list
-}
-
-# rename with sample name
-names(datalist) <- tra_names
-mixcr_a <- datalist
-
-# TRB: generate list of lists (like mixcr parsed into R)
-datalist = list()
-for (i in (1:length(trb_names))) {
-  dat <- parse.mixcr.ling(trb_names[i])
-  datalist[[i]] <- dat # add it to list
-}
-
-# rename with sample name
-names(datalist) <- trb_names
-mixcr_b <- datalist
-
-# sort alphabetically
-mixcr_a <- mixcr_a[order(names(mixcr_a))]
-mixcr_b <- mixcr_b[order(names(mixcr_b))]
-
-# create list of cell numbers and cell names
-# different lengths so same cell will be different number in a or b
-mixcr_a_names <- as.data.frame(names(mixcr_a))
-mixcr_b_names <- as.data.frame(names(mixcr_b))
-
-mixcr_a_names <-tibble::rownames_to_column(mixcr_a_names, "cell_number")
-mixcr_b_names <- tibble::rownames_to_column(mixcr_b_names, "cell_number")
-
-# rename columns
-colnames(mixcr_a_names) <- c("cell_number", "cell_name")
-colnames(mixcr_b_names) <- c("cell_number", "cell_name")
-
-# remove file extensions from names
-mixcr_a_names$cell_name <- mixcr_a_names$cell_name %>% str_replace("_L001.clonotypes.TRA.txt", "")
-mixcr_b_names$cell_name <- mixcr_b_names$cell_name %>% str_replace("_L001.clonotypes.TRB.txt", "")
-
-# convert mixcr lists to dataframe with just V.gene and J.gene info
-
-# mixcr_a - select top 2 rows for each cell
-datalist = list()
-for (i in (1:length(mixcr_a))) {
-  dat1 <- data.frame(c(mixcr_a[[i]][3],mixcr_a[[i]][7], mixcr_a[[i]][8]))
-  dat <- dat1[1,]
-  dat$i <- i # keep track of which iteration produced it
-  datalist[[i]] <- dat # add it to list
-}
-# combine columns
-big_data = do.call(rbind, datalist)
-tra <- big_data
-colnames(tra) <- c("Read.count", "TRAV", "TRAJ", "cell_number")
-tra <- merge(tra, mixcr_a_names, by="cell_number")
-
-
-# mixcr_b - select top row for each cell
-datalist = list()
-for (i in (1:length(mixcr_b))) {
-  dat1 <- data.frame(c(mixcr_b[[i]][3],mixcr_b[[i]][7], mixcr_b[[i]][8]))
-  dat <- dat1[1,]
-  dat$i <- i # keep track of which iteration produced it
-  datalist[[i]] <- dat # add it to list
-}
-# combine columns for each cell
-big_data = do.call(rbind, datalist)
-trb <- big_data 
-colnames(trb) <- c("Read.count", "TRBV", "TRBJ", "cell_number")
-trb <- merge(trb, mixcr_b_names, by="cell_number")
-
-# combine TRA and TRB dataframes
-cd8_1131 <- merge(tra,trb, by="cell_name")
-
-cd8_1131 <- mutate(cd8_1131, alpha=paste(TRAV, TRAJ, sep="_"))
-
-cd8_1131 <- mutate(cd8_1131, beta=paste(TRBV, TRBJ, sep="_"))
-
-
-# tabulate to get dominant alpha-beta pairing
-
-library(circlize)
-
-cd8_np16_1131_TP1 <- as.matrix(as.data.frame.matrix(table(cd8_1131$alpha, cd8_1131$beta)))
-cd8_np16_1131_TP1_table <- as.data.frame(table(cd8_1131$alpha, cd8_1131$beta))
-
-setwd("/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/")
-
-list <- c("cd8_np16_1131_TP1")
-
-for (i in 1:length(list)) {
-  circos.clear()
-  set.seed(999)
-  pdf(paste((list[i]), "_chorddiagram.pdf", sep=""), width = 16, height = 12, useDingbats = FALSE)
-  chordDiagram(get(list[i]), annotationTrack = "grid", preAllocateTracks = 1)
-  circos.trackPlotRegion(track.index = 1, panel.fun = function(x, y) {
-    xlim = get.cell.meta.data("xlim")
-    ylim = get.cell.meta.data("ylim")
-    sector.name = get.cell.meta.data("sector.index")
-    circos.text(mean(xlim), ylim[1] + .1, sector.name, facing = "clockwise", niceFacing = TRUE, adj = c(0, 0.5))
-    circos.axis(h = "top", labels.cex = 0.25, major.tick.percentage = 0.2, sector.index = sector.name, track.index = 2)
-  }, bg.border = NA)
-  dev.off()
-}
+# beta
+cd8_orf3a_diversity <- as.data.frame(repDiversity(.data = mixcr_b, 
+                                                  .method = "entropy",
+                                                  .quant = "read.count"))
+
+cd8_orf3a_div_b <- tibble::rownames_to_column(cd8_orf3a_diversity, "cell_name")
+colnames(cd8_orf3a_div_b ) <- c("cell_name", "diversity_index")
+
+
+cd8_orf3a_div_b$patient <- ifelse(grepl("1134-TP-2", cd8_orf3a_div_b$cell_name), "1134-TP-2", 
+                                  ifelse(grepl("1525-TP-1",cd8_orf3a_div_b$cell_name), "1525-TP-1", 
+                                         ifelse(grepl("1525-TP-2", cd8_orf3a_div_b$cell_name), "1525-TP-2", 
+                                                ifelse(grepl("1105", cd8_orf3a_div_b$cell_name), "1105",""))))
+
+cd8_orf3a_div_b$timepoint <- ifelse(grepl("1525-TP-1", cd8_orf3a_div_b$patient), "acute",
+                                    ifelse(grepl("1134-TP-2|1525-TP-2|1105", cd8_orf3a_div_b$patient), "convalescent",""))
+
+
+p <- ggplot(cd8_orf3a_div_b, aes(x=patient, y=diversity_index)) + 
+  geom_boxplot()
+p
+
+# combined CD8
+cd8_div <- rbind(cd8_np16_div_a, cd8_np16_div_b, cd8_orf3a_div_a, cd8_orf3a_div_b)
+
+p <- ggplot(cd8_div, aes(x=timepoint, y=diversity_index)) + 
+  geom_boxplot()
+p
