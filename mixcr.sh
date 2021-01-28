@@ -72,3 +72,39 @@ grep -o -i 1062 cd4_names.txt | wc -l
 grep -o -i 1493 cd4_names.txt | wc -l
 grep -o -i 1504 cd4_names.txt | wc -l
 grep -o -i 1525 cd4_names.txt | wc -l
+
+### modified version for more iterations and extend ###
+
+cd /t1-data/user/lfelce/BACKUP/Dong231120/ #input directory
+DIR=/t1-data/user/lfelce/MiXCR/1131-TP-1_CD8_new_again_output/ # output directory
+
+for NAME in $(find . -name '*_R1_001.fastq.gz' -printf "%f\n" | sed 's/_R1_001.fastq.gz//'); do # remove common ending of name
+ 
+echo "$NAME"
+
+p1='_R1_001.fastq.gz'
+
+echo -e '#!/bin/sh
+#$ -cwd
+#$ -q batchq
+module load mixcr/3.0.13
+cd /t1-data/user/lfelce/BACKUP/Dong231120/
+
+mixcr align -p rna-seq -s hsa -OallowPartialAlignments=true' $NAME$p1 $DIR$NAME'.vdjca
+# option preserves partial alignments for further use in assemblePartial
+
+mixcr assemblePartial' $DIR$NAME'.vdjca' $DIR$NAME'_Rescued_it1.vdjca
+mixcr assemblePartial' $DIR$NAME'_Rescued_it1.vdjca' $DIR$NAME'_Rescued_it2.vdjca
+mixcr assemblePartial' $DIR$NAME'_Rescued_it2.vdjca' $DIR$NAME'_Rescued_it3.vdjca
+mixcr assemblePartial' $DIR$NAME'_Rescued_it3.vdjca' $DIR$NAME'_Rescued_it4.vdjca
+mixcr assemblePartial' $DIR$NAME'_Rescued_it4.vdjca' $DIR$NAME'_Rescued.vdjca
+# several iterations to obtain more reads containing full CDR3 sequence
+
+mixcr extend' $DIR$NAME'_Rescued.vdjca' $DIR$NAME'_Rescued_extended.vdjca
+
+mixcr assemble -OaddReadsCountOnClustering=true -ObadQualityThreshold=5' $DIR$NAME'_Rescued_extended.vdjca' $DIR$NAME'.clns
+# decrease input quality threshold to 15 for poor quality data
+
+mixcr exportClones' $DIR$NAME'.clns' $DIR$NAME'.txt' > $DIR'script/'$NAME'.sh'
+
+done
