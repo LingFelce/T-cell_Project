@@ -34,20 +34,13 @@ genesegments$TRBV[1:10,]
 
 
 library(data.table)
+library(stringr)
 
 #------------- CD8 NP16 -------------------------
 
 setwd('/t1-data/user/lfelce/TCR_analysis/cd8_np16_new/')
-listFiles = list.files()
 
-# revise the structure of input files
-for(i in 1:length(listFiles))
-{
-  DT = fread(listFiles[i])
-  write.table(DT,listFiles[i],quote = F, row.names = F, sep = '\t')
-}
 
-library(stringr)
 
 # create list of file names
 tra_list <- list.files(path = ".", recursive = TRUE,
@@ -82,24 +75,23 @@ colnames(mixcr_a_names) <- c("cell_number", "cell_name")
 colnames(mixcr_b_names) <- c("cell_number", "cell_name")
 
 # convert mixcr lists to dataframe with Read count and proportion and V and J gene info
-# re-order rows for each cell based on highest clone count first
-# take top 2 rows to merge into large dataframe with all cells
+# removed bulk samples for now
+# keep cells with 1 or 2 alphas
+# keep cells with 1 beta
+# merge alpha and beta and keep cells that express only 1 alpha or only 1 beta
 
 # mixcr_a
 datalist = list()
 for (i in (1:length(mixcr_a))) {
   dat <- data.frame(c(mixcr_a[[i]][3], mixcr_a[[i]][4],mixcr_a[[i]][7], mixcr_a[[i]][8]))
   dat$i <- i # keep track of which iteration produced it
-  dat <- dat[order(dat$Read.count),]
-  dat <- dat[1:2,]
   datalist[[i]] <- dat # add it to list
 }
-# combine columns for each cell and filter any low false 2nd alphas
+# combine columns for each cell and filter to keep cells with 1 or 2 alphas
 big_data = do.call(rbind, datalist)
-tra <- big_data 
+tra <- big_data %>% group_by(i) %>% filter(n() <= 2)
 colnames(tra) <- c("clone_count", "clone_fraction", "TRAV", "TRAJ", "cell_number")
 tra <- merge(tra, mixcr_a_names, by="cell_number")
-tra <- tra[tra$clone_fraction > 0.01,]
 
 
 # mixcr_b
@@ -107,13 +99,11 @@ datalist = list()
 for (i in (1:length(mixcr_b))) {
   dat <- data.frame(c(mixcr_b[[i]][3], mixcr_b[[i]][4], mixcr_b[[i]][7], mixcr_b[[i]][8]))
   dat$i <- i # keep track of which iteration produced it
-  dat <- dat[order(-dat$Read.count),]
-  dat <- dat[1,]
   datalist[[i]] <- dat # add it to list
 }
 # combine columns for each cell
 big_data = do.call(rbind, datalist)
-trb <- big_data 
+trb <- big_data %>% group_by(i) %>% filter(n() == 1)
 colnames(trb) <- c("clone_count", "clone_fraction", "TRBV", "TRBJ", "cell_number")
 trb <- merge(trb, mixcr_b_names, by="cell_number")
 
@@ -128,6 +118,10 @@ cd8_np16 <- mutate(cd8_np16, beta=paste(TRBV, TRBJ, sep="_"))
 setwd('/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/')
 
 write.csv(cd8_np16, "cd8_np16_all_sc_tcr.csv")
+
+# filtering to tidy up single cell TCR list
+cd8_np16_tidy <- cd8_np16[,c(1, 12, 13)]
+
 
 # tabulate to get dominant alpha-beta pairing
 # 005 
