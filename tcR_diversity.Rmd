@@ -293,12 +293,12 @@ TRAV24_TRAJ22|TRAV25_TRAJ16|TRAV25_TRAJ47|TRAV35_TRAJ52|TRAV8-6_TRAJ22|TRAV25_TR
 
 p1 <- ggplot(div_a, aes(x=patient, y=diversity_index, color=TCR)) + 
   geom_jitter(width=0.25) +
-  labs(title="Diversity of CD8 NP16 CDR3 alpha",x="Patient", y = "Shannon diversity index") 
+  labs(title="Diversity of CD8 ORF3a-28 CDR3 alpha",x="Patient", y = "Shannon diversity index") 
   
 
 p2 <- ggplot(div_a, aes(x=timepoint, y=diversity_index, color=TCR)) + 
   geom_jitter(width=0.25)+
-  labs(title="Diversity of CD8 NP16 CDR3 alpha",x="Timepoint", y = "Shannon diversity index")
+  labs(title="Diversity of CD8 ORF3a-28 CDR3 alpha",x="Timepoint", y = "Shannon diversity index")
 
 
 # beta
@@ -324,11 +324,11 @@ div_b$TCR <- ifelse(grepl("TRBV13_TRBJ1-2|TRBV7-3_TRBJ1-2|TRBV4-2_TRBJ2-1|TRBV5-
 
 p3 <- ggplot(div_b, aes(x=patient, y=diversity_index, color=TCR)) + 
   geom_jitter(width=0.25)+
-  labs(title="Diversity of CD8 NP16 CDR3 beta",x="Patient", y = "Shannon diversity index")
+  labs(title="Diversity of CD8 ROF3a-28 CDR3 beta",x="Patient", y = "Shannon diversity index")
 
 p4 <- ggplot(div_b, aes(x=timepoint, y=diversity_index,color=TCR)) + 
   geom_jitter(width=0.25)+
-  labs(title="Diversity of CD8 NP16 CDR3 beta",x="Timepoint", y = "Shannon diversity index")
+  labs(title="Diversity of CD8 ORF3a-28 CDR3 beta",x="Timepoint", y = "Shannon diversity index")
 
 # export files
 setwd('/t1-data/user/lfelce/TCR_analysis/diversity/')
