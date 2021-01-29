@@ -324,7 +324,7 @@ div_b$TCR <- ifelse(grepl("TRBV13_TRBJ1-2|TRBV7-3_TRBJ1-2|TRBV4-2_TRBJ2-1|TRBV5-
 
 p3 <- ggplot(div_b, aes(x=patient, y=diversity_index, color=TCR)) + 
   geom_jitter(width=0.25)+
-  labs(title="Diversity of CD8 ROF3a-28 CDR3 beta",x="Patient", y = "Shannon diversity index")
+  labs(title="Diversity of CD8 ORF3a-28 CDR3 beta",x="Patient", y = "Shannon diversity index")
 
 p4 <- ggplot(div_b, aes(x=timepoint, y=diversity_index,color=TCR)) + 
   geom_jitter(width=0.25)+
