@@ -543,21 +543,21 @@ Load each previously saved .rds file - no need to repeat harmony integration, cl
 setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
 cd8 <- readRDS("cd8_harmony.rds")
 
-FeaturePlot(object = cd8, features = c("ITGA4", "ITGAL", "ITGB2", "CCL4", "CCL5", "CXCR3", "CXCR4"), cols = c("grey", "blue"), reduction = "umap")
+FeaturePlot(object = cd8, features = c("SELPLG", "ITGA4", "ITGAL", "ITGB2", "CCL4", "CCL5", "CXCR3", "CXCR4"), cols = c("grey", "blue"), reduction = "umap")
 ```
 
 ## Acute patients
 ```{r, fig.height=10, fig.width=16}
 acute <- readRDS("acute_harmony.rds")
 
-FeaturePlot(object = acute, features = c("ITGA4", "ITGAL", "ITGB2", "CCL4", "CCL5", "CXCR3", "CXCR4"), cols = c("grey", "blue"), reduction = "umap")
+FeaturePlot(object = acute, features = c("SELPLG","ITGA4", "ITGAL", "ITGB2", "CCL4", "CCL5", "CXCR3", "CXCR4"), cols = c("grey", "blue"), reduction = "umap")
 ```
 
 ## Convalescent patients
 ```{r, fig.height=10, fig.width=16}
 conv <- readRDS("convalescent_harmony.rds")
 
-FeaturePlot(object = conv, features = c("ITGA4", "ITGAL", "ITGB2", "CCL4", "CCL5", "CXCR3", "CXCR4"), cols = c("grey", "blue"), reduction = "umap")
+FeaturePlot(object = conv, features = c("SELPLG","ITGA4", "ITGAL", "ITGB2", "CCL4", "CCL5", "CXCR3", "CXCR4"), cols = c("grey", "blue"), reduction = "umap")
 ```
 ## Convalescent patients UMAP epitope
 ```{r}
@@ -572,7 +572,7 @@ VlnPlot(object = cd8, features = c("CD27", "IL7R", "S100A4", "PTPRC",
                                     "CCR7", "SELL", "CD44", "CD69",
                                     "HLA-DRB1", "CCL4",
                                     "CCL5", "CXCR3", "CXCR4",
-                                    "ITGA4", "ITGAL", "ITGB2",
+                                    "SELPLG","ITGA4", "ITGAL", "ITGB2",
                                     "IL16", "IFNG",
                                     "PRF1", "GNLY", "NKG7",
                                     "GZMA", "GZMB", "GZMH", "GZMK",
@@ -581,13 +581,26 @@ VlnPlot(object = cd8, features = c("CD27", "IL7R", "S100A4", "PTPRC",
                                     "KLRG1", "TIGIT", "BTLA","CD160"),
         ncol=4, group.by = "epitope")
 ```
+
+```{r, fig.height=30, fig.width=16}
+VlnPlot(object = cd8, features = c("CXCR3", "CXCR4", "CCR4", "CCR5", "CCR6", "CXCR6",
+                                   "PDCD1", "CTLA4", "HAVCR2", "CD244", "KLRG1", "TIGIT", 
+                                   "BTLA", "CD160",
+                                   "CD28", "CD27", "ICOS", "TNFRSF14", "TNFSF14", "CD40LG", 
+                                   "TNFRSF9", "TNFRSF4",
+                                   "TNFRSF25", "TNFRSF18", "TNFRSF8", "HAVCR1", "CD2", "CD226", 
+                                   "LILRB1","LILRB2", "LAIR1"),
+        ncol=4, group.by = "epitope")
+```
+
+
 ### Gene expression by cluster
 ```{r, fig.height=32, fig.width=16}
 VlnPlot(object = cd8, features = c("CD27", "IL7R", "S100A4", "PTPRC",
                                     "CCR7", "SELL", "CD44", "CD69",
                                     "HLA-DRB1", "CCL4",
                                     "CCL5", "CXCR3", "CXCR4",
-                                    "ITGA4", "ITGAL", "ITGB2",
+                                    "SELPLG","ITGA4", "ITGAL", "ITGB2",
                                     "IL16", "IFNG",
                                     "PRF1", "GNLY", "NKG7",
                                     "GZMA", "GZMB", "GZMH", "GZMK",
@@ -604,7 +617,7 @@ VlnPlot(object = acute, features = c("CD27", "IL7R", "S100A4", "PTPRC",
                                     "CCR7", "SELL", "CD44", "CD69",
                                     "HLA-DRB1", "CCL4",
                                     "CCL5", "CXCR3", "CXCR4",
-                                    "ITGA4", "ITGAL", "ITGB2",
+                                    "SELPLG","ITGA4", "ITGAL", "ITGB2",
                                     "IL16", "IFNG",
                                     "PRF1", "GNLY", "NKG7",
                                     "GZMA", "GZMB", "GZMH", "GZMK",
@@ -613,7 +626,18 @@ VlnPlot(object = acute, features = c("CD27", "IL7R", "S100A4", "PTPRC",
                                     "KLRG1", "TIGIT", "BTLA","CD160"),
         ncol=4, group.by = "orig.ident")
 ```
+```{r, fig.height=24, fig.width=16}
+VlnPlot(object = acute, features = c("CXCR3", "CXCR4", "CCR4", "CCR5", "CCR6", "CXCR6",
+                                   "PDCD1", "CTLA4", "HAVCR2", "CD244", "KLRG1", "TIGIT", 
+                                   "BTLA", "CD160",
+                                   "CD28", "CD27", "ICOS", "TNFRSF14", "TNFSF14", "CD40LG", 
+                                   "TNFRSF9", "TNFRSF4",
+                                   "TNFRSF25", "TNFRSF18", "TNFRSF8", "HAVCR1", "CD2", "CD226", 
+                                   "LILRB1","LILRB2", "LAIR1"),
+        ncol=4, group.by = "orig.ident")
 
+
+```
 
 ### Gene expression by cluster
 ```{r, fig.height=32, fig.width=16}
@@ -621,7 +645,7 @@ VlnPlot(object = acute, features = c("CD27", "IL7R", "S100A4", "PTPRC",
                                     "CCR7", "SELL", "CD44", "CD69",
                                     "HLA-DRB1", "CCL4",
                                     "CCL5", "CXCR3", "CXCR4",
-                                    "ITGA4", "ITGAL", "ITGB2",
+                                    "SELPLG","ITGA4", "ITGAL", "ITGB2",
                                     "IL16", "IFNG",
                                     "PRF1", "GNLY", "NKG7",
                                     "GZMA", "GZMB", "GZMH", "GZMK",
@@ -641,7 +665,7 @@ VlnPlot(object = conv, features = c("CD27", "IL7R", "S100A4", "PTPRC",
                                     "CCR7", "SELL", "CD44", "CD69",
                                     "HLA-DRB1", "CCL4",
                                     "CCL5", "CXCR3", "CXCR4",
-                                    "ITGA4", "ITGAL", "ITGB2",
+                                    "SELPLG","ITGA4", "ITGAL", "ITGB2",
                                     "IL16", "IFNG",
                                     "PRF1", "GNLY", "NKG7",
                                     "GZMA", "GZMB", "GZMH", "GZMK",
@@ -661,7 +685,7 @@ VlnPlot(object = conv, features = c("CD27", "IL7R", "S100A4", "PTPRC",
                                     "CCR7", "SELL", "CD44", "CD69",
                                     "HLA-DRB1", "CCL4",
                                     "CCL5", "CXCR3", "CXCR4",
-                                    "ITGA4", "ITGAL", "ITGB2",
+                                    "SELPLG","ITGA4", "ITGAL", "ITGB2",
                                     "IL16", "IFNG",
                                     "PRF1", "GNLY", "NKG7",
                                     "GZMA", "GZMB", "GZMH", "GZMK",
@@ -670,6 +694,21 @@ VlnPlot(object = conv, features = c("CD27", "IL7R", "S100A4", "PTPRC",
                                     "KLRG1", "TIGIT", "BTLA","CD160"),
         ncol=4, group.by = "epitope")
 ```
+
+```{r, fig.height=28, fig.width=16}
+VlnPlot(object = conv, features = c("CXCR3", "CXCR4", "CCR4", "CCR5", "CCR6", "CXCR6",
+                                   "PDCD1", "CTLA4", "HAVCR2", "CD244", "KLRG1", "TIGIT", 
+                                   "BTLA", "CD160",
+                                   "CD28", "CD27", "ICOS", "TNFRSF14", "TNFSF14", "CD40LG", 
+                                   "TNFRSF9", "TNFRSF4",
+                                   "TNFRSF25", "TNFRSF18", "TNFRSF8", "HAVCR1", "CD2", "CD226", 
+                                   "LILRB1","LILRB2", "LAIR1"),
+        ncol=4, group.by = "orig.ident")
+
+
+```
+
+
 
 # Save file
 
