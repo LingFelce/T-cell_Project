@@ -51,3 +51,6 @@ cd /t1-data/user/lfelce/10x_DONG171220/Dong_171220_10x/outs/fastq_path/
 module load cellranger/5.0.0
 
 cellranger count --id=count_Dong_171220_10x --fastqs=/t1-data/user/lfelce/10x_DONG171220/Dong_171220_10x/outs/fastq_path/ --sample=Dong_171220_GEX --transcriptome=/databank/10x-rangers/refdata-cellranger-GRCh38-3.0.0
+
+# cellranger aggr required, only for combining multiple runs of cellranger count to normalise runs to same sequencing depth.
+# can use output from cellranger count filtered_feature_bc_matrix into Seurat
