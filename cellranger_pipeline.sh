@@ -33,6 +33,10 @@ cellranger mkfastq --id=Dong_171220_10x \
 
 # cellranger_count.sh
 
+cellranger count takes FASTQ files from cellranger mkfastq and performs alignment, filtering, barcode counting, and UMI counting. 
+It uses the Chromium cellular barcodes to generate feature-barcode matrices, determine clusters, and perform gene expression analysis. 
+The count pipeline can take input from multiple sequencing runs on the same GEM well. cellranger count also processes Feature Barcode data alongside Gene Expression reads.
+
 #!/bin/bash
 #SBATCH --partition=batch
 #SBATCH --job-name=count
