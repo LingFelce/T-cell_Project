@@ -10,6 +10,24 @@ Any bcl2fastq argument works, except a few that are set by the pipeline
 to ensure proper trimming and sample indexing. The FASTQ output generated 
 is the same as when running bcl2fastq directly.
 
-cellranger mkfastq --id=tutorial_walk_through \
---run=/mnt/home/user.name/yard/run_cellrnager_mkfastq/cellranger-tiny-bcl-1.2.0 \
---csv=/mnt/home/user.name/yard/run_cellrnager_mkfastq/cellranger-tiny-bcl-simple-1.2.0.csv
+# cellranger_mkfastq.sh
+
+#!/bin/bash
+#SBATCH --partition=batch
+#SBATCH --job-name=mkfastq
+#SBATCH --nodes=1
+#SBATCH --mem=128G
+#SBATCH --time=07-00:00:00
+#SBATCH --output=%j_%x.out
+#SBATCH --error=%j_%x.err
+
+
+cd /t1-data/user/lfelce/10x_DONG171220/
+
+module load cellranger/5.0.0
+module load bcl2fastq
+
+cellranger mkfastq --id=Dong_171220_10x \
+--run=/t1-data/user/lfelce/10x_DONG171220/ \
+--csv=/t1-data/user/lfelce/10x_DONG171220/Dong_171220_sample_sheet.csv
+
