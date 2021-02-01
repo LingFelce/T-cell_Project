@@ -21,5 +21,8 @@ done
 
 
 # run in terminal in fastqc folder
+# remember to load conda first
 
+conda activate base
+conda activate ling
 multiqc .
