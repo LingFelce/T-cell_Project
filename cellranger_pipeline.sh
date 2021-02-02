@@ -59,39 +59,6 @@ cellranger count --id=count_Dong_171220_10x --fastqs=/t1-data/user/lfelce/10x_DO
 # https://hoohm.github.io/CITE-seq-Count/Running-the-script/
 -cbf 1 -cbl 16 -umif 17 -umil 26 # positions of the cellular and UMI barcodes for 10x
 
-cd /t1-data/user/lfelce/10x_DONG171220/Dong_171220_10x/outs/fastq_path/
-DIR=/t1-data/user/lfelce/10x_DONG171220/Dong_171220_10x/outs/fastq_path/hashtag_count/
-
-for NAME in $(find . -name '*GEX_*_R1_001.fastq.gz' -printf "%f\n" | sed 's/_R1_001.fastq.gz//'); do
-
-echo "$NAME"
-
-p1='_R1_001.fastq.gz'
-p2='_R2_001.fastq.gz'
-
-echo -e '#! /bin/sh
-#SBATCH --partition=batch
-#SBATCH --nodes=1
-#SBATCH --mem=128G
-
-module load cite-seq-count
-
-cd /t1-data/user/lfelce/10x_DONG171220/Dong_171220_10x/outs/fastq_path/hashtag_count/
-
-CITE-seq-Count -R1 /t1-data/user/lfelce/10x_DONG171220/Dong_171220_10x/outs/fastq_path/'$NAME$p1' -R2 /t1-data/user/lfelce/10x_DONG171220/Dong_171220_10x/outs/fastq_path/'$NAME$p2' -t hashtag_barcodes.csv -cbf 1 -cbl 16 -umif 17 -umil 26 -cells 2000 -o .' > $DIR'script/'$NAME'.sh'
-
-done
-
-#-----------------------
-
-cd /t1-data/user/lfelce/10x_DONG171220/Dong_171220_10x/outs/fastq_path/hashtag_count/script/
-
-for line in $(ls *.sh); do
-sbatch $line
-done
-
-squeue -u lfelce
-
 #### if running all 4 lanes together without merging, then do as 1 script ####
 # cite-seq-count.sh
 
