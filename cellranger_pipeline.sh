@@ -80,3 +80,26 @@ CITE-seq-Count -R1 Dong_171220_GEX_S1_L001_R1_001.fastq.gz,Dong_171220_GEX_S1_L0
 -t hashtag_barcodes.csv \
 -cbf 1 -cbl 16 -umif 17 -umil 26 -cells 2000 \
 -o ./hashtag_count
+
+###############
+
+# cite-seq-count gave a very sparse matrix, very few hashtags mapped to cell barcodes/UMIs. 
+# repeated using Feature Barcode extra options for cell ranger count
+# libraries.csv - 1 row, specifying file path, sample name and library_type - Antibody Capture
+# feature_ref - hashtag barcodes, TotalSeqC
+
+# for some reason script doesn't work on CCB cluster - keeps saying no input fastq files
+# copied fastq files over to BMRC cluster and ran on there instead
+
+#!/bin/bash
+#$ -wd /well/jknight/users/jln789/10x_Dong171220/
+#$ -q short.qc
+
+cd /well/jknight/users/jln789/10x_Dong171220/
+
+module load Cellranger/5.0.0
+
+cellranger count --id=ab_counts_cellranger \
+--transcriptome=/well/jknight/Andrew/software/cellranger/refdata-cellranger-GRCh38-and-mm10-3.1.0 \
+--libraries=libraries.csv \
+--feature-ref=feature_ref.csv
