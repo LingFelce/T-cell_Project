@@ -1,0 +1,135 @@
+---
+title: "SARS-CoV-2 6 month T cells"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(Seurat)
+library(plyr)
+library(dplyr)
+library(patchwork)
+library(cowplot)
+library(ggplot2)
+library(data.table)
+library(tidyverse)
+library(harmony)
+```
+
+## 10x single cell RNA sequencing from SARS-CoV-2 CD4/8 tetramer sorted T cells
+
+### Batch 1
+Dong 171220 = batch1
+Hashtag Ab 1 1180_6Mon, expanded, DR0101_M24 tetramer, CD4
+Hashtag Ab 2 1344_6Mon, expanded, DR1501_S51 tetramer, CD4
+Hashtag Ab 4 1344_6Mon, expanded, DR1501_S174 tetramer, CD4
+Hashtag Ab 5 1180_6Mon, expanded, A3_S76 tetramer, CD8
+Hashtag Ab 6 1180_6Mon, expanded, A1-ORF3a-28 tetramer, CD8
+Hashtag Ab 7 1344_6Mon, expanded, B27_NP1 tetramer, CD8
+Hashtag Ab 8 11344_6Mon, expanded, B27_NP13 tetramer, CD8
+Note: hashtag 5 and 6 mixed up?
+
+```{r}
+# Read in data
+batch1.counts <- Read10X(data.dir = "/t1-data/user/lfelce/10x_DONG171220/gex_count_cellranger/filtered_feature_bc_matrix")
+colnames(batch1.counts) <- gsub(x = colnames(batch1.counts), pattern = "-1", replacement = "")
+
+batch1.hash <- Read10X(data.dir ="/t1-data/user/lfelce/10x_DONG171220/ab_counts_2/filtered_feature_bc_matrix")
+colnames(batch1.hash) <- gsub(x = colnames(batch1.hash), pattern = "-1", replacement = "")
+
+# Select cell barcodes detected by both RNA and hashtag, then filter
+joint.barcodes <- intersect(colnames(batch1.counts), colnames(batch1.hash))
+
+# Subset RNA and hashtag counts by joint cell barcodes
+batch1.counts <- batch1.counts[, joint.barcodes]
+batch1.hash <- as.matrix(batch1.hash[,joint.barcodes])
+
+# Edit hashtag names (remove barcode sequences)
+rownames(batch1.hash) <- gsub(x = rownames(batch1.hash), pattern = "TotalSeq-C0251_anti-human_", replacement = "")
+rownames(batch1.hash) <- gsub(x = rownames(batch1.hash), pattern = "_antibody", replacement = "")
+
+# remove Hashtag3 (no cells labelled with this Ab)
+batch1.hash <- batch1.hash[-3,]
+
+# remove columns (cell barcodes) where column sum is 0 (therefore not mapped to any hashtag)
+i <- (colSums(batch1.hash, na.rm=T)!=0)
+batch1.hash <- batch1.hash[,i]
+
+# counts per hashtag
+rowSums(batch1.hash)
+rowMeans(batch1.hash)
+
+# Set up Seurat object 
+batch1 <- CreateSeuratObject(counts = batch1.counts)
+
+# Normalize RNA data with log normalization
+batch1 <- NormalizeData(batch1)
+
+# Find and scale variable features
+batch1 <- FindVariableFeatures(batch1, selection.method = "mean.var.plot")
+
+batch1 <- ScaleData(batch1, features = VariableFeatures(batch1))
+
+# Add HTO data as a new assay independent from RNA
+batch1[["hashtag"]] <- CreateAssayObject(counts = batch1.hash)
+
+# Normalize HTO data, here we use centered log-ratio (CLR) transformation
+batch1 <- NormalizeData(batch1, assay = "hashtag", normalization.method = "CLR")
+
+# Demultiplex cells based on hashtag enrichment - use HTODemux() to assign single cells back to sample origins
+
+# If you have a very large dataset we suggest using k_function = 'clara'. This is a k-medoid
+# clustering function for large applications You can also play with additional parameters (see
+# documentation for HTODemux()) to adjust the threshold for classification Here we are using the
+# default settings
+batch1 <- HTODemux(batch1, assay = "hashtag", positive.quantile = 0.99)
+
+```
+
+#### Visualise demultiplexing results
+Output from running HTODemux is saved in metadata. Can visualise cells classified as singletse, doublets and negative/ambiguous cells
+
+```{r}
+# Global classification results
+table(batch1$hashtag_classification.global)
+
+# Visualise enrichment for selected hashtags with ridge plots
+# Group cells based on max hashtag signal
+Idents(batch1) <- "hashtag_maxID"
+RidgePlot(batch1, assay="hashtag", features=rownames(batch1[["hashtag"]])[1:2], ncol=2)
+
+```
+```{r}
+# Visualise pairs of hashtag signals to confirm mutual exclusivity in singlets
+FeatureScatter(batch1, feature1 = "hashtag_Hashtag4", feature2 = "hashtag_Hashtag5")
+```
+```{r}
+# Compare number of UMIs for singlets, doublets and negative cells
+Idents(batch1) <- "hashtag_classification.global"
+VlnPlot(batch1, features = "nCount_RNA", pt.size = 0.1, log = TRUE)
+```
+
+```{r}
+# Cluster and visualize cells using the usual scRNA-seq workflow, and examine for the potential presence of batch effects.
+
+# Extract the singlets
+batch1.singlet <- subset(batch1, idents = "Singlet")
+
+# Select the top 1000 most variable features
+batch1.singlet <- FindVariableFeatures(batch1.singlet, selection.method = "vst")
+
+# Scaling RNA data
+batch1.singlet <- ScaleData(batch1.singlet, features = VariableFeatures(batch1.singlet))
+
+# Run PCA
+batch1.singlet <- RunPCA(batch1.singlet, features = VariableFeatures(batch1.singlet))
+
+# We select the top 10 PCs for clustering and tSNE based on PCElbowPlot
+batch1.singlet <- FindNeighbors(batch1.singlet, reduction = "pca", dims = 1:6)
+batch1.singlet <- FindClusters(batch1.singlet, resolution = 0.6, verbose = FALSE)
+batch1.singlet <- RunUMAP(batch1.singlet, dims = 1:6)
+
+# Projecting singlet identities on TSNE visualization
+DimPlot(batch1.singlet, reduction="umap", group.by = "hashtag_classification")
+```
+
