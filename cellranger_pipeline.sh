@@ -97,7 +97,7 @@ CITE-seq-Count -R1 Dong_171220_GEX_S1_L001_R1_001.fastq.gz,Dong_171220_GEX_S1_L0
 
 cd /well/jknight/users/jln789/10x_Dong171220/
 
-module load Cellranger/5.0.0
+module load CellRanger/5.0.0
 
 cellranger count --id=ab_counts_cellranger \
 --transcriptome=/well/jknight/Andrew/software/cellranger/refdata-cellranger-GRCh38-and-mm10-3.1.0 \
