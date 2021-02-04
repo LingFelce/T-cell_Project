@@ -14,6 +14,7 @@ library(ggplot2)
 library(data.table)
 library(tidyverse)
 library(harmony)
+library(gridExtra)
 ```
 
 ## 10x single cell RNA sequencing from SARS-CoV-2 CD4/8 tetramer sorted T cells
@@ -26,15 +27,15 @@ Hashtag Ab 4 1344_6Mon, expanded, DR1501_S174 tetramer, CD4
 Hashtag Ab 5 1180_6Mon, expanded, A3_S76 tetramer, CD8
 Hashtag Ab 6 1180_6Mon, expanded, A1-ORF3a-28 tetramer, CD8
 Hashtag Ab 7 1344_6Mon, expanded, B27_NP1 tetramer, CD8
-Hashtag Ab 8 11344_6Mon, expanded, B27_NP13 tetramer, CD8
+Hashtag Ab 8 1344_6Mon, expanded, B27_NP13 tetramer, CD8
 Note: hashtag 5 and 6 mixed up?
 
 ```{r}
 # Read in data
-batch1.counts <- Read10X(data.dir = "/t1-data/user/lfelce/10x_DONG171220/gex_count_cellranger/filtered_feature_bc_matrix")
+batch1.counts <- Read10X(data.dir = "/t1-data/user/lfelce/10x_DONG171220/counts_gex/filtered_feature_bc_matrix")
 colnames(batch1.counts) <- gsub(x = colnames(batch1.counts), pattern = "-1", replacement = "")
 
-batch1.hash <- Read10X(data.dir ="/t1-data/user/lfelce/10x_DONG171220/ab_counts_2/filtered_feature_bc_matrix")
+batch1.hash <- Read10X(data.dir ="/t1-data/user/lfelce/10x_DONG171220/counts_ab/filtered_feature_bc_matrix")
 colnames(batch1.hash) <- gsub(x = colnames(batch1.hash), pattern = "-1", replacement = "")
 
 # Select cell barcodes detected by both RNA and hashtag, then filter
@@ -44,16 +45,11 @@ joint.barcodes <- intersect(colnames(batch1.counts), colnames(batch1.hash))
 batch1.counts <- batch1.counts[, joint.barcodes]
 batch1.hash <- as.matrix(batch1.hash[,joint.barcodes])
 
-# Edit hashtag names (remove barcode sequences)
-rownames(batch1.hash) <- gsub(x = rownames(batch1.hash), pattern = "TotalSeq-C0251_anti-human_", replacement = "")
-rownames(batch1.hash) <- gsub(x = rownames(batch1.hash), pattern = "_antibody", replacement = "")
-
 # remove Hashtag3 (no cells labelled with this Ab)
 batch1.hash <- batch1.hash[-3,]
 
-# remove columns (cell barcodes) where column sum is 0 (therefore not mapped to any hashtag)
-i <- (colSums(batch1.hash, na.rm=T)!=0)
-batch1.hash <- batch1.hash[,i]
+# rename rows to sample names
+rownames(batch1.hash) <- c("1180_CD4_M24", "1344_CD4_S51", "1344_CD4_S174", "1180_CD8_S76", "1180_CD8_ORF3a-28", "1344_CD8_NP1", "1344_CD8_NP13")
 
 # counts per hashtag
 rowSums(batch1.hash)
@@ -89,34 +85,31 @@ batch1 <- HTODemux(batch1, assay = "hashtag", positive.quantile = 0.99)
 #### Visualise demultiplexing results
 Output from running HTODemux is saved in metadata. Can visualise cells classified as singletse, doublets and negative/ambiguous cells
 
-```{r}
+```{r, fig.width=10, fig.height=12}
 # Global classification results
 table(batch1$hashtag_classification.global)
 
 # Visualise enrichment for selected hashtags with ridge plots
 # Group cells based on max hashtag signal
 Idents(batch1) <- "hashtag_maxID"
-RidgePlot(batch1, assay="hashtag", features=rownames(batch1[["hashtag"]])[1:2], ncol=2)
+RidgePlot(batch1, assay="hashtag", features=rownames(batch1[["hashtag"]]), ncol=2)
 
 ```
-```{r}
-# Visualise pairs of hashtag signals to confirm mutual exclusivity in singlets
-FeatureScatter(batch1, feature1 = "hashtag_Hashtag4", feature2 = "hashtag_Hashtag5")
-```
-```{r}
+
+```{r, fig.width=6, fig.height=4}
 # Compare number of UMIs for singlets, doublets and negative cells
 Idents(batch1) <- "hashtag_classification.global"
 VlnPlot(batch1, features = "nCount_RNA", pt.size = 0.1, log = TRUE)
 ```
 
-```{r}
+```{r, fig.width=7, fig.height=4}
 # Cluster and visualize cells using the usual scRNA-seq workflow, and examine for the potential presence of batch effects.
 
 # Extract the singlets
 batch1.singlet <- subset(batch1, idents = "Singlet")
 
 # Select the top 1000 most variable features
-batch1.singlet <- FindVariableFeatures(batch1.singlet, selection.method = "vst")
+batch1.singlet <- FindVariableFeatures(batch1.singlet, selection.method = "mean.var.plot")
 
 # Scaling RNA data
 batch1.singlet <- ScaleData(batch1.singlet, features = VariableFeatures(batch1.singlet))
@@ -124,12 +117,127 @@ batch1.singlet <- ScaleData(batch1.singlet, features = VariableFeatures(batch1.s
 # Run PCA
 batch1.singlet <- RunPCA(batch1.singlet, features = VariableFeatures(batch1.singlet))
 
-# We select the top 10 PCs for clustering and tSNE based on PCElbowPlot
-batch1.singlet <- FindNeighbors(batch1.singlet, reduction = "pca", dims = 1:6)
-batch1.singlet <- FindClusters(batch1.singlet, resolution = 0.6, verbose = FALSE)
-batch1.singlet <- RunUMAP(batch1.singlet, dims = 1:6)
+# Elbow plot
+batch1.singlet <- JackStraw(batch1.singlet, num.replicate = 100)
+batch1.singlet <- ScoreJackStraw(batch1.singlet, dims = 1:20)
+JackStrawPlot(batch1.singlet, dims = 1:20)
+```
 
-# Projecting singlet identities on TSNE visualization
-DimPlot(batch1.singlet, reduction="umap", group.by = "hashtag_classification")
+```{r, fig.width=18, fig.height=10}
+# We select the top 10 PCs for clustering 
+batch1.singlet <- FindNeighbors(batch1.singlet, reduction = "pca", dims = 1:20)
+batch1.singlet <- FindClusters(batch1.singlet, resolution = 0.5, verbose = FALSE)
+batch1.singlet <- RunUMAP(batch1.singlet, dims = 1:20)
+batch1.singlet <- RunTSNE(batch1.singlet, reduction = "pca", dims = 1:20)
+
+# Projecting singlet identities on UMAP visualization
+umap <- DimPlot(batch1.singlet, reduction="umap", group.by = "hashtag_classification")
+tsne <- DimPlot(batch1.singlet, reduction="tsne", group.by = "hashtag_classification")
+pca <- DimPlot(batch1.singlet, reduction="pca", group.by="hashtag_classification")
+grid.arrange(umap, tsne, pca, nrow=2)
+
+
+# Assign metadata to object
+patient_list <- as.data.frame(batch1.singlet@meta.data$hashtag_classification)
+colnames(patient_list) <- "sample"
+patient_list$patient <- ifelse(grepl("1180", patient_list$sample), "1180",
+                               ifelse(grepl("1344", patient_list$sample), "1344", ""))
+patient_list$subset <- ifelse(grepl("CD4", patient_list$sample), "CD4",
+                               ifelse(grepl("CD8", patient_list$sample), "CD8", ""))
+patient_list$epitope <- ifelse(grepl("M24", patient_list$sample), "membrane",
+                        ifelse(grepl("S51", patient_list$sample), "spike", 
+                        ifelse(grepl("S174", patient_list$sample), "spike", 
+                        ifelse(grepl("S76", patient_list$sample), "spike", 
+                        ifelse(grepl("ORF3a-28", patient_list$sample), "ORF3a",
+                        ifelse(grepl("NP1", patient_list$sample), "nucleoprotein", 
+                        ifelse(grepl("NP13", patient_list$sample), "nucleoprotein", "")))))))
+
+batch1.singlet@meta.data$"epitope" <- as.factor(patient_list$epitope)
+batch1.singlet@meta.data$"patient" <- as.factor(patient_list$patient)
+batch1.singlet@meta.data$"t-cell" <- as.factor(patient_list$subset)
+
+
+# Save batch1 object
+saveRDS(batch1.singlet, "batch1_seurat.rds")
+```
+#### Harmony integration
+```{r, fig.height=3, fig.width, 6}
+# Load in RDS
+batch1 <- readRDS("batch1_seurat.rds")
+
+batch1 <- batch1 %>%
+    RunHarmony("t-cell", plot_convergence = TRUE)
+# Harmony converged after 2 iterations
+
+# access Harmony embeddings - show top 5 rows and top 5 columns
+harmony_embeddings <- Embeddings(batch1, 'harmony')
+
+```
+
+```{r, fig.height=5, fig.width=14}
+p1 <- DimPlot(object = batch1, reduction = "harmony", group.by = "hashtag_classification")
+p2 <- VlnPlot(object = batch1, features = "harmony_1", group.by = "hashtag_classification", pt.size = .1)
+p1 + p2
+```
+
+```{r, fig.height=5, fig.width=16}
+p3 <- DimPlot(object = batch1, reduction = "pca", group.by="hashtag_classification")
+p3 + pca
+```
+```{r, fig.width=16, fig.height=10}
+# # use split.by="seurat_clusters" to also show UMAP by epitope and cluster number
+# UMAP_epitope
+
+batch1 <- batch1 %>%
+    RunUMAP(reduction = "harmony", dims = 1:30) %>%
+    FindNeighbors(reduction = "harmony", dims = 1:30) %>%
+    FindClusters(resolution = 0.5) %>%
+    identity()
+umap_patient <- DimPlot(batch1, reduction = "umap", group.by = "patient")
+umap_subset <- DimPlot(batch1, reduction = "umap", group.by = "t-cell")
+umap_cluster <- DimPlot(batch1, reduction = "umap", group.by = "seurat_clusters")
+
+grid.arrange(umap_patient, umap_subset, umap_cluster, nrow=2)
+```
+
+
+#### Combined GEX and Antibody Hashtag
+Combined by putting two rows in libraries.csv for Feature Barcode analysis (cellranger count) for library_type Gene Expression and Antibody Capture. Followed 
+https://satijalab.org/seurat/articles/multimodal_vignette.html to create Seurat object with two assays - RNA and HTO, but doesn't explain how to demultiplex, so only suitable for CITE-Seq.
+```{r}
+# # Read in data
+# batch1.counts <- Read10X(data.dir = "/t1-data/user/lfelce/10x_DONG171220/counts_combined/filtered_feature_bc_matrix")
+# 
+# # Remove -1 from barcodes
+# colnames(batch1.counts$`Gene Expression`) <- gsub(x = colnames(batch1.counts$`Gene Expression`), pattern = "-1", replacement = "")
+# 
+# colnames(batch1.counts$`Antibody Capture`) <- gsub(x = colnames(batch1.counts$`Antibody Capture`), pattern = "-1", replacement = "")
+# 
+# batch1.counts$`Antibody Capture` <- batch1.counts$`Antibody Capture`[-3,]
+# 
+# # Create Seurat object from Gene Expression
+# batch1 <- CreateSeuratObject(counts = batch1.counts$`Gene Expression`)
+# 
+# # Create hashtag Assay object
+# hashtag_assay <- CreateAssayObject(counts=batch1.counts$`Antibody Capture`)
+# 
+# # Add to Seurat object
+# batch1[["HTO"]] <- hashtag_assay
+# 
+# # Rename rows to sample names
+# rownames(batch1[["HTO"]]) <- c("1180_CD4_M24", "1344_CD4_S51", "1344_CD4_S174", "1180_CD8_S76", "1180_CD8_ORF3a-28", "1134_CD8_NP1", "1344_CD8_NP13")
+# 
+# DefaultAssay(batch1) <- "RNA"
+# 
+# batch1 <- NormalizeData(batch1)
+# batch1 <- FindVariableFeatures(batch1)
+# batch1 <- ScaleData(batch1)
+# batch1 <- RunPCA(batch1, verbose = FALSE)
+# batch1 <- FindNeighbors(batch1, dims = 1:30)
+# batch1 <- FindClusters(batch1, resolution = 0.8, verbose = FALSE)
+# batch1 <- RunUMAP(batch1, dims = 1:30)
+# DimPlot(batch1)
+
+
 ```
 
