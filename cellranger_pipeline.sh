@@ -88,8 +88,10 @@ CITE-seq-Count -R1 Dong_171220_GEX_S1_L001_R1_001.fastq.gz,Dong_171220_GEX_S1_L0
 # libraries.csv - 1 row, specifying file path, sample name and library_type - Antibody Capture
 # feature_ref - hashtag barcodes, TotalSeqC
 
-# for some reason script doesn't work on CCB cluster - keeps saying no input fastq files
-# copied fastq files over to BMRC cluster and ran on there instead
+# for some reason script doesn't work on CCB cluster - keeps saying no input fastq files - probably too many other fastq files in folder?
+# copied GEX and Cell_Surface fastq files over to BMRC cluster and ran on there instead
+
+# script below for combined Gene Expression and Antibody Capture
 
 #!/bin/bash
 #$ -wd /well/jknight/users/jln789/10x_Dong171220/
@@ -99,7 +101,29 @@ cd /well/jknight/users/jln789/10x_Dong171220/
 
 module load CellRanger/5.0.0
 
-cellranger count --id=ab_counts_cellranger \
---transcriptome=/well/jknight/Andrew/software/cellranger/refdata-cellranger-GRCh38-and-mm10-3.1.0 \
+cellranger count --id=combined_counts_2 \
+--transcriptome=/well/htseq/Genomes/refdata-cellranger-3.1.0/GRCh38-combat/ \
 --libraries=libraries.csv \
 --feature-ref=feature_ref.csv
+
+
+# script below for Antibody Capture only
+#!/bin/bash
+#$ -wd /well/jknight/users/jln789/10x_Dong171220/
+#$ -q short.qc
+
+cd /well/jknight/users/jln789/10x_Dong171220/
+
+module load CellRanger/5.0.0
+
+cellranger count --id=ab_counts_2 \
+--transcriptome=/well/htseq/Genomes/refdata-cellranger-2020-A/refdata-gex-GRCh38-2020-A \
+--libraries=libraries_2.csv \
+--feature-ref=feature_ref_2.csv
+
+# libraries.csv
+fastqs,sample,library_type
+/gpfs2/well/jknight/users/jln789/10x_Dong171220/,Dong_171220_Cell_Surface,Antibody Capture
+/gpfs2/well/jknight/users/jln789/10x_Dong171220/,Dong_171220_GEX,Gene Expression
+
+
