@@ -29,3 +29,8 @@ STAR --runThreadN 10 --readFilesCommand gunzip \
 --genomeDir /well/htseq/Genomes/refdata-cellranger-2020-A/refdata-gex-GRCh38-2020-A/star \
 --readFilesIn ./H09_S93_L001_R1_001.fastq.gz ./H09_S93_L001_R2_001.fastq.gz \
 --outFileNamePrefix ./MRN345_Cl07_
+
+# Convert FASTQ to FASTA:
+seqtk seq -a in.fq.gz > out.fa
+# Fold long FASTA/Q lines and remove FASTA/Q comments:
+seqtk seq -Cl60 in.fa > out.fa 
