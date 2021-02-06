@@ -386,6 +386,8 @@ p6 <- DimPlot(covid_flu, reduction="pca", group.by="epitope")
 
 grid.arrange(p6, p1, p2, p3, p4, p5, nrow=3)
 
+saveRDS(covid_flu, "covid_flu_seurat_integrated.rds")
+
 ```
 
 ### Combined GEX and Antibody Hashtag
