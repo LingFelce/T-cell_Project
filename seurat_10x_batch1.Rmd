@@ -34,81 +34,81 @@ Note: hashtag 5 and 6 mixed up?
 
 ### Separate Gene Expression and Antibody Capture
 ```{r}
-# # Read in data
-# batch1.counts <- Read10X(data.dir = "/t1-data/user/lfelce/10x_DONG171220/counts_gex/filtered_feature_bc_matrix")
-# colnames(batch1.counts) <- gsub(x = colnames(batch1.counts), pattern = "-1", replacement = "")
-# 
-# batch1.hash <- Read10X(data.dir ="/t1-data/user/lfelce/10x_DONG171220/counts_ab/filtered_feature_bc_matrix")
-# colnames(batch1.hash) <- gsub(x = colnames(batch1.hash), pattern = "-1", replacement = "")
-# 
-# # Select cell barcodes detected by both RNA and hashtag, then filter
-# joint.barcodes <- intersect(colnames(batch1.counts), colnames(batch1.hash))
-# 
-# # Subset RNA and hashtag counts by joint cell barcodes
-# batch1.counts <- batch1.counts[, joint.barcodes]
-# batch1.hash <- as.matrix(batch1.hash[,joint.barcodes])
-# 
-# # remove Hashtag3 (no cells labelled with this Ab)
-# batch1.hash <- batch1.hash[-3,]
-# 
-# # rename rows to sample names
-# rownames(batch1.hash) <- c("1180_CD4_M24", "1344_CD4_S51", "1344_CD4_S174", "1180_CD8_S76", "1180_CD8_ORF3a-28", "1344_CD8_NP1", "1344_CD8_NP13")
-# 
-# # counts per hashtag
-# rowSums(batch1.hash)
-# rowMeans(batch1.hash)
-# 
-# # Set up Seurat object 
-# batch1 <- CreateSeuratObject(counts = batch1.counts)
-# 
-# # Normalize RNA data with log normalization
-# batch1 <- NormalizeData(batch1)
-# 
-# # Find and scale variable features
-# batch1 <- FindVariableFeatures(batch1, selection.method = "mean.var.plot")
-# 
-# batch1 <- ScaleData(batch1, features = VariableFeatures(batch1))
-# 
-# # Add HTO data as a new assay independent from RNA
-# batch1[["hashtag"]] <- CreateAssayObject(counts = batch1.hash)
-# 
-# # Normalize HTO data, here we use centered log-ratio (CLR) transformation
-# batch1 <- NormalizeData(batch1, assay = "hashtag", normalization.method = "CLR")
-# 
-# # Demultiplex cells based on hashtag enrichment - use HTODemux() to assign single cells back to sample origins
-# 
-# # If you have a very large dataset we suggest using k_function = 'clara'. This is a k-medoid
-# # clustering function for large applications You can also play with additional parameters (see
-# # documentation for HTODemux()) to adjust the threshold for classification Here we are using the
-# # default settings
-# batch1 <- HTODemux(batch1, assay = "hashtag", positive.quantile = 0.99)
+# Read in data
+batch1.counts <- Read10X(data.dir = "/t1-data/user/lfelce/10x_DONG171220/counts_gex/filtered_feature_bc_matrix")
+colnames(batch1.counts) <- gsub(x = colnames(batch1.counts), pattern = "-1", replacement = "")
+
+batch1.hash <- Read10X(data.dir ="/t1-data/user/lfelce/10x_DONG171220/counts_ab/filtered_feature_bc_matrix")
+colnames(batch1.hash) <- gsub(x = colnames(batch1.hash), pattern = "-1", replacement = "")
+
+# Select cell barcodes detected by both RNA and hashtag, then filter
+joint.barcodes <- intersect(colnames(batch1.counts), colnames(batch1.hash))
+
+# Subset RNA and hashtag counts by joint cell barcodes
+batch1.counts <- batch1.counts[, joint.barcodes]
+batch1.hash <- as.matrix(batch1.hash[,joint.barcodes])
+
+# remove Hashtag3 (no cells labelled with this Ab)
+batch1.hash <- batch1.hash[-3,]
+
+# rename rows to sample names
+rownames(batch1.hash) <- c("1180_CD4_M24", "1344_CD4_S51", "1344_CD4_S174", "1180_CD8_S76", "1180_CD8_ORF3a-28", "1344_CD8_NP1", "1344_CD8_NP13")
+
+# counts per hashtag
+rowSums(batch1.hash)
+rowMeans(batch1.hash)
+
+# Set up Seurat object
+batch1 <- CreateSeuratObject(counts = batch1.counts)
+
+# Normalize RNA data with log normalization
+batch1 <- NormalizeData(batch1)
+
+# Find and scale variable features
+batch1 <- FindVariableFeatures(batch1, selection.method = "mean.var.plot")
+
+batch1 <- ScaleData(batch1, features = VariableFeatures(batch1))
+
+# Add HTO data as a new assay independent from RNA
+batch1[["hashtag"]] <- CreateAssayObject(counts = batch1.hash)
+
+# Normalize HTO data, here we use centered log-ratio (CLR) transformation
+batch1 <- NormalizeData(batch1, assay = "hashtag", normalization.method = "CLR")
+
+# Demultiplex cells based on hashtag enrichment - use HTODemux() to assign single cells back to sample origins
+
+# If you have a very large dataset we suggest using k_function = 'clara'. This is a k-medoid
+# clustering function for large applications You can also play with additional parameters (see
+# documentation for HTODemux()) to adjust the threshold for classification Here we are using the
+# default settings
+batch1 <- HTODemux(batch1, assay = "hashtag", positive.quantile = 0.99)
 
 ```
 
 Output from running HTODemux is saved in metadata. Can visualise cells classified as singlets, doublets and negative/ambiguous cells
 
 ```{r, fig.width=12, fig.height=12}
-# # Global classification results
-# table(batch1$hashtag_classification.global)
-# 
-# # Visualise enrichment for selected hashtags with ridge plots
-# # Group cells based on max hashtag signal
-# Idents(batch1) <- "hashtag_maxID"
-# RidgePlot(batch1, assay="hashtag", features=rownames(batch1[["hashtag"]]), ncol=2)
+# Global classification results
+table(batch1$hashtag_classification.global)
+
+# Visualise enrichment for selected hashtags with ridge plots
+# Group cells based on max hashtag signal
+Idents(batch1) <- "hashtag_maxID"
+RidgePlot(batch1, assay="hashtag", features=rownames(batch1[["hashtag"]]), ncol=2)
 
 ```
 
 ```{r, fig.width=6, fig.height=4}
-# # Compare number of UMIs for singlets, doublets and negative cells
-# Idents(batch1) <- "hashtag_classification.global"
-# VlnPlot(batch1, features = "nCount_RNA", pt.size = 0.1, log = TRUE)
+# Compare number of UMIs for singlets, doublets and negative cells
+Idents(batch1) <- "hashtag_classification.global"
+VlnPlot(batch1, features = "nCount_RNA", pt.size = 0.1, log = TRUE)
 ```
 #### Singlets only
 ```{r, fig.width=18, fig.height=16}
 # # Cluster and visualize cells using the usual scRNA-seq workflow, and examine for the potential presence of batch effects.
 # 
-# # Extract the singlets
-# batch1.singlet <- subset(batch1, idents = "Singlet")
+# Extract the singlets
+batch1.singlet <- subset(batch1, idents = "Singlet")
 # 
 # # Select the top 1000 most variable features
 # batch1.singlet <- FindVariableFeatures(batch1.singlet, selection.method = "mean.var.plot")
@@ -148,12 +148,13 @@ Output from running HTODemux is saved in metadata. Can visualise cells classifie
 # tsne <- DimPlot(batch1.singlet, reduction="tsne", group.by = "hashtag_classification")
 # pca <- DimPlot(batch1.singlet, reduction="pca", group.by="hashtag_classification")
 # 
-# umap_cluster <- DimPlot(batch1.singlet, reduction="umap", group.by = "seurat_clusters")
+# umap_cluster <- DimPlot(batch1.singlet, reduction="umap", group.by = "seurat_clusters", labels=TRUE)
 # umap_tcell <- DimPlot(batch1.singlet, reduction="umap", group.by = "t-cell")
 # umap_epitope <- DimPlot(batch1.singlet, reduction="umap", group.by = "epitope")
 # umap_patient <- DimPlot(batch1.singlet, reduction="umap", group.by = "patient")
+# umap_hash <- DimPlot(batch1, reduction="umap", group.by="hashtag_classification")
 # 
-# grid.arrange(tsne, pca, umap_cluster, umap_tcell, umap_epitope, umap_patient, nrow=3)
+# grid.arrange(tsne, pca, umap_cluster, umap_tcell, umap_epitope, umap_patient, umap_hash nrow=3)
 # 
 # 
 # # Save batch1 object
@@ -186,6 +187,9 @@ Output from running HTODemux is saved in metadata. Can visualise cells classifie
 # genes_8 <- tmarkers[is.element(tmarkers$V1, cluster_8$gene),]
 # 
 # genes <- read.csv("genes.csv", header=TRUE)
+
+# find cluster marks distinguishing cluster 0 from clusters 1 and 7 (spike only clusters)
+cluster0.markers <- FindMarkers(batch1, ident.1 = 0, ident.2 = c(1,7), min.pct = 0.25)
 
 ```
 #### Gene expression by T cell subset
@@ -258,14 +262,138 @@ p4 <- FeaturePlot(object = batch1, features = c("IFNG", "TNF", "TGFB1", "PTPRC",
 p4
 ```
 
+### Integrated with flu
 
+```{r}
+covid <- batch1.singlet
+
+setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_Flu/')
+# load data (from featureCounts)
+d1_counts <-  fread('D1_210121_counts.txt', stringsAsFactors = F, header=T)
+d2_counts <-  fread('D2_210121_counts.txt', stringsAsFactors = F, header=T)
+
+# remove columns with chromosome, start, end, strand and length info
+d1_counts <- d1_counts[,-c(2:6)]
+d2_counts <- d2_counts[,-c(2:6)]
+
+# make Geneid into row names
+d1_counts <-tibble::column_to_rownames(d1_counts, "Geneid")
+d2_counts <-tibble::column_to_rownames(d2_counts, "Geneid")
+
+# tidy up sample names
+names(d1_counts) <- gsub(x = names(d1_counts), pattern = "./", replacement = "")
+names(d1_counts) <- gsub(x = names(d1_counts), pattern = ".bam", replacement = "")
+names(d2_counts) <- gsub(x = names(d2_counts), pattern = "./", replacement = "")
+names(d2_counts) <- gsub(x = names(d2_counts), pattern = ".bam", replacement = "")
+
+# rename file names based on sample names
+d1_names <- read.csv("donor1_names.csv", header=F)
+d1_names$V2 <- gsub(x = d1_names$V2, pattern = "Sample:", replacement = "")
+d1_names$V2 <- paste("D1", d1_names$V2, sep="_")
+colnames(d1_counts) <- d1_names$V2
+
+d2_names <- read.csv("donor2_names.csv", header=F)
+d2_names$V2 <- paste("D2", d2_names$V2, sep="_")
+colnames(d2_counts) <- d2_names$V2
+
+# combine columns
+flu_counts <- cbind(d1_counts, d2_counts)
+
+# # Initialise Seurat object with raw (non-normalised?) data
+# # min.cells = include features detected in at least this many cells
+# # min.features includes cells where at least this many features detected
+
+flu <- CreateSeuratObject(counts = flu_counts, min.cells = 3, min.features = 200, project = "Flu CD8+ T-cell data", assay = "RNA")
+
+combo <- merge(covid, flu)
+
+covid_list <- as.data.frame(covid@meta.data$hashtag_classification)
+colnames(covid_list) <- "sample"
+
+covid_list$patient <- ifelse(grepl("1180", covid_list$sample), "1180",
+                               ifelse(grepl("1344", covid_list$sample), "1344", ""))
+
+covid_list$subset <- ifelse(grepl("CD4", covid_list$sample), "CD4",
+                               ifelse(grepl("CD8", covid_list$sample), "CD8", ""))
+covid_list$epitope <- ifelse(grepl("M24", covid_list$sample), "membrane",
+                        ifelse(grepl("S51", covid_list$sample), "spike",
+                        ifelse(grepl("S174", covid_list$sample), "spike",
+                        ifelse(grepl("S76", covid_list$sample), "spike",
+                        ifelse(grepl("ORF3a-28", covid_list$sample), "ORF3a",
+                        ifelse(grepl("NP1", covid_list$sample), "nucleoprotein",
+                        ifelse(grepl("NP13", covid_list$sample), "nucleoprotein", "")))))))
+covid_list$timepoint <- "6_month"
+covid_list$virus <- "covid"
+
+
+flu_list <- as.data.frame(c(d1_names$V2, d2_names$V2))
+colnames(flu_list) <- "sample"
+flu_list$patient <- ifelse(grepl("D1", flu_list$sample), "D1",
+                               ifelse(grepl("D2", flu_list$sample), "D2", ""))
+flu_list$subset <- "CD8"
+flu_list$epitope <- "flu"
+flu_list$timepoint <- ifelse(grepl("2006", flu_list$sample), "TP1",
+ifelse(grepl("2015|2016", flu_list$sample), "TP2", 
+       ifelse(grepl("NoCell", flu_list$sample), "No Cell", "")))
+flu_list$virus <- "flu"
+
+list <- rbind(covid_list, flu_list)
+
+combo@meta.data$"epitope" <- as.factor(list$epitope)
+combo@meta.data$"patient" <- as.factor(list$patient)
+combo@meta.data$"t-cell" <- as.factor(list$subset)
+combo@meta.data$"timepoint" <- as.factor(list$timepoint)
+combo@meta.data$"virus" <- as.factor(list$virus)
+
+# Integration
+# split the dataset into a list by virus
+combo.list <- SplitObject(combo, split.by = "virus")
+
+# normalize and identify variable features for each dataset independently
+combo.list <- lapply(X = combo.list, FUN = function(x) {
+    x <- NormalizeData(x)
+    x <- FindVariableFeatures(x, selection.method = "vst", nfeatures = 2000)
+})
+
+# select features that are repeatedly variable across datasets for integration
+features <- SelectIntegrationFeatures(object.list = combo.list)
+
+# Find anchors
+immune.anchors <- FindIntegrationAnchors(object.list = combo.list, anchor.features = features, verbose=FALSE)
+
+# this command creates an 'integrated' data assay
+covid_flu <- IntegrateData(anchorset = immune.anchors, verbose=FALSE)
+```
+
+```{r, fig.width=16, fig.height=20}
+# specify that we will perform downstream analysis on the corrected data note that the original unmodified data still resides in the 'RNA' assay
+DefaultAssay(covid_flu) <- "integrated"
+
+# Run the standard workflow for visualization and clustering
+covid_flu <- ScaleData(covid_flu, verbose = FALSE)
+covid_flu <- RunPCA(covid_flu, npcs = 30, verbose = FALSE)
+covid_flu <- RunUMAP(covid_flu, reduction = "pca", dims = 1:30)
+covid_flu <- FindNeighbors(covid_flu, reduction = "pca", dims = 1:30)
+covid_flu <- FindClusters(covid_flu, resolution = 0.5)
+
+# Visualization
+p1 <- DimPlot(covid_flu, reduction = "umap", group.by = "seurat_clusters", label = TRUE, repel = TRUE)
+p2 <- DimPlot(covid_flu, reduction = "umap", group.by="patient")
+p3 <- DimPlot(covid_flu, reduction="umap", group.by="epitope")
+p4 <- DimPlot(covid_flu, reduction="umap", group.by="timepoint")
+p5 <- DimPlot(covid_flu, reduction="umap", group.by="t-cell")
+p6 <- DimPlot(covid_flu, reduction="pca", group.by="epitope")
+
+grid.arrange(p6, p1, p2, p3, p4, p5, nrow=3)
+
+```
 
 ### Combined GEX and Antibody Hashtag
 Combined by putting two rows in libraries.csv for Feature Barcode analysis (cellranger count) for library_type Gene Expression and Antibody Capture. Followed 
-https://satijalab.org/seurat/articles/multimodal_vignette.html to create Seurat object with two assays - RNA and HTO, but doesn't explain how to demultiplex, so only suitable for CITE-Seq.
+https://satijalab.org/seurat/articles/multimodal_vignette.html to create Seurat object with two assays - RNA and HTO. Then use HTODemux().
 ```{r}
 # # Read in data
-# batch1.counts <- Read10X(data.dir = "/t1-data/user/lfelce/10x_DONG171220/counts_combined/filtered_feature_bc_matrix")
+# batch1.counts <- Read10X(data.dir = "/t1-data/user/lfelce/10x_DONG171220/counts_combined_2/filtered_feature_bc_matrix")
 # 
 # # Remove -1 from barcodes
 # colnames(batch1.counts$`Gene Expression`) <- gsub(x = colnames(batch1.counts$`Gene Expression`), pattern = "-1", replacement = "")
@@ -314,6 +442,25 @@ Cluster and visualize cells using the usual scRNA-seq workflow, and examine for 
 # # Extract the singlets
 # batch1.singlet <- subset(batch1, idents = "Singlet")
 # 
+# # Assign metadata to object
+# patient_list <- as.data.frame(batch1.singlet@meta.data$HTO_classification)
+# colnames(patient_list) <- "sample"
+# patient_list$patient <- ifelse(grepl("1180", patient_list$sample), "1180",
+#                                ifelse(grepl("1344", patient_list$sample), "1344", ""))
+# patient_list$subset <- ifelse(grepl("CD4", patient_list$sample), "CD4",
+#                                ifelse(grepl("CD8", patient_list$sample), "CD8", ""))
+# patient_list$epitope <- ifelse(grepl("M24", patient_list$sample), "membrane",
+#                         ifelse(grepl("S51", patient_list$sample), "spike",
+#                         ifelse(grepl("S174", patient_list$sample), "spike",
+#                         ifelse(grepl("S76", patient_list$sample), "spike",
+#                         ifelse(grepl("ORF3a-28", patient_list$sample), "ORF3a",
+#                         ifelse(grepl("NP1", patient_list$sample), "nucleoprotein",
+#                         ifelse(grepl("NP13", patient_list$sample), "nucleoprotein", "")))))))
+# 
+# batch1.singlet@meta.data$"epitope" <- as.factor(patient_list$epitope)
+# batch1.singlet@meta.data$"patient" <- as.factor(patient_list$patient)
+# batch1.singlet@meta.data$"t-cell" <- as.factor(patient_list$subset)
+# 
 # # Select the top 1000 most variable features
 # batch1.singlet <- FindVariableFeatures(batch1.singlet, selection.method = "mean.var.plot")
 # 
@@ -323,30 +470,11 @@ Cluster and visualize cells using the usual scRNA-seq workflow, and examine for 
 # # Run PCA
 # batch1.singlet <- RunPCA(batch1.singlet, features = VariableFeatures(batch1.singlet))
 # 
-# # Select top PCs for clustering 
+# # Select top PCs for clustering
 # batch1.singlet <- FindNeighbors(batch1.singlet, reduction = "pca", dims = 1:20)
-# batch1.singlet <- FindClusters(batch1.singlet, resolution = 0.5, verbose = FALSE)
+# batch1.singlet <- FindClusters(batch1.singlet, resolution = 0.3, verbose = FALSE)
 # batch1.singlet <- RunUMAP(batch1.singlet, dims = 1:20)
 # batch1.singlet <- RunTSNE(batch1.singlet, reduction = "pca", dims = 1:20)
-# 
-# # Assign metadata to object
-# patient_list <- as.data.frame(batch1.singlet@meta.data$HTO_classification)
-# colnames(patient_list) <- "sample"
-# patient_list$patient <- ifelse(grepl("1180", patient_list$sample), "1180",
-#                                ifelse(grepl("1344", patient_list$sample), "1344", ""))
-# patient_list$subset <- ifelse(grepl("CD4", patient_list$sample), "CD4",
-#                                ifelse(grepl("CD8", patient_list$sample), "CD8", ""))
-# patient_list$epitope <- ifelse(grepl("M24", patient_list$sample), "membrane",
-#                         ifelse(grepl("S51", patient_list$sample), "spike", 
-#                         ifelse(grepl("S174", patient_list$sample), "spike", 
-#                         ifelse(grepl("S76", patient_list$sample), "spike", 
-#                         ifelse(grepl("ORF3a-28", patient_list$sample), "ORF3a",
-#                         ifelse(grepl("NP1", patient_list$sample), "nucleoprotein", 
-#                         ifelse(grepl("NP13", patient_list$sample), "nucleoprotein", "")))))))
-# 
-# batch1.singlet@meta.data$"epitope" <- as.factor(patient_list$epitope)
-# batch1.singlet@meta.data$"patient" <- as.factor(patient_list$patient)
-# batch1.singlet@meta.data$"t-cell" <- as.factor(patient_list$subset)
 # 
 # # Projecting singlet identities on UMAP visualization
 # tsne <- DimPlot(batch1.singlet, reduction="tsne", group.by = "HTO_classification")
@@ -358,10 +486,10 @@ Cluster and visualize cells using the usual scRNA-seq workflow, and examine for 
 # umap_patient <- DimPlot(batch1.singlet, reduction="umap", group.by = "patient")
 # 
 # grid.arrange(tsne, pca, umap_cluster, umap_tcell, umap_epitope, umap_patient, nrow=3)
-# 
-# saveRDS(batch1.singlet, "batch1_combined_seurat.rds")
 
 ```
+
+
 
 
 
