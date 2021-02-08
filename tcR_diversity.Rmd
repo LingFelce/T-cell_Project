@@ -16,6 +16,7 @@ library(dplyr)
 library(cowplot)
 library(tidyverse)
 library(gridExtra)
+library(ggplot2)
 
 ```
 
@@ -342,7 +343,7 @@ https://cran.r-project.org/web/packages/tcR/vignettes/tcrvignette.html
 ```
 
 ## CD8 NP16 and ORF3a-28 (combined)
-```{r}
+```{r, text=FALSE, result=FALSE, message=FALSE}
 # load in data and create mixcr_a and mixcr_b object
 setwd('/t1-data/user/lfelce/TCR_analysis/cd8_np16_new/')
 
@@ -424,6 +425,7 @@ for (i in (1:length(mixcr_b))) {
   datalist[[i]] <- dat # add it to list
 }
 # combine columns for each cell
+# have to have 1 or 2 betas per cell - if only keep 1 beta then diversity index = 0 for all betas!
 big_data = do.call(rbind, datalist)
 trb <- big_data %>% group_by(i) %>% filter(n() <= 2)
 colnames(trb) <- c("clone_count", "clone_fraction","CDR3_beta", "TRBV", "TRBJ", "cell_number")
@@ -523,22 +525,28 @@ div_b$TCR <- ifelse(grepl("TRBV27_TRBJ2-4|TRBV28_TRBJ1-1|TRBV5-1_TRBJ2-1|TRBV13_
 p4 <- ggplot(div_b, aes(x=patient, y=diversity_index, color=TCR)) + 
   geom_jitter(width=0.25)+
   labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Patient", y = "Shannon diversity index")
-
 p5 <- ggplot(div_b, aes(x=timepoint, y=diversity_index,color=TCR)) + 
   geom_jitter(width=0.25)+
   labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Timepoint", y = "Shannon diversity index")
-
 p6 <- ggplot(div_b, aes(x=epitope, y=diversity_index,color=TCR)) + 
   geom_jitter(width=0.25)+
   labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Epitope", y = "Shannon diversity index")
-
 
 # export files
 setwd('/t1-data/user/lfelce/TCR_analysis/diversity/')
 write.csv(div_a, "cd8_np16_orf3a-28_div_a.csv")
 write.csv(div_b, "cd8_np16_orf3a-28_div_b.csv")
-
 ```
+
+```{r, fig.width=18, fig.height=7}
+grid.arrange(p1, p4, nrow=1)
+```
+
+```{r, fig.width=18, fig.height=12}
+grid.arrange(p2, p3, p5, p6, nrow=2)
+```
+
+
 
 ```{r, fig.width=18, fig.height=7}
 
@@ -552,4 +560,23 @@ grid.arrange(p2, p3, p5, p6, nrow=2)
 
 ```
 
+```{r, fig.width=12, fig.height=6}
+# Welch 2 sample t-test: (y~x) where y is numeric and x is a binary factor
+t.test(div_a$diversity_index~div_a$timepoint)
+t.test(div_a$diversity_index~div_a$epitope)
+
+t.test(div_b$diversity_index~div_b$timepoint)
+t.test(div_b$diversity_index~div_b$epitope)
+
+q1 <- ggplot(div_a, aes(x=epitope, y=diversity_index)) +
+  geom_boxplot()+
+labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 alpha",x="Epitope", y = "Shannon diversity index") 
+
+q2 <- ggplot(div_b, aes(x=epitope, y=diversity_index)) +
+  geom_boxplot()+
+labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Epitope", y = "Shannon diversity index")
+
+grid.arrange(q1, q2, nrow=1)
+
+```
 
