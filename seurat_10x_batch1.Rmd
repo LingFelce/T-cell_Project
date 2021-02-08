@@ -431,10 +431,82 @@ VlnPlot(object = covid_flu, features=c("RPL39", "RPL30", "RPLP1", "RPS28",
 
 ```
 
+```{r, fig.width=25, fig.height=40}
+DefaultAssay(covid_flu) <- "RNA"
+
+VlnPlot(object = covid_flu, features=c("CD27", "CD28", "CD69", "CD38",
+                                      "PTPRC",   "CCR7", "TCF7", "CD44",
+                                       "IL7R", "S100A4", "SELL", "HLA-DRB1",
+                                       "TBX21", "IFNG", "LTA", "TNF", 
+                                       "CISH", "IL2RA",  "IL13", "TGFB1",
+                                       "CCL3", "CCL4", "CCL5", "CCR1", 
+                                       "CCR2",  "CCR4", "CCR5", 
+                                       "CXCR3", "CXCR4", "CXCR6", 
+                                       "PRF1", "GNLY", "NKG7", "XCL1", 
+                                       "GZMA", "GZMB", "GZMH", "GZMK",
+                                       "OAS1", "MX1", "ISG15",
+                                       "IFI44L", "MKI67", "TUBA1B",
+                                       "HAVCR2", "CD244", "KLRG1", "TIGIT"),
+        ncol=4, group.by = "seurat_clusters")
+
+```
+
+```{r, fig.width=20, fig.height=40}
+DefaultAssay(covid_flu) <- "RNA"
+
+VlnPlot(object = covid_flu, features=c("CD27", "CD28", "CD69", "CD38",
+                                      "PTPRC",   "CCR7", "TCF7", "CD44",
+                                       "IL7R", "S100A4", "SELL", "HLA-DRB1",
+                                       "TBX21", "IFNG", "LTA", "TNF", 
+                                       "CISH", "IL2RA",  "IL13", "TGFB1",
+                                       "CCL3", "CCL4", "CCL5", "CCR1", 
+                                       "CCR2",  "CCR4", "CCR5", 
+                                       "CXCR3", "CXCR4", "CXCR6", 
+                                       "PRF1", "GNLY", "NKG7", "XCL1", 
+                                       "GZMA", "GZMB", "GZMH", "GZMK",
+                                       "OAS1", "MX1", "ISG15",
+                                       "IFI44L", "MKI67", "TUBA1B",
+                                       "HAVCR2", "CD244", "KLRG1", "TIGIT"),
+        ncol=4, group.by = "epitope")
+
+```
+
 ```{r}
 # cluster0.markers <- FindMarkers(covid_flu, ident.1 = 0, ident.2 = c(1:15), min.pct = 0.25)
 ```
 
+#### Cluster markers
+```{r}
+# covid_flu.markers <- FindAllMarkers(object = covid_flu, only.pos = TRUE, min.pct = 0.25, thresh.use = 0.25)
+# cluster_0 <- covid_flu.markers[covid_flu.markers$cluster == "0", ]
+# cluster_1 <- covid_flu.markers[covid_flu.markers$cluster == "1", ]
+# cluster_2 <- covid_flu.markers[covid_flu.markers$cluster == "2", ]
+# cluster_3 <- covid_flu.markers[covid_flu.markers$cluster == "3", ]
+# cluster_4 <- covid_flu.markers[covid_flu.markers$cluster == "4", ]
+# cluster_5 <- covid_flu.markers[covid_flu.markers$cluster == "5", ]
+# cluster_6 <- covid_flu.markers[covid_flu.markers$cluster == "6", ]
+# cluster_7 <- covid_flu.markers[covid_flu.markers$cluster == "7", ]
+# cluster_8 <- covid_flu.markers[covid_flu.markers$cluster == "8", ]
+# cluster_9 <- covid_flu.markers[covid_flu.markers$cluster == "9", ]
+# cluster_10 <- covid_flu.markers[covid_flu.markers$cluster == "10", ]
+# cluster_11 <- covid_flu.markers[covid_flu.markers$cluster == "11", ]
+# 
+# setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
+# tmarkers <- read.csv("Markers_for_Ling.csv", header=F)
+# 
+# genes_0 <- tmarkers[is.element(tmarkers$V1, cluster_0$gene),]
+# genes_1 <- tmarkers[is.element(tmarkers$V1, cluster_1$gene),]
+# genes_2 <- tmarkers[is.element(tmarkers$V1, cluster_2$gene),]
+# genes_3 <- tmarkers[is.element(tmarkers$V1, cluster_3$gene),]
+# genes_4 <- tmarkers[is.element(tmarkers$V1, cluster_4$gene),]
+# genes_5 <- tmarkers[is.element(tmarkers$V1, cluster_5$gene),]
+# genes_6 <- tmarkers[is.element(tmarkers$V1, cluster_6$gene),]
+# genes_7 <- tmarkers[is.element(tmarkers$V1, cluster_7$gene),]
+# genes_8 <- tmarkers[is.element(tmarkers$V1, cluster_8$gene),]
+# genes_9 <- tmarkers[is.element(tmarkers$V1, cluster_9$gene),]
+# genes_10 <- tmarkers[is.element(tmarkers$V1, cluster_10$gene),]
+# genes_11 <- tmarkers[is.element(tmarkers$V1, cluster_11$gene),]
+```
 
 
 ### Combined GEX and Antibody Hashtag
