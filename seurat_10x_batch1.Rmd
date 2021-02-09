@@ -615,6 +615,55 @@ VlnPlot(object = cd8, features=c("CD27", "CD28", "CD69", "CD38",
                                        "HAVCR2", "CD244", "KLRG1", "TIGIT"),
         ncol=4, group.by = "seurat_clusters")
 ```
+### Subset CD8 cells only from Covid integrated object
+```{r, fig.height=8, fig.width=14}
+# read in batch1 seurat and subset CD8 cells
+batch1 <- readRDS("batch1_seurat.rds")
+DefaultAssay(batch1) <- "RNA"
+Idents(batch1) <- "t-cell"
+cd8 <- subset(batch1, idents = "CD8")
+
+# Run the standard workflow for visualization and clustering
+cd8 <- ScaleData(cd8, verbose = FALSE)
+cd8 <- RunPCA(cd8, npcs = 30, verbose = FALSE)
+cd8 <- RunUMAP(cd8, reduction = "pca", dims = 1:25, verbose=FALSE)
+cd8 <- FindNeighbors(cd8, reduction = "pca", dims = 1:25, verbose=FALSE)
+cd8 <- FindClusters(cd8, resolution = 0.5)
+# Visualization
+p1 <- DimPlot(cd8, reduction = "umap", group.by = "seurat_clusters", label = TRUE, repel = TRUE)
+p2 <- DimPlot(cd8, reduction = "umap", group.by="patient")
+p3 <- DimPlot(cd8, reduction="umap", group.by="epitope")
+p4 <- DimPlot(cd8, reduction="pca", group.by="epitope")
+
+grid.arrange(p1, p2, p3, p4, nrow=2)
+saveRDS(cd8, "batch1_cd8_seurat.rds")
+```
+#### Gene expression by epitope
+```{r, fig.width=20, fig.height=26}
+VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                  "TBX21", "IFNG", "LTA", "TNF", "CISH", "IL2RA",
+                                  "IL13", "TGFB1", "CCL3", "CCL4", "CCL5", "CCR1",
+                                  "CCR2",  "CCR4", "CCR5", "CXCR3", "CXCR4", "CXCR6", 
+                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                   "NKG7", "XCL1", "FASLG", "OAS1", "MX1", "ISG15",  
+                                  "MKI67", "TUBA1B","HAVCR2", "CD244", "KLRG1", "TIGIT"),
+        ncol=6, group.by = "epitope")
+```
+#### Gene expression by cluster
+```{r, fig.width=26, fig.height=26}
+VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                  "TBX21", "IFNG", "LTA", "TNF", "CISH", "IL2RA",
+                                  "IL13", "TGFB1", "CCL3", "CCL4", "CCL5", "CCR1",
+                                  "CCR2",  "CCR4", "CCR5", "CXCR3", "CXCR4", "CXCR6", 
+                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                   "NKG7", "XCL1", "FASLG", "OAS1", "MX1", "ISG15",  
+                                  "MKI67", "TUBA1B","HAVCR2", "CD244", "KLRG1", "TIGIT"),
+        ncol=6, group.by = "seurat_clusters")
+```
+
+
 
 ### Combined GEX and Antibody Hashtag
 Combined by putting two rows in libraries.csv for Feature Barcode analysis (cellranger count) for library_type Gene Expression and Antibody Capture. Followed 
