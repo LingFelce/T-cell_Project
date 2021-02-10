@@ -111,6 +111,7 @@ trb <- merge(trb, mixcr_b_names, by="cell_number")
 
 
 # combine TRA and TRB dataframes - some cells will have only 1 alpha or 1 beta, so keep all rows
+# note this is trying out Benny's example of matching cells with 1 alpha or 1 beta to existing alpha-beta pair
 cd8_np16 <- merge(tra,trb, by="cell_name", all= TRUE)
 
 cd8_np16 <- mutate(cd8_np16, alpha=paste(TRAV, TRAJ, sep="_"))
