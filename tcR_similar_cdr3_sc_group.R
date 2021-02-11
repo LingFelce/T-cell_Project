@@ -8,66 +8,132 @@ library(dplyr)
 
 #-----CD8 NP16------
 
-# calculating similarity - CDR3 alpha
-np16 <- read.csv("/t1-data/user/lfelce/TCR_analysis/shared_cdr3_cd8_np16.csv", header=TRUE)
-np16_a <- np16[,c(2, 3, 8)]
-colnames(np16_a) <- c("sequence", "TRAV", "name")
-np16_a <- np16_a[!duplicated(np16_a),]
+setwd('/t1-data/user/lfelce/TCR_analysis/cd8_np16_new/')
 
+# create list of file names
+tra_list <- list.files(path = ".", recursive = TRUE,
+                       pattern = "\\TRA.txt$", 
+                       full.names = TRUE)
+tra_list <- tra_list %>% str_replace("./*", "")
+
+trb_list <- list.files(path = ".", recursive = TRUE,
+                       pattern = "\\TRB.txt$", 
+                       full.names = TRUE)
+trb_list <- trb_list %>% str_replace("./*", "")
+
+
+# parse in files with tcR
+mixcr_a <- parse.file.list(tra_list, "mixcr")
+mixcr_b <- parse.file.list(trb_list, "mixcr")
+
+# sort alphabetically
+mixcr_a <- mixcr_a[order(names(mixcr_a))]
+mixcr_b <- mixcr_b[order(names(mixcr_b))]
+
+# create list of cell numbers and cell names
+# different lengths so same cell will be different number in a or b
+mixcr_a_names <- as.data.frame(names(mixcr_a))
+mixcr_b_names <- as.data.frame(names(mixcr_b))
+
+mixcr_a_names <-tibble::rownames_to_column(mixcr_a_names, "cell_number")
+mixcr_b_names <- tibble::rownames_to_column(mixcr_b_names, "cell_number")
+
+# rename columns
+colnames(mixcr_a_names) <- c("cell_number", "cell_name")
+colnames(mixcr_b_names) <- c("cell_number", "cell_name")
+
+# convert mixcr lists to dataframe with Read count and proportion and V and J gene info
+# removed bulk samples for now
+# keep cells with 1 or 2 alphas
+# keep cells with 1 beta
+# merge alpha and beta and keep cells that express only 1 alpha or only 1 beta
+
+# alpha
+
+# mixcr_a
+datalist = list()
+for (i in (1:length(mixcr_a))) {
+  dat <- data.frame(c(mixcr_a[[i]][3], mixcr_a[[i]][4], mixcr_a[[i]][6],mixcr_a[[i]][7], mixcr_a[[i]][8]))
+  dat$i <- i # keep track of which iteration produced it
+  datalist[[i]] <- dat # add it to list
+}
+# combine columns for each cell and filter to keep cells with 1 or 2 alphas
+big_data = do.call(rbind, datalist)
+tra <- big_data %>% group_by(i) %>% filter(n() <= 2)
+colnames(tra) <- c("clone_count", "clone_fraction", "CDR3_alpha", "TRAV", "TRAJ", "cell_number")
+tra <- merge(tra, mixcr_a_names, by="cell_number")
+tra <- mutate(tra, alpha=paste(TRAV, TRAJ, sep="_"))
+tra <- tra[,c("cell_name", "CDR3_alpha", "alpha")]
+colnames(tra) <- c("name", "CDR3a", "TRA")
+tra <- unique(tra)
+
+# clones
 np16_clones <- read.csv("/t1-data/user/lfelce/TCR_analysis/cd8_np16_tcr_clones.csv", header=TRUE)
-np16_clones_a <- np16_clones[,c(2, 7, 8)]
-colnames(np16_clones_a) <- c("name", "sequence", "TRAV")
+np16_clones_a <- np16_clones[,c("CloneName", "CDR3_aa.x", "alpha")]
+colnames(np16_clones_a) <- c("name", "CDR3a", "TRA")
+np16_clones_a <- unique(np16_clones_a)
 
-alpha <- rbind(np16_a, np16_clones_a)  
+alpha <- rbind(tra, np16_clones_a)  
 
 datalist = list()
-for (i in (1:length(alpha$sequence))) {
-  dat <- data.frame(agrep(pattern=alpha$sequence[i], x=alpha$sequence, 
-                          max.distance=0.5,value=TRUE, fixed=TRUE))
+for (i in (1:length(alpha$name))) {
+  dat <- data.frame(agrep(pattern=alpha$CDR3a[i], x=alpha$CDR3a, 
+                          max.distance=0.3,value=TRUE, fixed=TRUE))
   dat$i <- i # keep track of which iteration produced it
   datalist[[i]] <- dat # add it to list
 }
 big_data = do.call(rbind, datalist)
-colnames(big_data) <- c("sequence", "group")
-alpha_shared <- merge(big_data, alpha, by="sequence")
-alpha_shared <- alpha_shared[!duplicated(alpha_shared$sequence, alpha_shared$name),]
+colnames(big_data) <- c("CDR3a", "group")
+alpha_shared <- merge(big_data, alpha, by="CDR3a")
+alpha_shared <- alpha_shared[order(alpha_shared$group),]
+alpha_shared <- alpha_shared[!duplicated(alpha_shared$name),]
+alpha_shared <- alpha_shared %>% group_by(group) %>% filter(n() >= 2)
 
+write.csv(alpha_shared, "/t1-data/user/lfelce/TCR_analysis/cdr3_similarity/cd8_np16_sc_clone_shared_cdr3.csv")
 
+# beta
 
-alpha_shared <- merge(np16_a, big_data, by.x="CDR3a", by.y="sequence")
-alpha_shared <- alpha_shared[!duplicated(alpha_shared$CDR3a),]
-
-np16_clones <- read.csv("/t1-data/user/lfelce/TCR_analysis/cd8_np16_tcr_clones.csv", header=TRUE)
-np16_clones_a <- np16_clones[,c(2, 7, 8)]
-
+# mixcr_b
 datalist = list()
-for (i in (1:length(np16_clones_a$CloneName))) {
-  dat <- data.frame(agrep(pattern=np16_clones_a$CDR3_aa.x[i], x=alpha_shared$CDR3a, 
-                          max.distance=0.5,value=TRUE, fixed=TRUE))
-  dat$i <- i # keep track of which iteration produced it
-  dat$CloneName <- np16_clones_a$CloneName[i]
-  datalist[[i]] <- dat # add it to list
-}
-big_data = do.call(rbind, datalist)
-alpha_clones <- big_data
-colnames(alpha_clones) <- c("sequence", "group", "clone_name")
-alpha_clones <- alpha_clones[!duplicated(alpha_clones$sequence),]
-
-# calculating similarity - CDR3 beta
-np16_b <- np16[,c(1, 5, 6, 8, 9)]
-np16_b <- np16_b[!duplicated(np16_b$CDR3b),]
-
-datalist = list()
-for (i in (1:length(np16_b$X))) {
-  dat <- data.frame(agrep(pattern=np16_b$CDR3b[i], x=np16_b$CDR3b, 
-                          max.distance=0.5,value=TRUE, fixed=TRUE))
+for (i in (1:length(mixcr_b))) {
+  dat <- data.frame(c(mixcr_b[[i]][3], mixcr_b[[i]][4], mixcr_b[[i]][6], mixcr_b[[i]][7], mixcr_b[[i]][8]))
   dat$i <- i # keep track of which iteration produced it
   datalist[[i]] <- dat # add it to list
 }
+# combine columns for each cell
 big_data = do.call(rbind, datalist)
-colnames(big_data) <- c("sequence", "group")
-beta_shared <- merge(np16_b, big_data, by.x="CDR3b", by.y="sequence")
-beta_shared <- beta_shared[!duplicated(beta_shared$CDR3b),]
+trb <- big_data %>% group_by(i) %>% filter(n() == 1)
+colnames(trb) <- c("clone_count", "clone_fraction","CDR3_beta", "TRBV", "TRBJ", "cell_number")
+trb <- merge(trb, mixcr_b_names, by="cell_number")
+trb <- mutate(trb, beta=paste(TRBV, TRBJ, sep="_"))
+trb <- trb[,c("cell_name", "CDR3_beta", "beta")]
+colnames(trb) <- c("name", "CDR3b", "TRB")
+trb <- unique(trb)
+
+np16_clones_b <- np16_clones[,c("CloneName", "CDR3_aa.y", "beta")]
+colnames(np16_clones_b) <- c("name", "CDR3b", "TRB")
+np16_clones_b <- unique(np16_clones_b)
+
+beta <- rbind(trb, np16_clones_b)  
+
+datalist = list()
+for (i in (1:length(beta$name))) {
+  dat <- data.frame(agrep(pattern=beta$CDR3b[i], x=beta$CDR3b, 
+                          max.distance=0.3,value=TRUE, fixed=TRUE))
+  dat$i <- i # keep track of which iteration produced it
+  datalist[[i]] <- dat # add it to list
+}
+big_data = do.call(rbind, datalist)
+colnames(big_data) <- c("CDR3b", "group")
+beta_shared <- merge(big_data, beta, by="CDR3b")
+beta_shared <- beta_shared[order(beta_shared$group),]
+beta_shared <- beta_shared[!duplicated(beta_shared$name),]
+beta_shared <- beta_shared %>% group_by(group) %>% filter(n() >= 2)
+
+write.csv(beta_shared, "/t1-data/user/lfelce/TCR_analysis/cdr3_similarity/cd8_np16_sc_clone_shared_cdr3.csv")
+
+
+
 
 
 #----CD8 ORF3a-28--------
