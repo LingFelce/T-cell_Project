@@ -708,6 +708,42 @@ VlnPlot(object = conv, features = c("CXCR3", "CXCR4", "CCR4", "CCR5", "CCR6", "C
 
 ```
 
+# Adding TCR grouping from clones and single cells
+```{r}
+cd8 <- readRDS("cd8_harmony.rds")
+
+cells <- as.data.frame(cd8$orig.ident)
+cells <- tibble::rownames_to_column(cells, "cell_name")
+colnames(cells) <- c("cell_name", "patient")
+groups <- read.csv("/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/cd8_np16_orf3a_sc_groups.csv", header=TRUE)
+
+cell_groups <- merge(cells, groups, by.x="cell_name", by.y="name", all=TRUE)
+cell_groups <- cell_groups[-280,]
+cell_groups <- cell_groups[!duplicated(cell_groups$cell_name),]
+cell_groups$epitope <- ifelse(grepl("NP16|B7", cell_groups$cell_name), "NP16",
+                              ifelse(grepl("ORF", cell_groups$cell_name), "ORF3a-28",""))
+
+cell_groups <- mutate(cell_groups, group=paste(epitope, new.group, sep="_"))
+
+cd8@meta.data$CDR3_group <- as.factor(cell_groups$group)
+
+```
+
+```{r}
+DimPlot(cd8, reduction = "umap", group.by = "CDR3_group")
+```
+# Subset NP16 from CD8 object
+
+```{r, fig.height=4, fig.width=6}
+Idents(cd8) <- "epitope"
+np16 <- subset(cd8, idents="NP16")
+
+Idents(np16) <- "CDR3_group"
+np16_2 <- subset(np16, subset = CDR3_group !="NP16_NA")
+
+DimPlot(np16_2, reduction = "umap", group.by = "CDR3_group")
+
+```
 
 
 # Save file
