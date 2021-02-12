@@ -712,10 +712,15 @@ Load each previously saved .rds file - no need to repeat harmony integration, cl
 ```{r}
 cd8 <- readRDS("cd8_harmony.rds")
 
+# cd8$CDR3_group <- NULL
+
 cells <- as.data.frame(cd8$orig.ident)
 cells <- tibble::rownames_to_column(cells, "cell_name")
 colnames(cells) <- c("cell_name", "patient")
 groups <- read.csv("/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/cd8_np16_orf3a_sc_groups.csv", header=TRUE)
+
+# add 0 in front of single digit numbers
+groups$new.group <- str_pad(groups$new.group, 2, side="left", pad="0")
 
 cell_groups <- merge(cells, groups, by.x="cell_name", by.y="name", all=TRUE)
 cell_groups <- cell_groups[-280,]
@@ -731,7 +736,7 @@ cd8@meta.data$CDR3_group <- as.factor(cell_groups$group)
 
 # Subset NP16 from CD8 object
 
-```{r, fig.height=24, fig.width=38}
+```{r, fig.height=22, fig.width=40}
 Idents(cd8) <- "epitope"
 np16 <- subset(cd8, idents="NP16")
 
@@ -773,7 +778,7 @@ VlnPlot(object = orf3a_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S
 # saveRDS(cd8, file = "cd8_seurat.rds")
 # saveRDS(cd8.integrated, file="cd8_integrated_seurat.rds")
 
-saveRDS(cd8, file="cd8_harmony.rds")
+# saveRDS(cd8, file="cd8_harmony.rds")
 # saveRDS(acute, file="acute_harmony.rds")
 # saveRDS(conv, file="convalescent_harmony.rds")
 ```
