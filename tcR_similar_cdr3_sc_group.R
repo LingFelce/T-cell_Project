@@ -138,35 +138,80 @@ write.csv(beta_shared, "/t1-data/user/lfelce/TCR_analysis/cdr3_similarity/cd8_np
 
 #----CD8 ORF3a-28--------
 
-# calculating similarity - CDR3 alpha
-orf3a <- read.csv("/t1-data/user/lfelce/TCR_analysis/shared_cdr3_cd8_orf.csv", header=TRUE)
-orf3a_a <- orf3a[,c(1:3, 8, 9)]
-orf3a_a <- orf3a_a[!duplicated(orf3a_a$CDR3a),]
+setwd('/t1-data/user/lfelce/TCR_analysis/cd8_orf_new/')
+
+tra_list <- list.files(path = ".", recursive = TRUE,
+                       pattern = "\\TRA.txt$", 
+                       full.names = TRUE)
+tra_list <- tra_list %>% str_replace("./*", "")
+tra_list <-tra_list[!str_detect(tra_list,pattern="minibulk")]
+
+trb_list <- list.files(path = ".", recursive = TRUE,
+                       pattern = "\\TRB.txt$", 
+                       full.names = TRUE)
+trb_list <- trb_list %>% str_replace("./*", "")
+trb_list <-trb_list[!str_detect(trb_list,pattern="minibulk")]
+
+# parse mixcr files
+mixcr_a <- parse.file.list(tra_list, "mixcr")
+mixcr_b <- parse.file.list(trb_list, "mixcr")
+
+# sort alphabetically
+mixcr_a <- mixcr_a[order(names(mixcr_a))]
+mixcr_b <- mixcr_b[order(names(mixcr_b))]
+
+# create list of cell numbers and cell names
+# different lengths so same cell will be different number in a or b
+mixcr_a_names <- as.data.frame(names(mixcr_a))
+mixcr_b_names <- as.data.frame(names(mixcr_b))
+
+mixcr_a_names <-tibble::rownames_to_column(mixcr_a_names, "cell_number")
+mixcr_b_names <- tibble::rownames_to_column(mixcr_b_names, "cell_number")
+
+# rename columns
+colnames(mixcr_a_names) <- c("cell_number", "cell_name")
+colnames(mixcr_b_names) <- c("cell_number", "cell_name")
+
+# beta only
+
+# mixcr_b
+datalist = list()
+for (i in (1:length(mixcr_b))) {
+  dat <- data.frame(c(mixcr_b[[i]][3], mixcr_b[[i]][4], mixcr_b[[i]][6], mixcr_b[[i]][7], mixcr_b[[i]][8]))
+  dat$i <- i # keep track of which iteration produced it
+  datalist[[i]] <- dat # add it to list
+}
+# combine columns for each cell
+big_data = do.call(rbind, datalist)
+trb <- big_data %>% group_by(i) %>% filter(n() == 1)
+colnames(trb) <- c("clone_count", "clone_fraction","CDR3_beta", "TRBV", "TRBJ", "cell_number")
+trb <- merge(trb, mixcr_b_names, by="cell_number")
+trb <- mutate(trb, beta=paste(TRBV, TRBJ, sep="_"))
+trb <- trb[,c("cell_name", "CDR3_beta", "beta")]
+colnames(trb) <- c("name", "CDR3b", "TRB")
+trb <- unique(trb)
+
+# clones
+orf3a_clones <- read.csv("/t1-data/user/lfelce/TCR_analysis/cd8_orf3a-28_tcr_clones.csv", header=TRUE)
+orf3a_clones <- orf3a_clones %>% filter(clone_percentage.y > 10)
+orf3a_clones_b <- orf3a_clones[,c("CloneName", "CDR3_aa.y", "beta")]
+colnames(orf3a_clones_b) <- c("name", "CDR3b", "TRB")
+orf3a_clones_b <- unique(orf3a_clones_b)
+
+beta <- rbind(trb, orf3a_clones_b)  
 
 datalist = list()
-for (i in (1:length(orf3a_a$X))) {
-  dat <- data.frame(agrep(pattern=orf3a_a$CDR3a[i], x=orf3a_a$CDR3a, 
-                          max.distance=0.5,value=TRUE, fixed=TRUE))
+for (i in (1:length(beta$name))) {
+  dat <- data.frame(agrep(pattern=beta$CDR3b[i], x=beta$CDR3b, 
+                          max.distance=0.3,value=TRUE, fixed=TRUE))
   dat$i <- i # keep track of which iteration produced it
   datalist[[i]] <- dat # add it to list
 }
 big_data = do.call(rbind, datalist)
-colnames(big_data) <- c("sequence", "group")
-alpha_shared <- merge(orf3a_a, big_data, by.x="CDR3a", by.y="sequence")
-alpha_shared <- alpha_shared[!duplicated(alpha_shared$CDR3a),]
+colnames(big_data) <- c("CDR3b", "group")
+beta_shared <- merge(big_data, beta, by="CDR3b")
+beta_shared <- beta_shared[order(beta_shared$group),]
+beta_shared <- beta_shared[!duplicated(beta_shared$name),]
+beta_shared <- beta_shared %>% group_by(group) %>% filter(n() >= 2)
 
-# calculating similarity - CDR3 beta
-orf3a_b <- orf3a[,c(1, 5, 6, 8, 9)]
-orf3a_b <- orf3a_b[!duplicated(orf3a_b$CDR3b),]
-
-datalist = list()
-for (i in (1:length(orf3a_b$X))) {
-  dat <- data.frame(agrep(pattern=orf3a_b$CDR3b[i], x=orf3a_b$CDR3b, 
-                          max.distance=0.5,value=TRUE, fixed=TRUE))
-  dat$i <- i # keep track of which iteration produced it
-  datalist[[i]] <- dat # add it to list
-}
-big_data = do.call(rbind, datalist)
-colnames(big_data) <- c("sequence", "group")
-beta_shared <- merge(orf3a_b, big_data, by.x="CDR3b", by.y="sequence")
-beta_shared <- beta_shared[!duplicated(beta_shared$CDR3b),]
+write.csv(beta_shared, "/t1-data/user/lfelce/TCR_analysis/cdr3_similarity/cd8_orf3a_sc_clone_shared_cdr3.csv")
