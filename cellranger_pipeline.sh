@@ -31,6 +31,20 @@ cellranger mkfastq --id=Dong_171220_10x \
 --run=/t1-data/user/lfelce/10x_DONG171220/ \
 --csv=/t1-data/user/lfelce/10x_DONG171220/Dong_171220_sample_sheet.csv
 
+#!/bin/bash
+#$ -wd /well/jknight/users/jln789/10x_Dong050121/
+#$ -q short.qc
+
+cd /well/jknight/users/jln789/10x_Dong171220/
+
+module load CellRanger/5.0.0
+module load bcl2fastq2/2.20.0-foss-2018b
+
+cellranger mkfastq --id=fastq_Dong050121 \
+--run=/t1-data/user/lfelce/10x_Dong050121/ \
+--csv=/t1-data/user/lfelce/10x_Dong050121/Dong050121_sample_sheet.csv
+
+
 # cellranger_count.sh
 
 cellranger count takes FASTQ files from cellranger mkfastq and performs alignment, filtering, barcode counting, and UMI counting. 
