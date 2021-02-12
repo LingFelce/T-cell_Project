@@ -540,119 +540,119 @@ Load each previously saved .rds file - no need to repeat harmony integration, cl
 
 ## All 9 CD8+ patients
 ```{r, fig.height=10, fig.width=16}
-setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
-cd8 <- readRDS("cd8_harmony.rds")
-
-FeaturePlot(object = cd8, features = c("SELPLG", "ITGA4", "ITGAL", "ITGB2", "CCL4", "CCL5", "CXCR3", "CXCR4"), cols = c("grey", "blue"), reduction = "umap")
+# setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
+# cd8 <- readRDS("cd8_harmony.rds")
+# 
+# FeaturePlot(object = cd8, features = c("SELPLG", "ITGA4", "ITGAL", "ITGB2", "CCL4", "CCL5", "CXCR3", "CXCR4"), cols = c("grey", "blue"), reduction = "umap")
 ```
 
 ## Acute patients
 ```{r, fig.height=10, fig.width=16}
-acute <- readRDS("acute_harmony.rds")
-
-FeaturePlot(object = acute, features = c("SELPLG","ITGA4", "ITGAL", "ITGB2", "CCL4", "CCL5", "CXCR3", "CXCR4"), cols = c("grey", "blue"), reduction = "umap")
+# acute <- readRDS("acute_harmony.rds")
+# 
+# FeaturePlot(object = acute, features = c("SELPLG","ITGA4", "ITGAL", "ITGB2", "CCL4", "CCL5", "CXCR3", "CXCR4"), cols = c("grey", "blue"), reduction = "umap")
 ```
 
 ## Convalescent patients
 ```{r, fig.height=10, fig.width=16}
-conv <- readRDS("convalescent_harmony.rds")
-
-FeaturePlot(object = conv, features = c("SELPLG","ITGA4", "ITGAL", "ITGB2", "CCL4", "CCL5", "CXCR3", "CXCR4"), cols = c("grey", "blue"), reduction = "umap")
+# conv <- readRDS("convalescent_harmony.rds")
+# 
+# FeaturePlot(object = conv, features = c("SELPLG","ITGA4", "ITGAL", "ITGB2", "CCL4", "CCL5", "CXCR3", "CXCR4"), cols = c("grey", "blue"), reduction = "umap")
 ```
 ## Convalescent patients UMAP epitope
 ```{r}
-DimPlot(conv, reduction = "umap", group.by = "epitope")
+# DimPlot(conv, reduction = "umap", group.by = "epitope")
 ```
 # Gene expression violin plots
 ## All CD8+ patients
 ### Gene expression by epitope
 
 ```{r, fig.height=32, fig.width=16}
-VlnPlot(object = cd8, features = c("CD27", "IL7R", "S100A4", "PTPRC",
-                                    "CCR7", "SELL", "CD44", "CD69",
-                                    "HLA-DRB1", "CCL4",
-                                    "CCL5", "CXCR3", "CXCR4",
-                                    "SELPLG","ITGA4", "ITGAL", "ITGB2",
-                                    "IL16", "IFNG",
-                                    "PRF1", "GNLY", "NKG7",
-                                    "GZMA", "GZMB", "GZMH", "GZMK",
-                                    "FASLG", "ISG15",
-                                    "PDCD1", "CTLA4", "HAVCR2", "CD244",
-                                    "KLRG1", "TIGIT", "BTLA","CD160"),
-        ncol=4, group.by = "epitope")
+# VlnPlot(object = cd8, features = c("CD27", "IL7R", "S100A4", "PTPRC",
+#                                     "CCR7", "SELL", "CD44", "CD69",
+#                                     "HLA-DRB1", "CCL4",
+#                                     "CCL5", "CXCR3", "CXCR4",
+#                                     "SELPLG","ITGA4", "ITGAL", "ITGB2",
+#                                     "IL16", "IFNG",
+#                                     "PRF1", "GNLY", "NKG7",
+#                                     "GZMA", "GZMB", "GZMH", "GZMK",
+#                                     "FASLG", "ISG15",
+#                                     "PDCD1", "CTLA4", "HAVCR2", "CD244",
+#                                     "KLRG1", "TIGIT", "BTLA","CD160"),
+#         ncol=4, group.by = "epitope")
 ```
 
 ```{r, fig.height=30, fig.width=16}
-VlnPlot(object = cd8, features = c("CXCR3", "CXCR4", "CCR4", "CCR5", "CCR6", "CXCR6",
-                                   "PDCD1", "CTLA4", "HAVCR2", "CD244", "KLRG1", "TIGIT", 
-                                   "BTLA", "CD160",
-                                   "CD28", "CD27", "ICOS", "TNFRSF14", "TNFSF14", "CD40LG", 
-                                   "TNFRSF9", "TNFRSF4",
-                                   "TNFRSF25", "TNFRSF18", "TNFRSF8", "HAVCR1", "CD2", "CD226", 
-                                   "LILRB1","LILRB2", "LAIR1"),
-        ncol=4, group.by = "epitope")
+# VlnPlot(object = cd8, features = c("CXCR3", "CXCR4", "CCR2", "CCR4", "CCR5", "CCR6", "CXCR6",
+#                                    "PDCD1", "CTLA4", "HAVCR2", "CD244", "KLRG1", "TIGIT", 
+#                                    "BTLA", "CD160",
+#                                    "CD28", "CD27", "ICOS", "TNFRSF14", "TNFSF14", "CD40LG", 
+#                                    "TNFRSF9", "TNFRSF4",
+#                                    "TNFRSF25", "TNFRSF18", "TNFRSF8", "HAVCR1", "CD2", "CD226", 
+#                                    "LILRB1","LILRB2", "LAIR1"),
+#         ncol=4, group.by = "epitope")
 ```
 
 
 ### Gene expression by cluster
 ```{r, fig.height=32, fig.width=16}
-VlnPlot(object = cd8, features = c("CD27", "IL7R", "S100A4", "PTPRC",
-                                    "CCR7", "SELL", "CD44", "CD69",
-                                    "HLA-DRB1", "CCL4",
-                                    "CCL5", "CXCR3", "CXCR4",
-                                    "SELPLG","ITGA4", "ITGAL", "ITGB2",
-                                    "IL16", "IFNG",
-                                    "PRF1", "GNLY", "NKG7",
-                                    "GZMA", "GZMB", "GZMH", "GZMK",
-                                    "FASLG", "ISG15",
-                                    "PDCD1", "CTLA4", "HAVCR2", "CD244",
-                                    "KLRG1", "TIGIT", "BTLA","CD160"),
-        ncol=4, group.by = "seurat_clusters")
+# VlnPlot(object = cd8, features = c("CD27", "IL7R", "S100A4", "PTPRC",
+#                                     "CCR7", "SELL", "CD44", "CD69",
+#                                     "HLA-DRB1", "CCL4",
+#                                     "CCL5", "CXCR3", "CXCR4",
+#                                     "SELPLG","ITGA4", "ITGAL", "ITGB2",
+#                                     "IL16", "IFNG",
+#                                     "PRF1", "GNLY", "NKG7",
+#                                     "GZMA", "GZMB", "GZMH", "GZMK",
+#                                     "FASLG", "ISG15",
+#                                     "PDCD1", "CTLA4", "HAVCR2", "CD244",
+#                                     "KLRG1", "TIGIT", "BTLA","CD160"),
+#         ncol=4, group.by = "seurat_clusters")
 ```
 ## Acute patients
 ### Gene expression by patient/epitope
 
 ```{r, fig.height=36, fig.width=16}
-VlnPlot(object = acute, features = c("CD27", "IL7R", "S100A4", "PTPRC",
-                                    "CCR7", "SELL", "CD44", "CD69",
-                                    "HLA-DRB1", "CCL4",
-                                    "CCL5", "CXCR3", "CXCR4",
-                                    "SELPLG","ITGA4", "ITGAL", "ITGB2",
-                                    "IL16", "IFNG",
-                                    "PRF1", "GNLY", "NKG7",
-                                    "GZMA", "GZMB", "GZMH", "GZMK",
-                                    "FASLG", "ISG15",
-                                    "PDCD1", "CTLA4", "HAVCR2", "CD244",
-                                    "KLRG1", "TIGIT", "BTLA","CD160"),
-        ncol=4, group.by = "orig.ident")
+# VlnPlot(object = acute, features = c("CD27", "IL7R", "S100A4", "PTPRC",
+#                                     "CCR7", "SELL", "CD44", "CD69",
+#                                     "HLA-DRB1", "CCL4",
+#                                     "CCL5", "CXCR3", "CXCR4",
+#                                     "SELPLG","ITGA4", "ITGAL", "ITGB2",
+#                                     "IL16", "IFNG",
+#                                     "PRF1", "GNLY", "NKG7",
+#                                     "GZMA", "GZMB", "GZMH", "GZMK",
+#                                     "FASLG", "ISG15",
+#                                     "PDCD1", "CTLA4", "HAVCR2", "CD244",
+#                                     "KLRG1", "TIGIT", "BTLA","CD160"),
+#         ncol=4, group.by = "orig.ident")
 ```
 ```{r, fig.height=24, fig.width=16}
-VlnPlot(object = acute, features = c("CXCR3", "CXCR4", "CCR4", "CCR5", "CCR6", "CXCR6",
-                                   "PDCD1", "CTLA4", "HAVCR2", "CD244", "KLRG1", "TIGIT", 
-                                   "BTLA", "CD160",
-                                   "CD28", "CD27", "ICOS", "TNFRSF14", "TNFSF14", "CD40LG", 
-                                   "TNFRSF9", "TNFRSF4",
-                                   "TNFRSF25", "TNFRSF18", "TNFRSF8", "HAVCR1", "CD2", "CD226", 
-                                   "LILRB1","LILRB2", "LAIR1"),
-        ncol=4, group.by = "orig.ident")
+# VlnPlot(object = acute, features = c("CXCR3", "CXCR4", "CCR4", "CCR5", "CCR6", "CXCR6",
+#                                    "PDCD1", "CTLA4", "HAVCR2", "CD244", "KLRG1", "TIGIT", 
+#                                    "BTLA", "CD160",
+#                                    "CD28", "CD27", "ICOS", "TNFRSF14", "TNFSF14", "CD40LG", 
+#                                    "TNFRSF9", "TNFRSF4",
+#                                    "TNFRSF25", "TNFRSF18", "TNFRSF8", "HAVCR1", "CD2", "CD226", 
+#                                    "LILRB1","LILRB2", "LAIR1"),
+#         ncol=4, group.by = "orig.ident")
 
 
 ```
 
 ### Gene expression by cluster
 ```{r, fig.height=32, fig.width=16}
-VlnPlot(object = acute, features = c("CD27", "IL7R", "S100A4", "PTPRC",
-                                    "CCR7", "SELL", "CD44", "CD69",
-                                    "HLA-DRB1", "CCL4",
-                                    "CCL5", "CXCR3", "CXCR4",
-                                    "SELPLG","ITGA4", "ITGAL", "ITGB2",
-                                    "IL16", "IFNG",
-                                    "PRF1", "GNLY", "NKG7",
-                                    "GZMA", "GZMB", "GZMH", "GZMK",
-                                    "FASLG", "ISG15",
-                                    "PDCD1", "CTLA4", "HAVCR2", "CD244",
-                                    "KLRG1", "TIGIT", "BTLA","CD160"),
-        ncol=4, group.by = "seurat_clusters")
+# VlnPlot(object = acute, features = c("CD27", "IL7R", "S100A4", "PTPRC",
+#                                     "CCR7", "SELL", "CD44", "CD69",
+#                                     "HLA-DRB1", "CCL4",
+#                                     "CCL5", "CXCR3", "CXCR4",
+#                                     "SELPLG","ITGA4", "ITGAL", "ITGB2",
+#                                     "IL16", "IFNG",
+#                                     "PRF1", "GNLY", "NKG7",
+#                                     "GZMA", "GZMB", "GZMH", "GZMK",
+#                                     "FASLG", "ISG15",
+#                                     "PDCD1", "CTLA4", "HAVCR2", "CD244",
+#                                     "KLRG1", "TIGIT", "BTLA","CD160"),
+#         ncol=4, group.by = "seurat_clusters")
 ```
 
 
@@ -661,18 +661,18 @@ VlnPlot(object = acute, features = c("CD27", "IL7R", "S100A4", "PTPRC",
 ## Convalescent patients
 ### Gene expression by cluster
 ```{r, fig.height=32, fig.width=16}
-VlnPlot(object = conv, features = c("CD27", "IL7R", "S100A4", "PTPRC",
-                                    "CCR7", "SELL", "CD44", "CD69",
-                                    "HLA-DRB1", "CCL4",
-                                    "CCL5", "CXCR3", "CXCR4",
-                                    "SELPLG","ITGA4", "ITGAL", "ITGB2",
-                                    "IL16", "IFNG",
-                                    "PRF1", "GNLY", "NKG7",
-                                    "GZMA", "GZMB", "GZMH", "GZMK",
-                                    "FASLG", "ISG15",
-                                    "PDCD1", "CTLA4", "HAVCR2", "CD244",
-                                    "KLRG1", "TIGIT", "BTLA","CD160"), 
-        ncol=4, group.by = "seurat_clusters")
+# VlnPlot(object = conv, features = c("CD27", "IL7R", "S100A4", "PTPRC",
+#                                     "CCR7", "SELL", "CD44", "CD69",
+#                                     "HLA-DRB1", "CCL4",
+#                                     "CCL5", "CXCR3", "CXCR4",
+#                                     "SELPLG","ITGA4", "ITGAL", "ITGB2",
+#                                     "IL16", "IFNG",
+#                                     "PRF1", "GNLY", "NKG7",
+#                                     "GZMA", "GZMB", "GZMH", "GZMK",
+#                                     "FASLG", "ISG15",
+#                                     "PDCD1", "CTLA4", "HAVCR2", "CD244",
+#                                     "KLRG1", "TIGIT", "BTLA","CD160"), 
+#         ncol=4, group.by = "seurat_clusters")
 ```
 ### Gene expression by epitope
 ```{r, fig.height=32, fig.width=16}
@@ -681,29 +681,29 @@ VlnPlot(object = conv, features = c("CD27", "IL7R", "S100A4", "PTPRC",
 #                  times = c("133", "94", "74", "95", "66", "75", "95"))
 # conv@meta.data$"epitope" <- as.factor(epitope)
 # 
-VlnPlot(object = conv, features = c("CD27", "IL7R", "S100A4", "PTPRC",
-                                    "CCR7", "SELL", "CD44", "CD69",
-                                    "HLA-DRB1", "CCL4",
-                                    "CCL5", "CXCR3", "CXCR4",
-                                    "SELPLG","ITGA4", "ITGAL", "ITGB2",
-                                    "IL16", "IFNG",
-                                    "PRF1", "GNLY", "NKG7",
-                                    "GZMA", "GZMB", "GZMH", "GZMK",
-                                    "FASLG", "ISG15",
-                                    "PDCD1", "CTLA4", "HAVCR2", "CD244",
-                                    "KLRG1", "TIGIT", "BTLA","CD160"),
-        ncol=4, group.by = "epitope")
+# VlnPlot(object = conv, features = c("CD27", "IL7R", "S100A4", "PTPRC",
+#                                     "CCR7", "SELL", "CD44", "CD69",
+#                                     "HLA-DRB1", "CCL4",
+#                                     "CCL5", "CXCR3", "CXCR4",
+#                                     "SELPLG","ITGA4", "ITGAL", "ITGB2",
+#                                     "IL16", "IFNG",
+#                                     "PRF1", "GNLY", "NKG7",
+#                                     "GZMA", "GZMB", "GZMH", "GZMK",
+#                                     "FASLG", "ISG15",
+#                                     "PDCD1", "CTLA4", "HAVCR2", "CD244",
+#                                     "KLRG1", "TIGIT", "BTLA","CD160"),
+#         ncol=4, group.by = "epitope")
 ```
 
 ```{r, fig.height=28, fig.width=16}
-VlnPlot(object = conv, features = c("CXCR3", "CXCR4", "CCR4", "CCR5", "CCR6", "CXCR6",
-                                   "PDCD1", "CTLA4", "HAVCR2", "CD244", "KLRG1", "TIGIT", 
-                                   "BTLA", "CD160",
-                                   "CD28", "CD27", "ICOS", "TNFRSF14", "TNFSF14", "CD40LG", 
-                                   "TNFRSF9", "TNFRSF4",
-                                   "TNFRSF25", "TNFRSF18", "TNFRSF8", "HAVCR1", "CD2", "CD226", 
-                                   "LILRB1","LILRB2", "LAIR1"),
-        ncol=4, group.by = "orig.ident")
+# VlnPlot(object = conv, features = c("CXCR3", "CXCR4", "CCR4", "CCR5", "CCR6", "CXCR6",
+#                                    "PDCD1", "CTLA4", "HAVCR2", "CD244", "KLRG1", "TIGIT", 
+#                                    "BTLA", "CD160",
+#                                    "CD28", "CD27", "ICOS", "TNFRSF14", "TNFSF14", "CD40LG", 
+#                                    "TNFRSF9", "TNFRSF4",
+#                                    "TNFRSF25", "TNFRSF18", "TNFRSF8", "HAVCR1", "CD2", "CD226", 
+#                                    "LILRB1","LILRB2", "LAIR1"),
+#         ncol=4, group.by = "epitope")
 
 
 ```
@@ -720,8 +720,8 @@ groups <- read.csv("/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/cd8_np16_or
 cell_groups <- merge(cells, groups, by.x="cell_name", by.y="name", all=TRUE)
 cell_groups <- cell_groups[-280,]
 cell_groups <- cell_groups[!duplicated(cell_groups$cell_name),]
-cell_groups$epitope <- ifelse(grepl("NP16|B7", cell_groups$cell_name), "NP16",
-                              ifelse(grepl("ORF", cell_groups$cell_name), "ORF3a-28",""))
+cell_groups$epitope <- ifelse(grepl("005|1131|1153|1201", cell_groups$patient), "NP16",
+                              ifelse(grepl("1105|1134|1525", cell_groups$patient), "ORF3a-28",""))
 
 cell_groups <- mutate(cell_groups, group=paste(epitope, new.group, sep="_"))
 
@@ -729,19 +729,39 @@ cd8@meta.data$CDR3_group <- as.factor(cell_groups$group)
 
 ```
 
-```{r}
-DimPlot(cd8, reduction = "umap", group.by = "CDR3_group")
-```
 # Subset NP16 from CD8 object
 
-```{r, fig.height=4, fig.width=6}
+```{r, fig.height=24, fig.width=38}
 Idents(cd8) <- "epitope"
 np16 <- subset(cd8, idents="NP16")
 
 Idents(np16) <- "CDR3_group"
 np16_2 <- subset(np16, subset = CDR3_group !="NP16_NA")
 
-DimPlot(np16_2, reduction = "umap", group.by = "CDR3_group")
+VlnPlot(object = np16_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                  "IFNG", "TNF", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                            "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", 
+                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                   "NKG7",  "ISG15", "TUBA1B","HAVCR2", "TIGIT", "CTLA4"),
+        ncol=6, group.by = "CDR3_group")
+
+```
+
+# Subset ORF3a-28 from CD8 object
+
+```{r, fig.height=24, fig.width=34}
+Idents(cd8) <- "epitope"
+orf3a <- subset(cd8, idents="ORF3a-28")
+
+Idents(orf3a) <- "CDR3_group"
+orf3a_2 <- subset(orf3a, subset = CDR3_group !="ORF3a-28_NA")
+
+VlnPlot(object = orf3a_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                  "IFNG", "TNF", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                            "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", 
+                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                   "NKG7",  "ISG15", "TUBA1B","HAVCR2", "TIGIT", "CTLA4"),
+        ncol=6, group.by = "CDR3_group")
 
 ```
 
@@ -749,11 +769,11 @@ DimPlot(np16_2, reduction = "umap", group.by = "CDR3_group")
 # Save file
 
 ```{r save}
-# save cd8 object at this point so don't have to redo all of the above again
+# save <- object at this point so don't have to redo all of the above again
 # saveRDS(cd8, file = "cd8_seurat.rds")
 # saveRDS(cd8.integrated, file="cd8_integrated_seurat.rds")
 
-# saveRDS(cd8, file="cd8_harmony.rds")
+saveRDS(cd8, file="cd8_harmony.rds")
 # saveRDS(acute, file="acute_harmony.rds")
 # saveRDS(conv, file="convalescent_harmony.rds")
 ```
