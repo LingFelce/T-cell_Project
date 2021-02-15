@@ -734,6 +734,36 @@ cd8@meta.data$CDR3_group <- as.factor(cell_groups$group)
 
 ```
 
+```{r, fig.width=46, fig.height=20}
+cd8_2 <- subset(cd8, subset = CDR3_group !="NP16_NA")
+
+cd8_2 <- subset(cd8_2, subset = CDR3_group !="ORF3a-28_NA")
+
+cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_09")
+cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_10")
+cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_13")
+cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_14")
+cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_15")
+cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_16")
+cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_17")
+cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_19")
+
+cd8_2 <- subset(cd8_2, subset = CDR3_group !="ORF3a-28_03")
+cd8_2 <- subset(cd8_2, subset = CDR3_group !="ORF3a-28_04")
+cd8_2 <- subset(cd8_2, subset = CDR3_group !="ORF3a-28_06")
+
+Idents(cd8_2) <- "CDR3_group"
+
+VlnPlot(object = cd8_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                  "IFNG", "TNF", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                            "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", 
+                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                   "NKG7",  "ISG15", "TUBA1B","HAVCR2", "TIGIT", "CTLA4"),
+        ncol=6, group.by = "CDR3_group")
+
+```
+
+
 # Subset NP16 from CD8 object
 
 ```{r, fig.height=22, fig.width=40}
