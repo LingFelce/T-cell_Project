@@ -17,6 +17,7 @@ library(ggplot2)
 library(data.table)
 library(tidyverse)
 library(harmony)
+library(gridExtra)
 ```
 
 # All CD8 samples
@@ -60,7 +61,7 @@ Follow guided clustering tutorial https://satijalab.org/seurat/v3.2/pbmc3k_tutor
 # 
 # # merge with cd8_data = 816 + 92 = 908
 # cd8_data <- cbind(cd8_data, data_1131_new)
-
+# 
 # # Initialise Seurat object with raw (non-normalised) data
 # # min.cells = include features detected in at least this many cells
 # # min.features includes cells where at least this many features detected
@@ -75,14 +76,14 @@ Visualise gene and molecule counts, plot relationship and exclude cells with cle
 
 Also filter cells based on % mitochondrial genes present:
 
-```{r qc, fig.height=6, fig.width=16}
+```{r qc, fig.height=5, fig.width=16}
 # # non-UMI data - nUMI represents sum of non-normalised values within cells
 # # calculate % mitochondrial genes and store in separate object
 # # use object@raw.data represents non-transformed and non-log-normalised counts
 # # % of UMI mapping to MT-genes is a common scRNA-seq QC metric
 # mito.genes <- grep(pattern = "^MT-", x = rownames(cd8@assays[["RNA"]]), value = TRUE)
 # percent.mito <- Matrix::colSums(cd8@assays[["RNA"]][mito.genes, ])/Matrix::colSums(cd8@assays[["RNA"]])
-# cd8 <- AddMetaData(object = cd8, metadata = percent.mito, col.name = "percent.mito") 
+# cd8 <- AddMetaData(object = cd8, metadata = percent.mito, col.name = "percent.mito")
 # VlnPlot(object = cd8, features = c("nFeature_RNA", "nCount_RNA", "percent.mito"), ncol = 3)
 # # all cells have same value % mitochondrial cells?
 ```
@@ -110,7 +111,7 @@ After removing unwanted cells from dataset, need to normalise data. Use global-s
 Seurat calculates highly variable genes and focuses on these for downstream analysis. FindVariableGenes calculates average expression and dispersion for each gene, places genes into bins and calculates z-score for dispersion within each bin - helps to control relationship between variability and average expression. 
 
 ```{r variability, fig.height=8, fig.width = 16}
-# # identify 2000 variable genes - normal parameter settings for UMI data normalised to total of 1e4 molecules
+# identify 2000 variable genes - normal parameter settings for UMI data normalised to total of 1e4 molecules
 # cd8 <- FindVariableFeatures(object = cd8, mean.function = ExpMean, dispersion.function = LogVMR, x.low.cutoff = 0.0125, x.high.cutoff = 3, y.cutoff = 0.5, nfeatures = 2000)
 # # Identify the 10 most highly variable genes
 # top10 <- head(VariableFeatures(cd8), 10)
@@ -179,7 +180,7 @@ Place similar cells in low-dimensional space. Use same PCs as input to clusterin
 Define clusters via differential expression. Identifies positive and negative markers of single cluster compared to all other cells.
 
 ```{r number of cells}
-# # How many cells for each patient?
+# How many cells for each patient?
 # Idents(cd8) <- "orig.ident"
 # table(Idents(cd8))
 # # How many cells in each cluster?
@@ -216,24 +217,31 @@ Define clusters via differential expression. Identifies positive and negative ma
 
 # Annotating UMAPs with meaningful information
 ## Known information
-### Severity
-```{r severity annotation, fig.height=4, fig.width=6}
-# # assign known identities to clusters - look at known clinical description
-# clin.type <- rep(c("mild", "severe","severe","severe","severe","severe","mild", "severe","severe"), 
-#                  times = c("133", "94", "62", "74", "95", "66", "75", "46", "95"))
-# cd8@meta.data$"clin.type" <- as.factor(clin.type)
-# UMAP_clin <- DimPlot(cd8, reduction = "umap", group.by = "clin.type", label = TRUE, label.size = 3 ,repel = TRUE)
-# UMAP_clin
+
+```{r}
+# list <- as.data.frame(cd8$orig.ident)
+# 
+# list$epitope <- ifelse(grepl("005|1131|1153|1201", list$`cd8$orig.ident`), "NP16",
+#                        ifelse(grepl("1105|1134|1525", list$`cd8$orig.ident`), "ORF3a-28", ""))
+# 
+# list$clin.type <- ifelse(grepl("005|1201", list$`cd8$orig.ident`), "mild",
+#                          ifelse(grepl("1131|1153|1105|1134|1525", list$`cd8$orig.ident`), "severe",""))
+# 
+# cd8@meta.data$epitope <- as.factor(list$epitope)
+# cd8@meta.data$clin.type <- as.factor(list$clin.type)
+
 ```
-### Epitope
-```{r known epitopes, fig.height=4, fig.width=6}
-# # assign known identities to clusters - look at known epitopes
-# epitope <- rep(c("NP16", "ORF3a-28", "NP16", "NP16", "ORF3a-28", "NP16", "NP16", "ORF3a-28","ORF3a-28"), 
-#                  times = c("133", "94", "62", "74", "95", "66", "75", "46", "95"))
-# cd8@meta.data$"epitope" <- as.factor(epitope)
+
+```{r, fig.height=4, fig.width=10}
+# UMAP_clin <- DimPlot(cd8, reduction = "umap", group.by = "clin.type", label = TRUE, label.size = 3 ,repel = TRUE)
+# 
 # UMAP_epitope <- DimPlot(cd8, reduction = "umap", group.by = "epitope", label = TRUE, label.size = 3 ,repel = TRUE)
+# 
 # # use split.by="seurat_clusters" to also show UMAP by epitope and cluster number
-# UMAP_epitope
+# 
+# UMAP_clin + UMAP_epitope
+# 
+# saveRDS(cd8, "cd8_seurat.rds")
 ```
 
 
@@ -264,7 +272,7 @@ The simplest way to run Harmony is to pass the Seurat object and specify which v
 
 ```{r harmony1}
 # cd8 <- readRDS("cd8_seurat.rds")
-# options(repr.plot.height = 2.5, repr.plot.width = 6)
+# # options(repr.plot.height = 2.5, repr.plot.width = 6)
 # cd8 <- cd8 %>%
 #     RunHarmony("orig.ident", plot_convergence = TRUE)
 # # Harmony converged after 8 iterations
@@ -283,16 +291,32 @@ The simplest way to run Harmony is to pass the Seurat object and specify which v
 ```
 
 Many downstream analyses are performed on low dimensional embeddings, not gene expression. To use the corrected Harmony embeddings rather than PCs, set reduction = 'harmony'. For example, let's perform the UMAP and Nearest Neighbor analyses using the Harmony embeddings.
-```{r harmony_umap, fig.height=5, fig.width=20}
-# cd8 <- cd8 %>%
-#     RunUMAP(reduction = "harmony", dims = 1:20) %>%
-#     FindNeighbors(reduction = "harmony", dims = 1:20) %>%
-#     FindClusters(resolution = 0.5) %>%
-#     identity()
-# umap_patient <- DimPlot(cd8, reduction = "umap", group.by = "orig.ident")
-# umap_epitope <- DimPlot(cd8, reduction = "umap", group.by = "epitope")
-# umap_cluster <- DimPlot(cd8, reduction = "umap", group.by = "seurat_clusters")
-# umap_patient + umap_epitope + umap_cluster
+```{r harmony_umap, fig.height=14, fig.width=14}
+cd8 <- readRDS("cd8_harmony.rds")
+
+cd8 <- cd8 %>%
+    RunUMAP(reduction = "harmony", dims = 1:25, verbose=FALSE) %>%
+    FindNeighbors(reduction = "harmony", dims = 1:25, verbose=FALSE) %>%
+    FindClusters(resolution = 0.5, verbose=FALSE) %>%
+    identity()
+
+# list <- as.data.frame(cd8$orig.ident)
+# list$timepoint <- ifelse(grepl("TP-1", list$`cd8$orig.ident`), "acute",
+#                          ifelse(grepl("005|1131-TP-2|1153|1201|1105|1134|1525-TP-2", 
+#                                       list$`cd8$orig.ident`), "convalescent", ""))
+# 
+# cd8@meta.data$"timepoint" <- as.factor(list$timepoint)
+
+p1 <- DimPlot(cd8, reduction = "umap", group.by = "orig.ident")
+p2 <- DimPlot(cd8, reduction = "umap", group.by = "epitope")
+p3 <- DimPlot(cd8, reduction = "umap", group.by = "seurat_clusters")
+p4 <- DimPlot(cd8, reduction = "umap", group.by = "timepoint")
+p5 <- DimPlot(cd8, reduction = "umap", group.by = "clin.type")
+
+grid.arrange(p1, p2, p3, p4, p5, nrow=3)
+ 
+# saveRDS(cd8, "cd8_harmony.rds")
+
 ```
 
 ```{r harmony_markers}
@@ -301,8 +325,7 @@ Many downstream analyses are performed on low dimensional embeddings, not gene e
 # cluster_1 <- cd8.markers[cd8.markers$cluster == "1", ]
 # cluster_2 <- cd8.markers[cd8.markers$cluster == "2", ]
 # cluster_3 <- cd8.markers[cd8.markers$cluster == "3", ]
-# cluster_4 <- cd8.markers[cd8.markers$cluster == "4", ]
-# cluster_5 <- cd8.markers[cd8.markers$cluster == "5", ]
+# 
 # 
 # setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
 # tmarkers <- read.csv("Markers_for_Ling.csv", header=F)
@@ -311,8 +334,7 @@ Many downstream analyses are performed on low dimensional embeddings, not gene e
 # genes_1 <- tmarkers[is.element(tmarkers$V1, cluster_1$gene),]
 # genes_2 <- tmarkers[is.element(tmarkers$V1, cluster_2$gene),]
 # genes_3 <- tmarkers[is.element(tmarkers$V1, cluster_3$gene),]
-# genes_4 <- tmarkers[is.element(tmarkers$V1, cluster_4$gene),]
-# genes_5 <- tmarkers[is.element(tmarkers$V1, cluster_5$gene),]
+
 
 ```
 
@@ -330,7 +352,7 @@ Many downstream analyses are performed on low dimensional embeddings, not gene e
 # Acute patients
 Analyse acute patients separately - 1131-TP-1 (NP16) and 1525-TP-1 (ORF3a-28)
 ## Processing data
-```{r}
+```{r, fig.width=10, fig.height=4}
 # # select only columns containing TP-1
 # acute_data <- select(cd8_data,contains("TP-1"))
 # acute <- CreateSeuratObject(counts = acute_data, min.cells = 3, min.features = 200, project = "CD8 acute T-cell data", assay = "RNA")
@@ -356,8 +378,8 @@ Analyse acute patients separately - 1131-TP-1 (NP16) and 1525-TP-1 (ORF3a-28)
 
 
 ```{r, fig.height=8, fig.width = 16}
-# # Filter out cells that have unique gene counts (nFeature_RNA) over 4000 or less than 200 
-# # Note that > and < are used to define a'gate'.  
+# # Filter out cells that have unique gene counts (nFeature_RNA) over 4000 or less than 200
+# # Note that > and < are used to define a'gate'.
 # # -Inf and Inf should be used if don't want a lower or upper threshold.
 # acute <- subset(x = acute, subset = nFeature_RNA > 200 & nFeature_RNA < 4000 & percent.mito >  -Inf & percent.mito < 0.05 )
 # 
@@ -390,7 +412,7 @@ Analyse acute patients separately - 1131-TP-1 (NP16) and 1525-TP-1 (ORF3a-28)
 ```
 ## Harmony integration 
 ```{r}
-# acute <- acute %>% 
+# acute <- acute %>%
 #     RunHarmony("orig.ident", plot_convergence = TRUE)
 # # Harmony converged after 3 iterations
 # harmony_embeddings <- Embeddings(acute, 'harmony')
@@ -402,11 +424,11 @@ Analyse acute patients separately - 1131-TP-1 (NP16) and 1525-TP-1 (ORF3a-28)
 # p2 <- VlnPlot(object = acute, features = "harmony_1", group.by = "orig.ident", pt.size = .1)
 # p3 + p1 + p2
 ```
-```{r, fig.height=5, fig.width=12}
-# acute <- acute %>% 
-#     RunUMAP(reduction = "harmony", dims = 1:20) %>% 
-#     FindNeighbors(reduction = "harmony", dims = 1:20) %>% 
-#     FindClusters(resolution = 0.5) %>% 
+```{r, fig.height=4, fig.width=10}
+# acute <- acute %>%
+#     RunUMAP(reduction = "harmony", dims = 1:20) %>%
+#     FindNeighbors(reduction = "harmony", dims = 1:20) %>%
+#     FindClusters(resolution = 0.5) %>%
 #     identity()
 # umap_patient <- DimPlot(acute, reduction = "umap", group.by = "orig.ident")
 # umap_cluster <- DimPlot(acute, reduction = "umap", group.by = "seurat_clusters")
@@ -433,7 +455,7 @@ Analyse acute patients separately - 1131-TP-1 (NP16) and 1525-TP-1 (ORF3a-28)
 Analyse convalescent patients separately - all patients except 1131-TP-1 and 1525-TP-1
 ## Processing data
 ```{r, fig.height=5, fig.width=15}
-# # remove any columns containing TP-1
+# remove any columns containing TP-1
 # conv_data <- cd8_data %>% select(!(contains("TP-1")))
 # 
 # conv <- CreateSeuratObject(counts = conv_data, min.cells = 3, min.features = 200, project = "CD8 conv T-cell data", assay = "RNA")
@@ -460,9 +482,9 @@ Analyse convalescent patients separately - all patients except 1131-TP-1 and 152
 
 
 ```{r, fig.height=8, fig.width = 16}
-# # Filter out cells that have unique gene counts (nFeature_RNA) over 4000 or less than 200 
-# # Note that > and < are used to define a'gate'.  
-# # -Inf and Inf should be used if don't want a lower or upper threshold.
+# Filter out cells that have unique gene counts (nFeature_RNA) over 4000 or less than 200
+# Note that > and < are used to define a'gate'.
+# -Inf and Inf should be used if don't want a lower or upper threshold.
 # conv <- subset(x = conv, subset = nFeature_RNA > 200 & nFeature_RNA < 4000 & percent.mito >  -Inf & percent.mito < 0.05 )
 # 
 # # After removing unwanted cells from dataset, need to normalise data. Use global-scaling normalisation method "LogNormalize" - normalises gene expression measurements for each cell by total expression, multiplies by scale factor (10,000 default) and log-tranforms result.
@@ -492,7 +514,7 @@ Analyse convalescent patients separately - all patients except 1131-TP-1 and 152
 ```
 ## Harmony integration 
 ```{r}
-# conv <- conv %>% 
+# conv <- conv %>%
 #     RunHarmony("orig.ident", plot_convergence = TRUE)
 # # Harmony converged after 7 iterations
 # harmony_embeddings <- Embeddings(conv, 'harmony')
@@ -505,13 +527,20 @@ Analyse convalescent patients separately - all patients except 1131-TP-1 and 152
 ```
 
 ```{r, fig.height=5, fig.width=12}
-# conv <- conv %>% 
-#     RunUMAP(reduction = "harmony", dims = 1:25) %>% 
-#     FindNeighbors(reduction = "harmony", dims = 1:25) %>% 
-#     FindClusters(resolution = 0.5) %>% 
+# conv <- conv %>%
+#     RunUMAP(reduction = "harmony", dims = 1:25) %>%
+#     FindNeighbors(reduction = "harmony", dims = 1:25) %>%
+#     FindClusters(resolution = 0.5) %>%
 #     identity()
+# 
+# 
+# epitope <- rep(c("NP16", "ORF3a-28", "NP16", "ORF3a-28", "NP16", "NP16", "ORF3a-28"),
+#                  times = c("133", "94", "74", "95", "66", "75", "95"))
+# conv@meta.data$"epitope" <- as.factor(epitope)
+# 
 # umap_patient <- DimPlot(conv, reduction = "umap", group.by = "orig.ident")
 # umap_cluster <- DimPlot(conv, reduction = "umap", group.by = "seurat_clusters")
+# umap_eptiope <- DimPlot(conv, reduction = "umap", group.by = "epitope")
 # umap_patient + umap_cluster
 ```
 
@@ -565,50 +594,47 @@ Load each previously saved .rds file - no need to repeat harmony integration, cl
 ```
 # Gene expression violin plots
 ## All CD8+ patients
-### Gene expression by epitope
 
-```{r, fig.height=32, fig.width=16}
-# VlnPlot(object = cd8, features = c("CD27", "IL7R", "S100A4", "PTPRC",
-#                                     "CCR7", "SELL", "CD44", "CD69",
-#                                     "HLA-DRB1", "CCL4",
-#                                     "CCL5", "CXCR3", "CXCR4",
-#                                     "SELPLG","ITGA4", "ITGAL", "ITGB2",
-#                                     "IL16", "IFNG",
-#                                     "PRF1", "GNLY", "NKG7",
-#                                     "GZMA", "GZMB", "GZMH", "GZMK",
-#                                     "FASLG", "ISG15",
-#                                     "PDCD1", "CTLA4", "HAVCR2", "CD244",
-#                                     "KLRG1", "TIGIT", "BTLA","CD160"),
-#         ncol=4, group.by = "epitope")
+```{r, fig.height=20, fig.width=18}
+VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                  "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                  "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1", 
+                                  "MKI67","TUBA1B","PDCD1", "HAVCR2", "TIGIT", "CTLA4"),
+        ncol=6, group.by = "seurat_clusters")
 ```
 
-```{r, fig.height=30, fig.width=16}
-# VlnPlot(object = cd8, features = c("CXCR3", "CXCR4", "CCR2", "CCR4", "CCR5", "CCR6", "CXCR6",
-#                                    "PDCD1", "CTLA4", "HAVCR2", "CD244", "KLRG1", "TIGIT", 
-#                                    "BTLA", "CD160",
-#                                    "CD28", "CD27", "ICOS", "TNFRSF14", "TNFSF14", "CD40LG", 
-#                                    "TNFRSF9", "TNFRSF4",
-#                                    "TNFRSF25", "TNFRSF18", "TNFRSF8", "HAVCR1", "CD2", "CD226", 
-#                                    "LILRB1","LILRB2", "LAIR1"),
-#         ncol=4, group.by = "epitope")
+```{r, fig.height=22, fig.width=18}
+VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                  "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                  "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1", 
+                                  "MKI67","TUBA1B","PDCD1", "HAVCR2", "TIGIT", "CTLA4"),
+        ncol=6, group.by = "epitope")
 ```
 
-
-### Gene expression by cluster
-```{r, fig.height=32, fig.width=16}
-# VlnPlot(object = cd8, features = c("CD27", "IL7R", "S100A4", "PTPRC",
-#                                     "CCR7", "SELL", "CD44", "CD69",
-#                                     "HLA-DRB1", "CCL4",
-#                                     "CCL5", "CXCR3", "CXCR4",
-#                                     "SELPLG","ITGA4", "ITGAL", "ITGB2",
-#                                     "IL16", "IFNG",
-#                                     "PRF1", "GNLY", "NKG7",
-#                                     "GZMA", "GZMB", "GZMH", "GZMK",
-#                                     "FASLG", "ISG15",
-#                                     "PDCD1", "CTLA4", "HAVCR2", "CD244",
-#                                     "KLRG1", "TIGIT", "BTLA","CD160"),
-#         ncol=4, group.by = "seurat_clusters")
+```{r, fig.height=20, fig.width=18}
+VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                  "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                  "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1", 
+                                  "MKI67","TUBA1B","PDCD1", "HAVCR2", "TIGIT", "CTLA4"),
+        ncol=6, group.by = "clin.type")
 ```
+
+```{r, fig.height=22, fig.width=18}
+VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                  "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                  "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1", 
+                                  "MKI67","TUBA1B","PDCD1", "HAVCR2", "TIGIT", "CTLA4"),
+        ncol=6, group.by = "timepoint")
+```
+
 ## Acute patients
 ### Gene expression by patient/epitope
 
@@ -675,24 +701,21 @@ Load each previously saved .rds file - no need to repeat harmony integration, cl
 #         ncol=4, group.by = "seurat_clusters")
 ```
 ### Gene expression by epitope
-```{r, fig.height=32, fig.width=16}
+```{r, fig.height=18, fig.width=16}
 # 
 # epitope <- rep(c("NP16", "ORF3a-28", "NP16", "ORF3a-28", "NP16", "NP16", "ORF3a-28"),
 #                  times = c("133", "94", "74", "95", "66", "75", "95"))
 # conv@meta.data$"epitope" <- as.factor(epitope)
+
+# conv <- readRDS("convalescent_harmony.rds")
 # 
-# VlnPlot(object = conv, features = c("CD27", "IL7R", "S100A4", "PTPRC",
-#                                     "CCR7", "SELL", "CD44", "CD69",
-#                                     "HLA-DRB1", "CCL4",
-#                                     "CCL5", "CXCR3", "CXCR4",
-#                                     "SELPLG","ITGA4", "ITGAL", "ITGB2",
-#                                     "IL16", "IFNG",
-#                                     "PRF1", "GNLY", "NKG7",
-#                                     "GZMA", "GZMB", "GZMH", "GZMK",
-#                                     "FASLG", "ISG15",
-#                                     "PDCD1", "CTLA4", "HAVCR2", "CD244",
-#                                     "KLRG1", "TIGIT", "BTLA","CD160"),
-#         ncol=4, group.by = "epitope")
+# VlnPlot(object = conv, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "IFNG", "TNF", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                            "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", 
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                    "NKG7",  "ISG15", "TUBA1B","HAVCR2", "TIGIT", "CTLA4"),
+#         ncol=6, group.by = "epitope")
+
 ```
 
 ```{r, fig.height=28, fig.width=16}
@@ -710,56 +733,56 @@ Load each previously saved .rds file - no need to repeat harmony integration, cl
 
 # Adding TCR grouping from clones and single cells
 ```{r}
-cd8 <- readRDS("cd8_harmony.rds")
-
-# cd8$CDR3_group <- NULL
-
-cells <- as.data.frame(cd8$orig.ident)
-cells <- tibble::rownames_to_column(cells, "cell_name")
-colnames(cells) <- c("cell_name", "patient")
-groups <- read.csv("/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/cd8_np16_orf3a_sc_groups.csv", header=TRUE)
-
-# add 0 in front of single digit numbers
-groups$new.group <- str_pad(groups$new.group, 2, side="left", pad="0")
-
-cell_groups <- merge(cells, groups, by.x="cell_name", by.y="name", all=TRUE)
-cell_groups <- cell_groups[-280,]
-cell_groups <- cell_groups[!duplicated(cell_groups$cell_name),]
-cell_groups$epitope <- ifelse(grepl("005|1131|1153|1201", cell_groups$patient), "NP16",
-                              ifelse(grepl("1105|1134|1525", cell_groups$patient), "ORF3a-28",""))
-
-cell_groups <- mutate(cell_groups, group=paste(epitope, new.group, sep="_"))
-
-cd8@meta.data$CDR3_group <- as.factor(cell_groups$group)
+# cd8 <- readRDS("cd8_harmony.rds")
+# 
+# # cd8$CDR3_group <- NULL
+# 
+# cells <- as.data.frame(cd8$orig.ident)
+# cells <- tibble::rownames_to_column(cells, "cell_name")
+# colnames(cells) <- c("cell_name", "patient")
+# groups <- read.csv("/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/cd8_np16_orf3a_sc_groups.csv", header=TRUE)
+# 
+# # add 0 in front of single digit numbers
+# groups$new.group <- str_pad(groups$new.group, 2, side="left", pad="0")
+# 
+# cell_groups <- merge(cells, groups, by.x="cell_name", by.y="name", all=TRUE)
+# cell_groups <- cell_groups[-280,]
+# cell_groups <- cell_groups[!duplicated(cell_groups$cell_name),]
+# cell_groups$epitope <- ifelse(grepl("005|1131|1153|1201", cell_groups$patient), "NP16",
+#                               ifelse(grepl("1105|1134|1525", cell_groups$patient), "ORF3a-28",""))
+# 
+# cell_groups <- mutate(cell_groups, group=paste(epitope, new.group, sep="_"))
+# 
+# cd8@meta.data$CDR3_group <- as.factor(cell_groups$group)
 
 ```
 
 ```{r, fig.width=46, fig.height=20}
-cd8_2 <- subset(cd8, subset = CDR3_group !="NP16_NA")
-
-cd8_2 <- subset(cd8_2, subset = CDR3_group !="ORF3a-28_NA")
-
-cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_09")
-cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_10")
-cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_13")
-cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_14")
-cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_15")
-cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_16")
-cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_17")
-cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_19")
-
-cd8_2 <- subset(cd8_2, subset = CDR3_group !="ORF3a-28_03")
-cd8_2 <- subset(cd8_2, subset = CDR3_group !="ORF3a-28_04")
-cd8_2 <- subset(cd8_2, subset = CDR3_group !="ORF3a-28_06")
-
-Idents(cd8_2) <- "CDR3_group"
-
-VlnPlot(object = cd8_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-                                  "IFNG", "TNF", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                            "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", 
-                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-                                   "NKG7",  "ISG15", "TUBA1B","HAVCR2", "TIGIT", "CTLA4"),
-        ncol=6, group.by = "CDR3_group")
+# cd8_2 <- subset(cd8, subset = CDR3_group !="NP16_NA")
+# 
+# cd8_2 <- subset(cd8_2, subset = CDR3_group !="ORF3a-28_NA")
+# 
+# cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_09")
+# cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_10")
+# cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_13")
+# cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_14")
+# cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_15")
+# cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_16")
+# cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_17")
+# cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_19")
+# 
+# cd8_2 <- subset(cd8_2, subset = CDR3_group !="ORF3a-28_03")
+# cd8_2 <- subset(cd8_2, subset = CDR3_group !="ORF3a-28_04")
+# cd8_2 <- subset(cd8_2, subset = CDR3_group !="ORF3a-28_06")
+# 
+# Idents(cd8_2) <- "CDR3_group"
+# 
+# VlnPlot(object = cd8_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "IFNG", "TNF", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                            "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", 
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                    "NKG7",  "ISG15", "TUBA1B","HAVCR2", "TIGIT", "CTLA4"),
+#         ncol=6, group.by = "CDR3_group")
 
 ```
 
@@ -767,36 +790,113 @@ VlnPlot(object = cd8_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S10
 # Subset NP16 from CD8 object
 
 ```{r, fig.height=22, fig.width=40}
-Idents(cd8) <- "epitope"
-np16 <- subset(cd8, idents="NP16")
+# Idents(cd8) <- "epitope"
+# np16 <- subset(cd8, idents="NP16")
+# 
+# list <- as.data.frame(np16$orig.ident)
+# list <- tibble::rownames_to_column(list, "cell_name")
+# list2 <- merge(list, cell_groups, by.x="cell_name", by.y="cell_name", all.x=TRUE)
+# np16@meta.data$CDR3_group <- list2$group
+# 
+# Idents(np16) <- "CDR3_group"
+# np16_2 <- subset(np16, subset = CDR3_group !="NP16_NA")
+# 
+# 
+# VlnPlot(object = np16_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "IFNG", "TNF", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                            "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", 
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                    "NKG7",  "ISG15", "TUBA1B","HAVCR2", "TIGIT", "CTLA4"),
+#         ncol=6, group.by = "CDR3_group")
 
-Idents(np16) <- "CDR3_group"
-np16_2 <- subset(np16, subset = CDR3_group !="NP16_NA")
+```
 
-VlnPlot(object = np16_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-                                  "IFNG", "TNF", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                            "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", 
-                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-                                   "NKG7",  "ISG15", "TUBA1B","HAVCR2", "TIGIT", "CTLA4"),
-        ncol=6, group.by = "CDR3_group")
+```{r, fig.height=18, fig.width=16}
+# Idents(np16) <- "clin.type"
+# 
+# VlnPlot(object = np16, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "IFNG", "TNF", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                            "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", 
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                    "NKG7",  "ISG15", "TUBA1B","HAVCR2", "TIGIT", "CTLA4"),
+#         ncol=6, group.by = "clin.type")
+```
 
+
+```{r, fig.height=8, fig.width=12}
+# Select the top 1000 most variable features
+# np16 <- FindVariableFeatures(object = np16, mean.function = ExpMean, dispersion.function = LogVMR, x.low.cutoff = 0.0125, x.high.cutoff = 3, y.cutoff = 0.5, nfeatures = 2000)
+# 
+# # Scaling RNA data
+# np16 <- ScaleData(np16)
+# 
+# # Run PCA
+# np16 <- RunPCA(np16, npcs = 30, verbose = FALSE)
+# 
+# # Select top PCs for clustering
+# np16 <- FindNeighbors(np16, reduction = "pca", dims = 1:20, verbose=FALSE)
+# np16 <- FindClusters(np16, resolution = 0.5, verbose = FALSE)
+# np16 <- RunUMAP(np16, dims = 1:20, verbose=FALSE)
+# 
+# p1 <- DimPlot(np16, reduction = "umap", group.by = "orig.ident")
+# p2 <- DimPlot(np16, reduction = "umap", group.by = "clin.type")
+# p3 <- DimPlot(np16, reduction = "umap", group.by = "seurat_clusters")
+# p4 <- DimPlot(np16, reduction = "pca", group.by = "orig.ident")
+# 
+# grid.arrange(p1, p2, p3, p4, nrow=2)
+
+```
+```{r}
+# np16 <- np16 %>%
+#     RunHarmony("orig.ident", plot_convergence = TRUE)
+# 
+# # access Harmony embeddings - show top 5 rows and top 5 columns
+# harmony_embeddings <- Embeddings(np16, 'harmony')
+```
+
+```{r, fig.height=5, fig.width=12}
+# p1 <- DimPlot(object = np16, reduction = "harmony", group.by = "orig.ident")
+# p2 <- VlnPlot(object = np16, features = "harmony_1", group.by = "orig.ident", pt.size = .1)
+# p1 + p2
+```
+```{r, fig.height=5, fig.width=12}
+# p3 <- DimPlot(object = np16, reduction = "pca", group.by="orig.ident")
+# p3 + p1
+```
+
+
+```{r, fig.height=5, fig.width=20}
+# np16 <- np16 %>%
+#     RunUMAP(reduction = "harmony", dims = 1:30) %>%
+#     FindNeighbors(reduction = "harmony", dims = 1:30) %>%
+#     FindClusters(resolution = 0.5) %>%
+#     identity()
+# umap_patient <- DimPlot(np16, reduction = "umap", group.by = "orig.ident")
+# umap_clin <- DimPlot(np16, reduction = "umap", group.by = "clin.type")
+# umap_cluster <- DimPlot(np16, reduction = "umap", group.by = "seurat_clusters")
+# umap_patient + umap_clin + umap_cluster
 ```
 
 # Subset ORF3a-28 from CD8 object
 
 ```{r, fig.height=24, fig.width=34}
-Idents(cd8) <- "epitope"
-orf3a <- subset(cd8, idents="ORF3a-28")
-
-Idents(orf3a) <- "CDR3_group"
-orf3a_2 <- subset(orf3a, subset = CDR3_group !="ORF3a-28_NA")
-
-VlnPlot(object = orf3a_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-                                  "IFNG", "TNF", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                            "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", 
-                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-                                   "NKG7",  "ISG15", "TUBA1B","HAVCR2", "TIGIT", "CTLA4"),
-        ncol=6, group.by = "CDR3_group")
+# Idents(cd8) <- "epitope"
+# orf3a <- subset(cd8, idents="ORF3a-28")
+# 
+# list <- as.data.frame(orf3a$orig.ident)
+# list <- tibble::rownames_to_column(list, "cell_name")
+# list2 <- merge(list, cell_groups, by.x="cell_name", by.y="cell_name", all.x=TRUE)
+# orf3a@meta.data$CDR3_group <- list2$group
+# 
+# Idents(orf3a) <- "CDR3_group"
+# orf3a_2 <- subset(orf3a, subset = CDR3_group !="ORF3a-28_NA")
+# 
+# VlnPlot(object = orf3a_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "IFNG", "TNF", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                            "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", 
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                    "NKG7",  "ISG15", "TUBA1B","HAVCR2", "TIGIT", "CTLA4"),
+#         ncol=6, group.by = "CDR3_group")
 
 ```
 
@@ -811,4 +911,5 @@ VlnPlot(object = orf3a_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S
 # saveRDS(cd8, file="cd8_harmony.rds")
 # saveRDS(acute, file="acute_harmony.rds")
 # saveRDS(conv, file="convalescent_harmony.rds")
+
 ```
