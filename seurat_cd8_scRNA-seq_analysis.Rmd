@@ -595,43 +595,47 @@ Load each previously saved .rds file - no need to repeat harmony integration, cl
 # Gene expression violin plots
 ## All CD8+ patients
 
-```{r, fig.height=20, fig.width=18}
+```{r, fig.height=24, fig.width=18}
 VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
                                   "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
                                   "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1", 
-                                  "MKI67","TUBA1B","PDCD1", "HAVCR2", "TIGIT", "CTLA4"),
+                                  "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+                                 "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
         ncol=6, group.by = "seurat_clusters")
 ```
 
-```{r, fig.height=22, fig.width=18}
+```{r, fig.height=26, fig.width=18}
 VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
                                   "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
                                   "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1", 
-                                  "MKI67","TUBA1B","PDCD1", "HAVCR2", "TIGIT", "CTLA4"),
+                                  "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+                                 "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
         ncol=6, group.by = "epitope")
 ```
 
-```{r, fig.height=20, fig.width=18}
+```{r, fig.height=24, fig.width=18}
 VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
                                   "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
                                   "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1", 
-                                  "MKI67","TUBA1B","PDCD1", "HAVCR2", "TIGIT", "CTLA4"),
+                                  "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+                                 "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
         ncol=6, group.by = "clin.type")
 ```
 
-```{r, fig.height=22, fig.width=18}
+```{r, fig.height=26, fig.width=18}
 VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
                                   "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
                                   "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1", 
-                                  "MKI67","TUBA1B","PDCD1", "HAVCR2", "TIGIT", "CTLA4"),
+                                  "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+                                 "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
         ncol=6, group.by = "timepoint")
 ```
 
