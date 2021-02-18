@@ -596,47 +596,47 @@ Load each previously saved .rds file - no need to repeat harmony integration, cl
 ## All CD8+ patients
 
 ```{r, fig.height=24, fig.width=18}
-VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-                                  "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-                                  "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1", 
-                                  "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
-                                 "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
-        ncol=6, group.by = "seurat_clusters")
+# VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                   "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1", 
+#                                   "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+#                                  "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
+#         ncol=6, group.by = "seurat_clusters")
 ```
 
 ```{r, fig.height=26, fig.width=18}
-VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-                                  "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-                                  "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1", 
-                                  "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
-                                 "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
-        ncol=6, group.by = "epitope")
+# VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                   "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1", 
+#                                   "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+#                                  "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
+#         ncol=6, group.by = "epitope")
 ```
 
 ```{r, fig.height=24, fig.width=18}
-VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-                                  "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-                                  "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1", 
-                                  "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
-                                 "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
-        ncol=6, group.by = "clin.type")
+# VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                   "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1", 
+#                                   "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+#                                  "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
+#         ncol=6, group.by = "clin.type")
 ```
 
 ```{r, fig.height=26, fig.width=18}
-VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-                                  "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-                                  "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1", 
-                                  "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
-                                 "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
-        ncol=6, group.by = "timepoint")
+# VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                   "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1", 
+#                                   "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+#                                  "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
+#         ncol=6, group.by = "timepoint")
 ```
 
 ## Acute patients
@@ -737,27 +737,33 @@ VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A
 
 # Adding TCR grouping from clones and single cells
 ```{r}
-# cd8 <- readRDS("cd8_harmony.rds")
-# 
-# # cd8$CDR3_group <- NULL
-# 
-# cells <- as.data.frame(cd8$orig.ident)
-# cells <- tibble::rownames_to_column(cells, "cell_name")
-# colnames(cells) <- c("cell_name", "patient")
-# groups <- read.csv("/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/cd8_np16_orf3a_sc_groups.csv", header=TRUE)
-# 
-# # add 0 in front of single digit numbers
-# groups$new.group <- str_pad(groups$new.group, 2, side="left", pad="0")
-# 
-# cell_groups <- merge(cells, groups, by.x="cell_name", by.y="name", all=TRUE)
-# cell_groups <- cell_groups[-280,]
-# cell_groups <- cell_groups[!duplicated(cell_groups$cell_name),]
-# cell_groups$epitope <- ifelse(grepl("005|1131|1153|1201", cell_groups$patient), "NP16",
-#                               ifelse(grepl("1105|1134|1525", cell_groups$patient), "ORF3a-28",""))
-# 
-# cell_groups <- mutate(cell_groups, group=paste(epitope, new.group, sep="_"))
-# 
-# cd8@meta.data$CDR3_group <- as.factor(cell_groups$group)
+cd8 <- readRDS("cd8_harmony.rds")
+
+# cd8$CDR3_group <- NULL
+
+cells <- as.data.frame(cd8$orig.ident)
+cells <- tibble::rownames_to_column(cells, "cell_name")
+colnames(cells) <- c("cell_name", "patient")
+groups <- read.csv("/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/cd8_np16_orf3a_sc_groups.csv", header=TRUE)
+
+# add 0 in front of single digit numbers
+groups$new.group <- str_pad(groups$new.group, 2, side="left", pad="0")
+
+cell_groups <- merge(cells, groups, by.x="cell_name", by.y="name", all=TRUE)
+cell_groups <- cell_groups[-280,]
+cell_groups <- cell_groups[!duplicated(cell_groups$cell_name),]
+cell_groups$epitope <- ifelse(grepl("005|1131|1153|1201", cell_groups$patient), "NP16",
+                              ifelse(grepl("1105|1134|1525", cell_groups$patient), "ORF3a-28",""))
+
+cell_groups <- mutate(cell_groups, group=paste(epitope, new.group, sep="_"))
+cell_groups$avidity <- ifelse(grepl("NP16_01|NP16_05|NP16_07|NP16_08|NP16_09|NP16_12|NP16_13|NP16_14|NP16_17|NP16_18|NP16_19", cell_groups$group), "NP16 low avidity",
+                       ifelse(grepl("NP16_02|NP16_03|NP16_15|NP16_20|NP16_04", cell_groups$group), "NP16 high avidity", 
+                       ifelse(grepl("ORF3a-28_04|ORF3a-28_05|ORF3a-28_06|ORF3a-28_07", cell_groups$group), "ORF3a-28 low avidity", 
+                       ifelse(grepl("ORF3a-28_01|ORF3a-28_02|ORF3a-28_03|ORF3a-28_08", cell_groups$group), "ORF3a-28 high avidity", 
+                       ifelse(grepl("NP16_NA|ORF3a-28_NA", cell_groups$group), "NA", "")))))
+
+cd8@meta.data$CDR3_group <- as.factor(cell_groups$group)
+cd8@meta.data$avidity <- as.factor(cell_groups$avidity)
 
 ```
 
@@ -793,25 +799,29 @@ VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A
 
 # Subset NP16 from CD8 object
 
-```{r, fig.height=22, fig.width=40}
-# Idents(cd8) <- "epitope"
-# np16 <- subset(cd8, idents="NP16")
-# 
-# list <- as.data.frame(np16$orig.ident)
-# list <- tibble::rownames_to_column(list, "cell_name")
-# list2 <- merge(list, cell_groups, by.x="cell_name", by.y="cell_name", all.x=TRUE)
-# np16@meta.data$CDR3_group <- list2$group
-# 
-# Idents(np16) <- "CDR3_group"
-# np16_2 <- subset(np16, subset = CDR3_group !="NP16_NA")
-# 
-# 
-# VlnPlot(object = np16_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-#                                   "IFNG", "TNF", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                            "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", 
-#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-#                                    "NKG7",  "ISG15", "TUBA1B","HAVCR2", "TIGIT", "CTLA4"),
-#         ncol=6, group.by = "CDR3_group")
+```{r, fig.height=26, fig.width=18}
+Idents(cd8) <- "epitope"
+np16 <- subset(cd8, idents="NP16")
+
+list <- as.data.frame(np16$orig.ident)
+list <- tibble::rownames_to_column(list, "cell_name")
+list2 <- merge(list, cell_groups, by.x="cell_name", by.y="cell_name", all.x=TRUE)
+
+np16@meta.data$avidity <- list2$avidity
+np16@meta.data$CDR3_group <- list2$group
+
+Idents(np16) <- "avidity"
+np16_2 <- subset(np16, idents=c("NP16 low avidity", "NP16 high avidity"))
+
+
+VlnPlot(object = np16_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                   "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                   "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1", 
+                                   "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+                                   "KLRG1",   "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRC2"),
+        ncol=6, group.by = "avidity")
 
 ```
 
@@ -825,7 +835,7 @@ VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A
 #                                    "NKG7",  "ISG15", "TUBA1B","HAVCR2", "TIGIT", "CTLA4"),
 #         ncol=6, group.by = "clin.type")
 ```
-
+## Harmony integration of CD8+ NP16
 
 ```{r, fig.height=8, fig.width=12}
 # Select the top 1000 most variable features
@@ -883,24 +893,28 @@ VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A
 
 # Subset ORF3a-28 from CD8 object
 
-```{r, fig.height=24, fig.width=34}
-# Idents(cd8) <- "epitope"
-# orf3a <- subset(cd8, idents="ORF3a-28")
-# 
-# list <- as.data.frame(orf3a$orig.ident)
-# list <- tibble::rownames_to_column(list, "cell_name")
-# list2 <- merge(list, cell_groups, by.x="cell_name", by.y="cell_name", all.x=TRUE)
-# orf3a@meta.data$CDR3_group <- list2$group
-# 
-# Idents(orf3a) <- "CDR3_group"
-# orf3a_2 <- subset(orf3a, subset = CDR3_group !="ORF3a-28_NA")
-# 
-# VlnPlot(object = orf3a_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-#                                   "IFNG", "TNF", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                            "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", 
-#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-#                                    "NKG7",  "ISG15", "TUBA1B","HAVCR2", "TIGIT", "CTLA4"),
-#         ncol=6, group.by = "CDR3_group")
+```{r, fig.height=32, fig.width=18}
+Idents(cd8) <- "epitope"
+orf3a <- subset(cd8, idents="ORF3a-28")
+
+list <- as.data.frame(orf3a$orig.ident)
+list <- tibble::rownames_to_column(list, "cell_name")
+list2 <- merge(list, cell_groups, by.x="cell_name", by.y="cell_name", all.x=TRUE)
+
+orf3a@meta.data$avidity <- list2$avidity
+orf3a@meta.data$CDR3_group <- list2$group
+
+Idents(orf3a) <- "avidity"
+orf3a_2 <- subset(orf3a, idents=c("ORF3a-28 low avidity", "ORF3a-28 high avidity"))
+
+VlnPlot(object = orf3a_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                   "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                   "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1", 
+                                   "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+                                   "KLRG1",   "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRC2"),
+        ncol=6, group.by = "avidity")
 
 ```
 
