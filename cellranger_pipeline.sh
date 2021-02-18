@@ -154,3 +154,27 @@ cellranger count --id=count_T1_Dong050121 \
 --fastqs=/well/jknight/users/jln789/10x_Dong050121/fastq_Dong050121/outs/fastq_path/ \
 --sample=Dong_050121_GEX_T1 \
 --transcriptome=/well/htseq/Genomes/refdata-cellranger-2020-A/refdata-gex-GRCh38-2020-A
+
+
+###########################
+# cellranger vdj for TCR sequencing
+
+#!/bin/bash
+#SBATCH --partition=batch
+#SBATCH --job-name=vdj
+#SBATCH --nodes=1
+#SBATCH --mem=128G
+#SBATCH --time=07-00:00:00
+#SBATCH --output=%j_%x.out
+#SBATCH --error=%j_%x.err
+
+
+cd /t1-data/user/lfelce/CellRanger_VDJ/10x_Dong050121_TCR/
+
+module load cellranger/5.0.0
+
+cellranger vdj --id=TCR_T2 \
+--fastqs=/t1-data/user/lfelce/10x_Dong050121/VDJ/vdj_fastq/outs/fastq_path \
+--reference=/databank/10x-rangers/refdata-cellranger-vdj-GRCh38-alts-ensembl-4.0.0 \
+--sample=Dong_050121_TCR_T2 \
+
