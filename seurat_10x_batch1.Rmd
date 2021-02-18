@@ -34,7 +34,7 @@ Note: hashtag 5 and 6 mixed up?
 
 ### Separate Gene Expression and Antibody Capture
 ```{r}
-# # Read in data
+# Read in data
 # batch1.counts <- Read10X(data.dir = "/t1-data/user/lfelce/10x_DONG171220/counts_gex/filtered_feature_bc_matrix")
 # colnames(batch1.counts) <- gsub(x = colnames(batch1.counts), pattern = "-1", replacement = "")
 # 
@@ -216,47 +216,47 @@ Output from running HTODemux is saved in metadata. Can visualise cells classifie
 
 #### Gene expression by epitope
 ```{r, fig.width=20, fig.height=28}
-batch1 <- readRDS("batch1_seurat.rds")
-
-VlnPlot(object = batch1, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-                                  "TBX21", "IFNG", "LTA", "TNF", "CISH", "IL2RA",
-                                  "IL13", "TGFB1", "CCL3", "CCL4", "CCL5", "CCR1",
-                                  "CCR2",  "CCR4", "CCR5", "CXCR3", "CXCR4", "CXCR6",
-                                  "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-                                   "NKG7", "XCL1", "FASLG", "OAS1", "MX1", "ISG15",  
-                                  "MKI67", "TUBA1B","HAVCR2", "CD244", "KLRG1", "TIGIT"),
-        ncol=6, group.by = "epitope")
+# batch1 <- readRDS("batch1_seurat.rds")
+# 
+# VlnPlot(object = batch1, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "TBX21", "IFNG", "LTA", "TNF", "CISH", "IL2RA",
+#                                   "IL13", "TGFB1", "CCL3", "CCL4", "CCL5", "CCR1",
+#                                   "CCR2",  "CCR4", "CCR5", "CXCR3", "CXCR4", "CXCR6",
+#                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                    "NKG7", "XCL1", "FASLG", "OAS1", "MX1", "ISG15",  
+#                                   "MKI67", "TUBA1B","HAVCR2", "CD244", "KLRG1", "TIGIT"),
+#         ncol=6, group.by = "epitope")
 ```
 
 
 #### Gene expression by cluster
 
 ```{r, fig.width=30, fig.height=32}
-VlnPlot(object = batch1, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-                                  "TBX21", "IFNG", "LTA", "TNF", "CISH", "IL2RA",
-                                  "IL13", "TGFB1", "CCL3", "CCL4", "CCL5", "CCR1",
-                                  "CCR2",  "CCR4", "CCR5", "CXCR3", "CXCR4", "CXCR6",
-                                  "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-                                   "NKG7", "XCL1", "FASLG", "OAS1", "MX1", "ISG15",  
-                                  "MKI67", "TUBA1B","HAVCR2", "CD244", "KLRG1", "TIGIT"),
-        ncol=6, group.by = "seurat_clusters")
+# VlnPlot(object = batch1, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "TBX21", "IFNG", "LTA", "TNF", "CISH", "IL2RA",
+#                                   "IL13", "TGFB1", "CCL3", "CCL4", "CCL5", "CCR1",
+#                                   "CCR2",  "CCR4", "CCR5", "CXCR3", "CXCR4", "CXCR6",
+#                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                    "NKG7", "XCL1", "FASLG", "OAS1", "MX1", "ISG15",  
+#                                   "MKI67", "TUBA1B","HAVCR2", "CD244", "KLRG1", "TIGIT"),
+#         ncol=6, group.by = "seurat_clusters")
 ```
 
 ```{r, fig.height=30, fig.width=34}
-FeaturePlot(object = batch1, features = c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-                                  "TBX21", "IFNG", "LTA", "TNF", "CISH", "IL2RA",
-                                  "IL13", "TGFB1", "CCL3", "CCL4", "CCL5", "CCR1",
-                                  "CCR2",  "CCR4", "CCR5", "CXCR3", "CXCR4", "CXCR6",
-                                  "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-                                   "NKG7", "XCL1", "FASLG", "OAS1", "MX1", "ISG15",  
-                                  "MKI67", "TUBA1B","HAVCR2", "CD244", "KLRG1", "TIGIT"),
-             cols = c("grey", "blue"), reduction = "umap", ncol=6)
+# FeaturePlot(object = batch1, features = c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "TBX21", "IFNG", "LTA", "TNF", "CISH", "IL2RA",
+#                                   "IL13", "TGFB1", "CCL3", "CCL4", "CCL5", "CCR1",
+#                                   "CCR2",  "CCR4", "CCR5", "CXCR3", "CXCR4", "CXCR6",
+#                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                    "NKG7", "XCL1", "FASLG", "OAS1", "MX1", "ISG15",  
+#                                   "MKI67", "TUBA1B","HAVCR2", "CD244", "KLRG1", "TIGIT"),
+#              cols = c("grey", "blue"), reduction = "umap", ncol=6)
 
 
 ```
@@ -427,34 +427,34 @@ FeaturePlot(object = batch1, features = c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R
 ```
 
 ```{r, fig.width=26, fig.height=26}
-covid_flu <- readRDS("covid_flu_seurat_integrated.rds")
-
-DefaultAssay(covid_flu) <- "RNA"
-
-VlnPlot(object = covid_flu, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-                                  "TBX21", "IFNG", "LTA", "TNF", "CISH", "IL2RA",
-                                  "IL13", "TGFB1", "CCL3", "CCL4", "CCL5", "CCR1",
-                                  "CCR2",  "CCR4", "CCR5", "CXCR3", "CXCR4", "CXCR6",
-                                  "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-                                   "NKG7", "XCL1", "FASLG", "OAS1", "MX1", "ISG15",  
-                                  "MKI67", "TUBA1B","HAVCR2", "CD244", "KLRG1", "TIGIT"),
-        ncol=6, group.by = "seurat_clusters")
+# covid_flu <- readRDS("covid_flu_seurat_integrated.rds")
+# 
+# DefaultAssay(covid_flu) <- "RNA"
+# 
+# VlnPlot(object = covid_flu, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "TBX21", "IFNG", "LTA", "TNF", "CISH", "IL2RA",
+#                                   "IL13", "TGFB1", "CCL3", "CCL4", "CCL5", "CCR1",
+#                                   "CCR2",  "CCR4", "CCR5", "CXCR3", "CXCR4", "CXCR6",
+#                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                    "NKG7", "XCL1", "FASLG", "OAS1", "MX1", "ISG15",  
+#                                   "MKI67", "TUBA1B","HAVCR2", "CD244", "KLRG1", "TIGIT"),
+#         ncol=6, group.by = "seurat_clusters")
 
 ```
 
 ```{r, fig.width=24, fig.height=30}
-VlnPlot(object = covid_flu, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-                                  "TBX21", "IFNG", "LTA", "TNF", "CISH", "IL2RA",
-                                  "IL13", "TGFB1", "CCL3", "CCL4", "CCL5", "CCR1",
-                                  "CCR2",  "CCR4", "CCR5", "CXCR3", "CXCR4", "CXCR6",
-                                  "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-                                   "NKG7", "XCL1", "FASLG", "OAS1", "MX1", "ISG15",  
-                                  "MKI67", "TUBA1B","HAVCR2", "CD244", "KLRG1", "TIGIT"),
-        ncol=6, group.by = "epitope")
+# VlnPlot(object = covid_flu, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "TBX21", "IFNG", "LTA", "TNF", "CISH", "IL2RA",
+#                                   "IL13", "TGFB1", "CCL3", "CCL4", "CCL5", "CCR1",
+#                                   "CCR2",  "CCR4", "CCR5", "CXCR3", "CXCR4", "CXCR6",
+#                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                    "NKG7", "XCL1", "FASLG", "OAS1", "MX1", "ISG15",  
+#                                   "MKI67", "TUBA1B","HAVCR2", "CD244", "KLRG1", "TIGIT"),
+#         ncol=6, group.by = "epitope")
 
 
 ```
@@ -567,33 +567,33 @@ VlnPlot(object = covid_flu, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", 
 
 #### Gene expression by epitope
 ```{r, fig.width=24, fig.height=32}
-cd8 <- readRDS("covid_flu_cd8_seurat_integrated.rds")
-
-DefaultAssay(cd8) <- "RNA"
-
-VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-                                  "TBX21", "IFNG", "LTA", "TNF", "CISH", "IL2RA",
-                                  "IL13", "TGFB1", "CCL3", "CCL4", "CCL5", "CCR1",
-                                  "CCR2",  "CCR4", "CCR5", "CXCR3", "CXCR4", "CXCR6",
-                                  "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-                                   "NKG7", "XCL1", "FASLG", "OAS1", "MX1", "ISG15",  
-                                  "MKI67", "TUBA1B","HAVCR2", "CD244", "KLRG1", "TIGIT"),
-        ncol=6, group.by = "epitope")
+# cd8 <- readRDS("covid_flu_cd8_seurat_integrated.rds")
+# 
+# DefaultAssay(cd8) <- "RNA"
+# 
+# VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "TBX21", "IFNG", "LTA", "TNF", "CISH", "IL2RA",
+#                                   "IL13", "TGFB1", "CCL3", "CCL4", "CCL5", "CCR1",
+#                                   "CCR2",  "CCR4", "CCR5", "CXCR3", "CXCR4", "CXCR6",
+#                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                    "NKG7", "XCL1", "FASLG", "OAS1", "MX1", "ISG15",  
+#                                   "MKI67", "TUBA1B","HAVCR2", "CD244", "KLRG1", "TIGIT"),
+#         ncol=6, group.by = "epitope")
 ```
 #### Gene expression by cluster
 ```{r, fig.width=24, fig.height=26}
-VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-                                  "TBX21", "IFNG", "LTA", "TNF", "CISH", "IL2RA",
-                                  "IL13", "TGFB1", "CCL3", "CCL4", "CCL5", "CCR1",
-                                  "CCR2",  "CCR4", "CCR5", "CXCR3", "CXCR4", "CXCR6",
-                                  "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-                                   "NKG7", "XCL1", "FASLG", "OAS1", "MX1", "ISG15",  
-                                  "MKI67", "TUBA1B","HAVCR2", "CD244", "KLRG1", "TIGIT"),
-        ncol=6, group.by = "seurat_clusters")
+# VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "TBX21", "IFNG", "LTA", "TNF", "CISH", "IL2RA",
+#                                   "IL13", "TGFB1", "CCL3", "CCL4", "CCL5", "CCR1",
+#                                   "CCR2",  "CCR4", "CCR5", "CXCR3", "CXCR4", "CXCR6",
+#                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                    "NKG7", "XCL1", "FASLG", "OAS1", "MX1", "ISG15",  
+#                                   "MKI67", "TUBA1B","HAVCR2", "CD244", "KLRG1", "TIGIT"),
+#         ncol=6, group.by = "seurat_clusters")
 
 ```
 ### Subset CD8 cells only from Covid object
@@ -622,31 +622,27 @@ VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A
 #### Gene expression by epitope
 ```{r, fig.width=20, fig.height=28}
 
-batch1_cd8 <- readRDS("batch1_cd8_seurat.rds")
-
-VlnPlot(object = batch1_cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-                                  "TBX21", "IFNG", "LTA", "TNF", "CISH", "IL2RA",
-                                  "IL13", "TGFB1", "CCL3", "CCL4", "CCL5", "CCR1",
-                                  "CCR2",  "CCR4", "CCR5", "CXCR3", "CXCR4", "CXCR6",
-                                  "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-                                   "NKG7", "XCL1", "FASLG", "OAS1", "MX1", "ISG15",  
-                                  "MKI67", "TUBA1B","HAVCR2", "CD244", "KLRG1", "TIGIT"),
-        ncol=6, group.by = "epitope")
+# batch1_cd8 <- readRDS("batch1_cd8_seurat.rds")
+# 
+# VlnPlot(object = batch1_cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                   "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1", 
+#                                   "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+#                                  "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
+#         ncol=6, group.by = "epitope")
 ```
 #### Gene expression by cluster
 ```{r, fig.width=26, fig.height=26}
-VlnPlot(object = batch1_cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-                                  "TBX21", "IFNG", "LTA", "TNF", "CISH", "IL2RA",
-                                  "IL13", "TGFB1", "CCL3", "CCL4", "CCL5", "CCR1",
-                                  "CCR2",  "CCR4", "CCR5", "CXCR3", "CXCR4", "CXCR6",
-                                  "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-                                   "NKG7", "XCL1", "FASLG", "OAS1", "MX1", "ISG15",  
-                                  "MKI67", "TUBA1B","HAVCR2", "CD244", "KLRG1", "TIGIT"),
-        ncol=6, group.by = "seurat_clusters")
+# VlnPlot(object = batch1_cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                   "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1", 
+#                                   "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+#                                  "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
+#         ncol=6, group.by = "seurat_clusters")
 ```
 ### Subset spike cells only from Covid object
 ```{r, fig.height=7, fig.width=12}
@@ -674,31 +670,31 @@ VlnPlot(object = batch1_cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R",
 ```
 #### Gene expression by sample
 ```{r, fig.width=20, fig.height=34}
-spike <- readRDS("batch1_spike_seurat.rds")
-
-VlnPlot(object = spike, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-                                  "TBX21", "IFNG", "LTA", "TNF", "CISH", "IL2RA",
-                                  "IL13", "TGFB1", "CCL3", "CCL4", "CCL5", "CCR1",
-                                  "CCR2",  "CCR4", "CCR5", "CXCR3", "CXCR4", "CXCR6",
-                                  "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-                                   "NKG7", "XCL1", "FASLG", "OAS1", "MX1", "ISG15",  
-                                  "MKI67", "TUBA1B","HAVCR2", "CD244", "KLRG1", "TIGIT"),
-        ncol=6, group.by = "hashtag_classification")
+# spike <- readRDS("batch1_spike_seurat.rds")
+# 
+# VlnPlot(object = spike, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "TBX21", "IFNG", "LTA", "TNF", "CISH", "IL2RA",
+#                                   "IL13", "TGFB1", "CCL3", "CCL4", "CCL5", "CCR1",
+#                                   "CCR2",  "CCR4", "CCR5", "CXCR3", "CXCR4", "CXCR6",
+#                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                    "NKG7", "XCL1", "FASLG", "OAS1", "MX1", "ISG15",  
+#                                   "MKI67", "TUBA1B","HAVCR2", "CD244", "KLRG1", "TIGIT"),
+#         ncol=6, group.by = "hashtag_classification")
 ```
 #### Gene expression by cluster
 ```{r, fig.width=24, fig.height=28}
-VlnPlot(object = spike, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-                                  "TBX21", "IFNG", "LTA", "TNF", "CISH", "IL2RA",
-                                  "IL13", "TGFB1", "CCL3", "CCL4", "CCL5", "CCR1",
-                                  "CCR2",  "CCR4", "CCR5", "CXCR3", "CXCR4", "CXCR6",
-                                  "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-                                   "NKG7", "XCL1", "FASLG", "OAS1", "MX1", "ISG15",  
-                                  "MKI67", "TUBA1B","HAVCR2", "CD244", "KLRG1", "TIGIT"),
-        ncol=6, group.by = "seurat_clusters")
+# VlnPlot(object = spike, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "TBX21", "IFNG", "LTA", "TNF", "CISH", "IL2RA",
+#                                   "IL13", "TGFB1", "CCL3", "CCL4", "CCL5", "CCR1",
+#                                   "CCR2",  "CCR4", "CCR5", "CXCR3", "CXCR4", "CXCR6",
+#                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                    "NKG7", "XCL1", "FASLG", "OAS1", "MX1", "ISG15",  
+#                                   "MKI67", "TUBA1B","HAVCR2", "CD244", "KLRG1", "TIGIT"),
+#         ncol=6, group.by = "seurat_clusters")
 ```
 
 
@@ -706,105 +702,227 @@ VlnPlot(object = spike, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S10
 ### Combined GEX and Antibody Hashtag
 Combined by putting two rows in libraries.csv for Feature Barcode analysis (cellranger count) for library_type Gene Expression and Antibody Capture. Followed 
 https://satijalab.org/seurat/articles/multimodal_vignette.html to create Seurat object with two assays - RNA and HTO. Then use HTODemux().
+
+Discussion with Andrew Kwok - decided this was the better method as Cellranger already intersects barcodes, so retains more cells for analysis (4656 singlets vs 3695)
 ```{r}
-# # Read in data
-# batch1.counts <- Read10X(data.dir = "/t1-data/user/lfelce/10x_DONG171220/counts_combined_2/filtered_feature_bc_matrix")
-# 
-# # Remove -1 from barcodes
-# colnames(batch1.counts$`Gene Expression`) <- gsub(x = colnames(batch1.counts$`Gene Expression`), pattern = "-1", replacement = "")
-# 
-# colnames(batch1.counts$`Antibody Capture`) <- gsub(x = colnames(batch1.counts$`Antibody Capture`), pattern = "-1", replacement = "")
-# 
-# # Remove Hashtag 3 from Antibody Capture (no cells)
-# batch1.counts$`Antibody Capture` <- batch1.counts$`Antibody Capture`[-3,]
-# 
-# # Rename rows to sample names
-# rownames(batch1.counts$`Antibody Capture`) <- c("1180_CD4_M24", "1344_CD4_S51", "1344_CD4_S174", "1180_CD8_S76", "1180_CD8_ORF3a-28", "1344_CD8_NP1", "1344_CD8_NP13")
-# 
-# # Create Seurat object from Gene Expression
-# batch1 <- CreateSeuratObject(counts = batch1.counts$`Gene Expression`)
-# 
-# # Normalize RNA data with log normalization
-# DefaultAssay(batch1) <- "RNA"
-# batch1 <- NormalizeData(batch1)
-# 
-# # Find and scale variable features
-# batch1 <- FindVariableFeatures(batch1, selection.method = "mean.var.plot")
-# batch1 <- ScaleData(batch1, features = VariableFeatures(batch1))
-# 
-# # Add HTO data as a new assay independent from RNA
-# batch1[["HTO"]] <- CreateAssayObject(counts = batch1.counts$`Antibody Capture`)
-# 
-# # Normalize HTO data, here we use centered log-ratio (CLR) transformation
-# batch1 <- NormalizeData(batch1, assay = "HTO", normalization.method = "CLR")
-# 
-# # Demultiplex cells based on hashtag enrichment - use HTODemux() to assign single cells back to sample origins
-# # If you have a very large dataset we suggest using k_function = 'clara'. This is a k-medoid
-# # clustering function for large applications You can also play with additional parameters (see
-# # documentation for HTODemux()) to adjust the threshold for classification Here we are using the
-# # default settings
-# batch1 <- HTODemux(batch1, assay = "HTO", positive.quantile = 0.99)
-# 
-# table(batch1$HTO_classification.global)
-# 
-# Idents(batch1) <- "HTO_classification.global"
-# VlnPlot(batch1, features = "nCount_RNA", pt.size = 0.1, log = TRUE)
+# Read in data
+batch1.counts <- Read10X(data.dir = "/t1-data/user/lfelce/10x_DONG171220/counts_combined_2/filtered_feature_bc_matrix")
+
+# Remove -1 from barcodes
+colnames(batch1.counts$`Gene Expression`) <- gsub(x = colnames(batch1.counts$`Gene Expression`), pattern = "-1", replacement = "")
+
+colnames(batch1.counts$`Antibody Capture`) <- gsub(x = colnames(batch1.counts$`Antibody Capture`), pattern = "-1", replacement = "")
+
+# Remove Hashtag 3 from Antibody Capture (no cells)
+batch1.counts$`Antibody Capture` <- batch1.counts$`Antibody Capture`[-3,]
+
+# Rename rows to sample names
+rownames(batch1.counts$`Antibody Capture`) <- c("1180_CD4_M24", "1344_CD4_S51", "1344_CD4_S174", "1180_CD8_S76", "1180_CD8_ORF3a-28", "1344_CD8_NP1", "1344_CD8_NP13")
+
+# Create Seurat object from Gene Expression
+batch1 <- CreateSeuratObject(counts = batch1.counts$`Gene Expression`)
+
+# Normalize RNA data with log normalization
+DefaultAssay(batch1) <- "RNA"
+batch1 <- NormalizeData(batch1)
+
+# Find and scale variable features
+batch1 <- FindVariableFeatures(batch1, selection.method = "mean.var.plot")
+batch1 <- ScaleData(batch1, features = VariableFeatures(batch1))
+
+# Add HTO data as a new assay independent from RNA
+batch1[["HTO"]] <- CreateAssayObject(counts = batch1.counts$`Antibody Capture`)
+
+# Normalize HTO data, here we use centered log-ratio (CLR) transformation
+batch1 <- NormalizeData(batch1, assay = "HTO", normalization.method = "CLR")
+
+# Demultiplex cells based on hashtag enrichment - use HTODemux() to assign single cells back to sample origins
+# If you have a very large dataset we suggest using k_function = 'clara'. This is a k-medoid
+# clustering function for large applications You can also play with additional parameters (see
+# documentation for HTODemux()) to adjust the threshold for classification Here we are using the
+# default settings
+batch1 <- HTODemux(batch1, assay = "HTO", positive.quantile = 0.99)
+
+table(batch1$HTO_classification.global)
+
+Idents(batch1) <- "HTO_classification.global"
+VlnPlot(batch1, features = "nCount_RNA", pt.size = 0.1, log = TRUE)
 
 ```
 Cluster and visualize cells using the usual scRNA-seq workflow, and examine for the potential presence of batch effects.
 
-```{r, fig.width=18, fig.height=16}
-# # Extract the singlets
-# batch1.singlet <- subset(batch1, idents = "Singlet")
-# 
-# # Assign metadata to object
-# patient_list <- as.data.frame(batch1.singlet@meta.data$HTO_classification)
-# colnames(patient_list) <- "sample"
-# patient_list$patient <- ifelse(grepl("1180", patient_list$sample), "1180",
-#                                ifelse(grepl("1344", patient_list$sample), "1344", ""))
-# patient_list$subset <- ifelse(grepl("CD4", patient_list$sample), "CD4",
-#                                ifelse(grepl("CD8", patient_list$sample), "CD8", ""))
-# patient_list$epitope <- ifelse(grepl("M24", patient_list$sample), "membrane",
-#                         ifelse(grepl("S51", patient_list$sample), "spike",
-#                         ifelse(grepl("S174", patient_list$sample), "spike",
-#                         ifelse(grepl("S76", patient_list$sample), "spike",
-#                         ifelse(grepl("ORF3a-28", patient_list$sample), "ORF3a",
-#                         ifelse(grepl("NP1", patient_list$sample), "nucleoprotein",
-#                         ifelse(grepl("NP13", patient_list$sample), "nucleoprotein", "")))))))
-# 
-# batch1.singlet@meta.data$"epitope" <- as.factor(patient_list$epitope)
-# batch1.singlet@meta.data$"patient" <- as.factor(patient_list$patient)
-# batch1.singlet@meta.data$"t-cell" <- as.factor(patient_list$subset)
-# 
-# # Select the top 1000 most variable features
-# batch1.singlet <- FindVariableFeatures(batch1.singlet, selection.method = "mean.var.plot")
-# 
-# # Scaling RNA data
-# batch1.singlet <- ScaleData(batch1.singlet, features = VariableFeatures(batch1.singlet))
-# 
-# # Run PCA
-# batch1.singlet <- RunPCA(batch1.singlet, features = VariableFeatures(batch1.singlet))
-# 
-# # Select top PCs for clustering
-# batch1.singlet <- FindNeighbors(batch1.singlet, reduction = "pca", dims = 1:20)
-# batch1.singlet <- FindClusters(batch1.singlet, resolution = 0.3, verbose = FALSE)
-# batch1.singlet <- RunUMAP(batch1.singlet, dims = 1:20)
-# batch1.singlet <- RunTSNE(batch1.singlet, reduction = "pca", dims = 1:20)
-# 
-# # Projecting singlet identities on UMAP visualization
-# tsne <- DimPlot(batch1.singlet, reduction="tsne", group.by = "HTO_classification")
-# pca <- DimPlot(batch1.singlet, reduction="pca", group.by="HTO_classification")
-# 
-# umap_cluster <- DimPlot(batch1.singlet, reduction="umap", group.by = "seurat_clusters")
-# umap_tcell <- DimPlot(batch1.singlet, reduction="umap", group.by = "t-cell")
-# umap_epitope <- DimPlot(batch1.singlet, reduction="umap", group.by = "epitope")
-# umap_patient <- DimPlot(batch1.singlet, reduction="umap", group.by = "patient")
-# 
-# grid.arrange(tsne, pca, umap_cluster, umap_tcell, umap_epitope, umap_patient, nrow=3)
+```{r}
+# Extract the singlets
+batch1.singlet <- subset(batch1, idents = "Singlet")
+
+# Assign metadata to object
+patient_list <- as.data.frame(batch1.singlet@meta.data$HTO_classification)
+colnames(patient_list) <- "sample"
+patient_list$patient <- ifelse(grepl("1180", patient_list$sample), "1180",
+                               ifelse(grepl("1344", patient_list$sample), "1344", ""))
+patient_list$subset <- ifelse(grepl("CD4", patient_list$sample), "CD4",
+                               ifelse(grepl("CD8", patient_list$sample), "CD8", ""))
+patient_list$epitope <- ifelse(grepl("M24", patient_list$sample), "membrane",
+                        ifelse(grepl("S51", patient_list$sample), "spike",
+                        ifelse(grepl("S174", patient_list$sample), "spike",
+                        ifelse(grepl("S76", patient_list$sample), "spike",
+                        ifelse(grepl("ORF3a-28", patient_list$sample), "ORF3a",
+                        ifelse(grepl("NP1", patient_list$sample), "nucleoprotein",
+                        ifelse(grepl("NP13", patient_list$sample), "nucleoprotein", "")))))))
+
+batch1.singlet@meta.data$"epitope" <- as.factor(patient_list$epitope)
+batch1.singlet@meta.data$"patient" <- as.factor(patient_list$patient)
+batch1.singlet@meta.data$"t-cell" <- as.factor(patient_list$subset)
+
+# Select the top 1000 most variable features
+batch1.singlet <- FindVariableFeatures(batch1.singlet, selection.method = "mean.var.plot")
+
+# Scaling RNA data
+batch1.singlet <- ScaleData(batch1.singlet, features = VariableFeatures(batch1.singlet))
+
+# Run PCA
+batch1.singlet <- RunPCA(batch1.singlet, features = VariableFeatures(batch1.singlet))
+
+# Select top PCs for clustering
+batch1.singlet <- FindNeighbors(batch1.singlet, reduction = "pca", dims = 1:30, verbose=FALSE)
+batch1.singlet <- FindClusters(batch1.singlet, resolution = 0.5, verbose = FALSE)
+batch1.singlet <- RunUMAP(batch1.singlet, dims = 1:30, verbose=FALSE)
+batch1.singlet <- RunTSNE(batch1.singlet, reduction = "pca", dims = 1:30, verbose=FALSE)
+
+# Projecting singlet identities on UMAP visualization
+tsne <- DimPlot(batch1.singlet, reduction="tsne", group.by = "epitope")
+pca <- DimPlot(batch1.singlet, reduction="pca", group.by="epitope")
+
+umap_cluster <- DimPlot(batch1.singlet, reduction="umap", group.by = "seurat_clusters")
+umap_tcell <- DimPlot(batch1.singlet, reduction="umap", group.by = "t-cell")
+umap_epitope <- DimPlot(batch1.singlet, reduction="umap", group.by = "epitope")
+umap_patient <- DimPlot(batch1.singlet, reduction="umap", group.by = "HTO_classification")
+```
+
+```{r, fig.width=16, fig.height=16}
+
+grid.arrange(tsne, pca, umap_cluster, umap_tcell, umap_epitope, umap_patient, nrow=3)
 
 ```
 
+#### Gene expression (violin plots)
+```{r, fig.width=18, fig.height=24}
+batch1 <- readRDS("batch1_combined_seurat.rds")
 
+VlnPlot(object = batch1, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
+                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                  "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                  "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
+                                  "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+                                 "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
+        ncol=6, group.by = "epitope")
+```
+```{r, fig.width=32, fig.height=24}
+batch1 <- readRDS("batch1_combined_seurat.rds")
 
+VlnPlot(object = batch1, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
+                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                  "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                  "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
+                                  "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+                                 "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
+        ncol=6, group.by = "seurat_clusters")
+```
+### Subset CD8 cells only from Covid object
+```{r, fig.height=12, fig.width=14}
+# read in batch1 seurat and subset CD8 cells
+# batch1 <- readRDS("batch1_combined_seurat.rds")
+DefaultAssay(batch1) <- "RNA"
+Idents(batch1) <- "t-cell"
+cd8 <- subset(batch1, idents = "CD8")
 
+# Run the standard workflow for visualization and clustering
+cd8 <- ScaleData(cd8, verbose = FALSE)
+cd8 <- RunPCA(cd8, npcs = 30, verbose = FALSE)
+cd8 <- RunUMAP(cd8, reduction = "pca", dims = 1:30, verbose=FALSE)
+cd8 <- FindNeighbors(cd8, reduction = "pca", dims = 1:30, verbose=FALSE)
+cd8 <- FindClusters(cd8, resolution = 0.5)
+# Visualization
+p1 <- DimPlot(cd8, reduction = "umap", group.by = "seurat_clusters", label = TRUE, repel = TRUE)
+p2 <- DimPlot(cd8, reduction = "umap", group.by="patient")
+p3 <- DimPlot(cd8, reduction="umap", group.by="epitope")
+p4 <- DimPlot(cd8, reduction="pca", group.by="epitope")
+p5 <- DimPlot(cd8, reduction="umap", group.by="HTO_classification")
 
+grid.arrange(p1, p2, p3, p5, p4, nrow=3)
+
+# saveRDS(cd8, "batch1_combined_cd8_seurat.rds")
+```
+#### Gene expression 
+```{r, fig.width=26, fig.height=24}
+# cd8 <- readRDS("batch1_combined_cd8_seurat.rds")
+VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
+                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                  "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                  "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
+                                  "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+                                 "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
+        ncol=6, group.by = "seurat_clusters")
+```
+
+```{r, fig.width=22, fig.height=28}
+VlnPlot(object = cd8, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
+                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                  "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                  "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
+                                  "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+                                 "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
+        ncol=6, group.by = "epitope")
+```
+### Subset spike cells only from Covid object
+```{r, fig.height=8, fig.width=13}
+# read in batch1 seurat and subset CD8 cells
+# batch1 <- readRDS("batch1_combined_seurat.rds")
+DefaultAssay(batch1) <- "RNA"
+
+Idents(batch1) <- "epitope"
+spike <- subset(batch1, idents = "spike")
+
+# Run the standard workflow for visualization and clustering
+spike <- ScaleData(spike, verbose = FALSE)
+spike <- RunPCA(spike, npcs = 30, verbose = FALSE)
+spike <- RunUMAP(spike, reduction = "pca", dims = 1:30, verbose=FALSE)
+spike <- FindNeighbors(spike, reduction = "pca", dims = 1:30, verbose=FALSE)
+spike <- FindClusters(spike, resolution = 0.3, verbose=FALSE)
+# Visualization
+p1 <- DimPlot(spike, reduction = "umap", group.by = "seurat_clusters", label = TRUE, repel = TRUE)
+p2 <- DimPlot(spike, reduction = "umap", group.by="HTO_classification")
+p3 <- DimPlot(spike, reduction="umap", group.by="t-cell")
+p4 <- DimPlot(spike, reduction="pca", group.by="patient")
+
+grid.arrange(p1, p2, p3, p4, nrow=2)
+
+# saveRDS(spike, "batch1_combined_spike_seurat.rds")
+```
+#### Gene expression 
+```{r, fig.width=20, fig.height=28}
+# spike <- readRDS("batch1_combined_spike_seurat.rds")
+VlnPlot(object = spike, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
+                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                  "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                  "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
+                                  "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+                                 "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
+        ncol=6, group.by = "HTO_classification")
+```
+
+```{r, fig.width=20, fig.height=24}
+VlnPlot(object = spike, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
+                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                  "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                  "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
+                                  "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+                                 "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
+        ncol=6, group.by = "seurat_clusters")
+```
