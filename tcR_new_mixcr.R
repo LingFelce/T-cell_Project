@@ -4,7 +4,6 @@ library(tcR)
 library(tidyverse)
 library(data.table)
 library(stringr)
-library(vegan)
 library(plyr)
 library(dplyr)
 
@@ -110,9 +109,8 @@ colnames(trb) <- c("clone_count", "clone_fraction","CDR3_beta", "TRBV", "TRBJ", 
 trb <- merge(trb, mixcr_b_names, by="cell_number")
 
 
-# combine TRA and TRB dataframes - some cells will have only 1 alpha or 1 beta, so keep all rows
-# note this is trying out Benny's example of matching cells with 1 alpha or 1 beta to existing alpha-beta pair
-cd8_np16 <- merge(tra,trb, by="cell_name", all= TRUE)
+# combine TRA and TRB dataframes
+cd8_np16 <- merge(tra,trb, by="cell_name")
 
 cd8_np16 <- mutate(cd8_np16, alpha=paste(TRAV, TRAJ, sep="_"))
 
@@ -120,7 +118,7 @@ cd8_np16 <- mutate(cd8_np16, beta=paste(TRBV, TRBJ, sep="_"))
 
 setwd('/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/')
 
-write.csv(cd8_np16, "cd8_np16_all_sc_tcr.csv")
+write.csv(cd8_np16, "cd8_np16_complete_sc_tcr.csv")
 
 # tabulate to get dominant alpha-beta pairing
 # 005 
@@ -178,8 +176,8 @@ trb_list <- trb_list %>% str_replace("./*", "")
 trb_list <-trb_list[!str_detect(trb_list,pattern="minibulk")]
 
 # parse mixcr files
-mixcr_a <- parse.file.list(tra_names, "mixcr")
-mixcr_b <- parse.file.list(trb_names, "mixcr")
+mixcr_a <- parse.file.list(tra_list, "mixcr")
+mixcr_b <- parse.file.list(trb_list, "mixcr")
 
 # sort alphabetically
 mixcr_a <- mixcr_a[order(names(mixcr_a))]
@@ -197,32 +195,31 @@ mixcr_b_names <- tibble::rownames_to_column(mixcr_b_names, "cell_number")
 colnames(mixcr_a_names) <- c("cell_number", "cell_name")
 colnames(mixcr_b_names) <- c("cell_number", "cell_name")
 
-# convert mixcr lists to dataframe with just V.gene and J.gene info
-
 # mixcr_a
 datalist = list()
-for (i in (1:(length(mixcr_a)))) {
-  dat <- data.frame(c(mixcr_a[[i]][7], mixcr_a[[i]][8]))
+for (i in (1:length(mixcr_a))) {
+  dat <- data.frame(c(mixcr_a[[i]][3], mixcr_a[[i]][4], mixcr_a[[i]][6],mixcr_a[[i]][7], mixcr_a[[i]][8]))
   dat$i <- i # keep track of which iteration produced it
   datalist[[i]] <- dat # add it to list
 }
-# combine columns for each cell, select only cells with only 2 rows (dual receptor)
+# combine columns for each cell and filter to keep cells with 1 or 2 alphas
 big_data = do.call(rbind, datalist)
 tra <- big_data %>% group_by(i) %>% filter(n() <= 2)
-colnames(tra) <- c("TRAV", "TRAJ", "cell_number")
+colnames(tra) <- c("clone_count", "clone_fraction", "CDR3_alpha", "TRAV", "TRAJ", "cell_number")
 tra <- merge(tra, mixcr_a_names, by="cell_number")
+
 
 # mixcr_b
 datalist = list()
-for (i in (1:(length(mixcr_b)))) {
-  dat <- data.frame(c(mixcr_b[[i]][7], mixcr_b[[i]][8]))
+for (i in (1:length(mixcr_b))) {
+  dat <- data.frame(c(mixcr_b[[i]][3], mixcr_b[[i]][4], mixcr_b[[i]][6], mixcr_b[[i]][7], mixcr_b[[i]][8]))
   dat$i <- i # keep track of which iteration produced it
   datalist[[i]] <- dat # add it to list
 }
-# combine columns for each cell, select only cells with only 1 row (single receptor)
+# combine columns for each cell
 big_data = do.call(rbind, datalist)
 trb <- big_data %>% group_by(i) %>% filter(n() == 1)
-colnames(trb) <- c("TRBV", "TRBJ", "cell_number")
+colnames(trb) <- c("clone_count", "clone_fraction","CDR3_beta", "TRBV", "TRBJ", "cell_number")
 trb <- merge(trb, mixcr_b_names, by="cell_number")
 
 # combine TRA and TRB dataframes
@@ -234,7 +231,7 @@ cd8_orf <- mutate(cd8_orf, beta=paste(TRBV, TRBJ, sep="_"))
 
 setwd('/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/')
 
-write.csv(cd8_orf, "cd8_orf_sc_tcr.csv")
+write.csv(cd8_orf, "cd8_orf3a-28_complete_sc_tcr.csv")
 
 # tabulate to get dominant alpha-beta pairing
 # 1105 rows 
