@@ -737,33 +737,38 @@ Load each previously saved .rds file - no need to repeat harmony integration, cl
 
 # Adding TCR grouping from clones and single cells
 ```{r}
-# cd8 <- readRDS("cd8_harmony.rds")
-# 
-# # cd8$CDR3_group <- NULL
-# 
-# cells <- as.data.frame(cd8$orig.ident)
-# cells <- tibble::rownames_to_column(cells, "cell_name")
-# colnames(cells) <- c("cell_name", "patient")
-# groups <- read.csv("/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/cd8_np16_orf3a_sc_groups.csv", header=TRUE)
-# 
-# # add 0 in front of single digit numbers
-# groups$new.group <- str_pad(groups$new.group, 2, side="left", pad="0")
-# 
-# cell_groups <- merge(cells, groups, by.x="cell_name", by.y="name", all=TRUE)
+cd8 <- readRDS("cd8_harmony.rds")
+
+# cd8$CDR3_group <- NULL
+
+cells <- as.data.frame(cd8$orig.ident)
+cells <- tibble::rownames_to_column(cells, "cell_name")
+colnames(cells) <- c("cell_name", "patient")
+groups <- read.csv("/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/cd8_np16_orf3a_sc_groups.csv", header=TRUE)
+
+# add 0 in front of single digit numbers
+groups$new.group <- str_pad(groups$new.group, 2, side="left", pad="0")
+
+cell_groups <- merge(cells, groups, by.x="cell_name", by.y="name", all.x=TRUE)
 # cell_groups <- cell_groups[-280,]
 # cell_groups <- cell_groups[!duplicated(cell_groups$cell_name),]
-# cell_groups$epitope <- ifelse(grepl("005|1131|1153|1201", cell_groups$patient), "NP16",
-#                               ifelse(grepl("1105|1134|1525", cell_groups$patient), "ORF3a-28",""))
-# 
-# cell_groups <- mutate(cell_groups, group=paste(epitope, new.group, sep="_"))
-# cell_groups$avidity <- ifelse(grepl("NP16_01|NP16_05|NP16_07|NP16_08|NP16_09|NP16_12|NP16_13|NP16_14|NP16_17|NP16_18|NP16_19", cell_groups$group), "NP16 low avidity",
-#                        ifelse(grepl("NP16_02|NP16_03|NP16_15|NP16_20|NP16_04", cell_groups$group), "NP16 high avidity", 
-#                        ifelse(grepl("ORF3a-28_04|ORF3a-28_05|ORF3a-28_06|ORF3a-28_07", cell_groups$group), "ORF3a-28 low avidity", 
-#                        ifelse(grepl("ORF3a-28_01|ORF3a-28_02|ORF3a-28_03|ORF3a-28_08", cell_groups$group), "ORF3a-28 high avidity", 
-#                        ifelse(grepl("NP16_NA|ORF3a-28_NA", cell_groups$group), "NA", "")))))
-# 
-# cd8@meta.data$CDR3_group <- as.factor(cell_groups$group)
-# cd8@meta.data$avidity <- as.factor(cell_groups$avidity)
+
+# re-arrange order so that 1131-TP-1 rows are at bottom
+cell_groups <- cell_groups[c(1:227, 290:740, 228:289),]
+
+cell_groups$epitope <- ifelse(grepl("005|1131|1153|1201", cell_groups$patient), "NP16",
+                              ifelse(grepl("1105|1134|1525", cell_groups$patient), "ORF3a-28",""))
+
+cell_groups <- mutate(cell_groups, group=paste(epitope, new.group, sep="_"))
+
+cell_groups$avidity <- ifelse(grepl("NP16_01|NP16_05|NP16_06|NP16_07|NP16_08|NP16_09|NP16_10|NP16_12|NP16_16|NP16_17|NP16_18|NP16_19", cell_groups$group), "NP16 low avidity",
+                       ifelse(grepl("NP16_02|NP16_03|NP16_04|NP16_13|NP16_14|NP16_15|NP16_20", cell_groups$group), "NP16 high avidity",
+                       ifelse(grepl("ORF3a-28_01|ORF3a-28_05|ORF3a-28_06|ORF3a-28_08", cell_groups$group), "ORF3a-28 low avidity",
+                       ifelse(grepl("ORF3a-28_02|ORF3a-28_03|ORF3a-28_04|ORF3a-28_07", cell_groups$group), "ORF3a-28 high avidity",
+                       ifelse(grepl("NP16_NA|ORF3a-28_NA", cell_groups$group), "NA", "")))))
+
+cd8@meta.data$CDR3_group <- as.factor(cell_groups$group)
+cd8@meta.data$avidity <- as.factor(cell_groups$avidity)
 
 ```
 
@@ -800,28 +805,29 @@ Load each previously saved .rds file - no need to repeat harmony integration, cl
 # Subset NP16 from CD8 object
 
 ```{r, fig.height=26, fig.width=18}
-# Idents(cd8) <- "epitope"
-# np16 <- subset(cd8, idents="NP16")
-# 
+Idents(cd8) <- "epitope"
+np16 <- subset(cd8, idents="NP16")
+
 # list <- as.data.frame(np16$orig.ident)
 # list <- tibble::rownames_to_column(list, "cell_name")
 # list2 <- merge(list, cell_groups, by.x="cell_name", by.y="cell_name", all.x=TRUE)
 # 
 # np16@meta.data$avidity <- list2$avidity
 # np16@meta.data$CDR3_group <- list2$group
-# 
-# Idents(np16) <- "avidity"
-# np16_2 <- subset(np16, idents=c("NP16 low avidity", "NP16 high avidity"))
-# 
-# 
-# VlnPlot(object = np16_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-#                                    "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-#                                    "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-#                                    "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-#                                    "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1", 
-#                                    "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
-#                                    "KLRG1",   "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRC2"),
-#         ncol=6, group.by = "avidity")
+
+Idents(np16) <- "avidity"
+np16_2 <- subset(np16, idents=c("NP16 low avidity", "NP16 high avidity"))
+
+table(Idents(np16_2))
+
+VlnPlot(object = np16_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
+                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                   "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                   "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
+                                   "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+                                   "KLRG1",   "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRC2"),
+        ncol=6, group.by = "avidity")
 
 ```
 
@@ -894,8 +900,8 @@ Load each previously saved .rds file - no need to repeat harmony integration, cl
 # Subset ORF3a-28 from CD8 object
 
 ```{r, fig.height=32, fig.width=18}
-# Idents(cd8) <- "epitope"
-# orf3a <- subset(cd8, idents="ORF3a-28")
+Idents(cd8) <- "epitope"
+orf3a <- subset(cd8, idents="ORF3a-28")
 # 
 # list <- as.data.frame(orf3a$orig.ident)
 # list <- tibble::rownames_to_column(list, "cell_name")
@@ -904,98 +910,100 @@ Load each previously saved .rds file - no need to repeat harmony integration, cl
 # orf3a@meta.data$avidity <- list2$avidity
 # orf3a@meta.data$CDR3_group <- list2$group
 # 
-# Idents(orf3a) <- "avidity"
-# orf3a_2 <- subset(orf3a, idents=c("ORF3a-28 low avidity", "ORF3a-28 high avidity"))
-# 
-# VlnPlot(object = orf3a_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-#                                    "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-#                                    "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-#                                    "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-#                                    "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1", 
-#                                    "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
-#                                    "KLRG1",   "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRC2"),
-#         ncol=6, group.by = "avidity")
+Idents(orf3a) <- "avidity"
+orf3a_2 <- subset(orf3a, idents=c("ORF3a-28 low avidity", "ORF3a-28 high avidity"))
+
+table(Idents(orf3a_2))
+
+VlnPlot(object = orf3a_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
+                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                   "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                   "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
+                                   "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+                                   "KLRG1",   "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRC2"),
+        ncol=6, group.by = "avidity")
 
 ```
 
 # TCR diversity
 ```{r}
-cd8 <- readRDS("cd8_harmony.rds")
-
-div <- read.csv("/t1-data/user/lfelce/TCR_analysis/diversity/cd8_np16_orf3a-28_div_b.csv")
-
-div$div_group <- cut(div$diversity_index, c(-Inf, 0.01, Inf),
-                     c("Low", "High"))
-
-div <- mutate(div, div_epi_group=paste(epitope, div_group, sep=" "))
-
-list <- as.data.frame(cd8$orig.ident)
-list <- tibble::rownames_to_column(list, "cell_name")
-
-diversity <- merge(list, div, by="cell_name", all.x=TRUE)
-
-cd8@meta.data$"diversity" <- as.factor(diversity$div_epi_group)
-
-p1 <- DimPlot(cd8, reduction = "umap", group.by = "orig.ident")
-p2 <- DimPlot(cd8, reduction = "umap", group.by = "epitope")
-p3 <- DimPlot(cd8, reduction = "umap", group.by = "seurat_clusters")
-p4 <- DimPlot(cd8, reduction = "umap", group.by = "timepoint")
-p5 <- DimPlot(cd8, reduction = "umap", group.by = "clin.type")
-p6 <- DimPlot(cd8, reduction = "umap", group.by = "diversity")
+# cd8 <- readRDS("cd8_harmony.rds")
+# 
+# div <- read.csv("/t1-data/user/lfelce/TCR_analysis/diversity/cd8_np16_orf3a-28_div_b.csv")
+# 
+# div$div_group <- cut(div$diversity_index, c(-Inf, 0.01, Inf),
+#                      c("Low", "High"))
+# 
+# div <- mutate(div, div_epi_group=paste(epitope, div_group, sep=" "))
+# 
+# list <- as.data.frame(cd8$orig.ident)
+# list <- tibble::rownames_to_column(list, "cell_name")
+# 
+# diversity <- merge(list, div, by="cell_name", all.x=TRUE)
+# 
+# cd8@meta.data$"diversity" <- as.factor(diversity$div_epi_group)
+# 
+# p1 <- DimPlot(cd8, reduction = "umap", group.by = "orig.ident")
+# p2 <- DimPlot(cd8, reduction = "umap", group.by = "epitope")
+# p3 <- DimPlot(cd8, reduction = "umap", group.by = "seurat_clusters")
+# p4 <- DimPlot(cd8, reduction = "umap", group.by = "timepoint")
+# p5 <- DimPlot(cd8, reduction = "umap", group.by = "clin.type")
+# p6 <- DimPlot(cd8, reduction = "umap", group.by = "diversity")
 
 
 ```
 
 ```{r, fig.width=16, fig.height=16}
-grid.arrange(p1, p2, p3, p4, p5, p6,nrow=3)
+# grid.arrange(p1, p2, p3, p4, p5, p6,nrow=3)
 ```
 
 
 ```{r, fig.height=26, fig.width=18}
-Idents(cd8) <- "diversity"
-cd8_diversity <- subset(cd8, idents=c("NP16 Low", "NP16 High",
-                                      "ORF3a-28 Low", "ORF3a-28 High"))
-Idents(cd8_diversity) <- "diversity"
-table(Idents(cd8_diversity))
-
-VlnPlot(object = cd8_diversity, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
-                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-                                  "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-                                  "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
-                                  "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
-                                 "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
-        ncol=6, group.by = "diversity")
+# Idents(cd8) <- "diversity"
+# cd8_diversity <- subset(cd8, idents=c("NP16 Low", "NP16 High",
+#                                       "ORF3a-28 Low", "ORF3a-28 High"))
+# Idents(cd8_diversity) <- "diversity"
+# table(Idents(cd8_diversity))
+# 
+# VlnPlot(object = cd8_diversity, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                   "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
+#                                   "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+#                                  "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
+#         ncol=6, group.by = "diversity")
 
 
 ```
 ## Clustering for just T cells with diversity indexes
 ```{r}
 # Select the top 2000 most variable features
-cd8_diversity <- FindVariableFeatures(object = cd8_diversity, mean.function = ExpMean, dispersion.function = LogVMR, x.low.cutoff = 0.0125, x.high.cutoff = 3, y.cutoff = 0.5, nfeatures = 2000)
-
-# Scaling RNA data
-cd8_diversity <- ScaleData(cd8_diversity)
-
-# Run PCA
-cd8_diversity <- RunPCA(cd8_diversity, npcs = 30, verbose = FALSE)
-
-# Select top PCs for clustering
-cd8_diversity <- FindNeighbors(cd8_diversity, reduction = "pca", dims = 1:30, verbose=FALSE)
-cd8_diversity <- FindClusters(cd8_diversity, resolution = 0.5, verbose = FALSE)
-cd8_diversity <- RunUMAP(cd8_diversity, dims = 1:30, verbose=FALSE)
-
-p1 <- DimPlot(cd8_diversity, reduction = "umap", group.by = "orig.ident")
-p2 <- DimPlot(cd8_diversity, reduction = "umap", group.by = "epitope")
-p3 <- DimPlot(cd8_diversity, reduction = "umap", group.by = "seurat_clusters")
-p4 <- DimPlot(cd8_diversity, reduction = "umap", group.by = "timepoint")
-p5 <- DimPlot(cd8_diversity, reduction = "umap", group.by = "clin.type")
-p6 <- DimPlot(cd8_diversity, reduction = "umap", group.by = "diversity")
+# cd8_diversity <- FindVariableFeatures(object = cd8_diversity, mean.function = ExpMean, dispersion.function = LogVMR, x.low.cutoff = 0.0125, x.high.cutoff = 3, y.cutoff = 0.5, nfeatures = 2000)
+# 
+# # Scaling RNA data
+# cd8_diversity <- ScaleData(cd8_diversity)
+# 
+# # Run PCA
+# cd8_diversity <- RunPCA(cd8_diversity, npcs = 30, verbose = FALSE)
+# 
+# # Select top PCs for clustering
+# cd8_diversity <- FindNeighbors(cd8_diversity, reduction = "pca", dims = 1:30, verbose=FALSE)
+# cd8_diversity <- FindClusters(cd8_diversity, resolution = 0.5, verbose = FALSE)
+# cd8_diversity <- RunUMAP(cd8_diversity, dims = 1:30, verbose=FALSE)
+# 
+# p1 <- DimPlot(cd8_diversity, reduction = "umap", group.by = "orig.ident")
+# p2 <- DimPlot(cd8_diversity, reduction = "umap", group.by = "epitope")
+# p3 <- DimPlot(cd8_diversity, reduction = "umap", group.by = "seurat_clusters")
+# p4 <- DimPlot(cd8_diversity, reduction = "umap", group.by = "timepoint")
+# p5 <- DimPlot(cd8_diversity, reduction = "umap", group.by = "clin.type")
+# p6 <- DimPlot(cd8_diversity, reduction = "umap", group.by = "diversity")
 
 ```
 
 ```{r, fig.width=16, fig.height=16}
-grid.arrange(p1, p2, p3, p4, p5, p6, nrow=3)
+# grid.arrange(p1, p2, p3, p4, p5, p6, nrow=3)
 ```
 
 
