@@ -178,3 +178,28 @@ cellranger vdj --id=TCR_T2 \
 --reference=/databank/10x-rangers/refdata-cellranger-vdj-GRCh38-alts-ensembl-4.0.0 \
 --sample=Dong_050121_TCR_T2 \
 
+
+############### Tried cite-seq-count for Cell Hashing ###############
+# this script works but leads to very few barcodes intersected
+# also only worked because added trimming
+
+#!/bin/bash
+#SBATCH --partition=batch
+#SBATCH --job-name=cite-seq-count
+#SBATCH --nodes=1
+#SBATCH --mem=128G
+#SBATCH --time=07-00:00:00
+#SBATCH --output=%j_%x.out
+#SBATCH --error=%j_%x.err
+
+module load cite-seq-count
+
+cd /t1-data/user/lfelce/10x_Dong050121/
+
+CITE-seq-Count -R1 Dong_050121_Cell_Surface_T1_S5_L001_R1_001.fastq.gz,Dong_050121_Cell_Surface_T1_S5_L002_R1_001.fastq.gz,Dong_050121_Cell_Surface_T1_S5_L003_R1_001.fastq.gz,Dong_050121_Cell_Surface_T1_S5_L004_R1_001.fastq.gz \
+-R2 Dong_050121_Cell_Surface_T1_S5_L001_R2_001.fastq.gz,Dong_050121_Cell_Surface_T1_S5_L002_R2_001.fastq.gz,Dong_050121_Cell_Surface_T1_S5_L003_R2_001.fastq.gz,Dong_050121_Cell_Surface_T1_S5_L004_R2_001.fastq.gz \
+-t hashtag_barcodes.csv \
+-cbf 1 -cbl 16 -umif 17 -umil 26 -cells 8000 \
+--start-trim 10 \
+-o ./citeseqcount_T1
+
