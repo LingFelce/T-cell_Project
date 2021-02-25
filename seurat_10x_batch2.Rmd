@@ -28,78 +28,197 @@ Hashtag 1 1131 S151
 Hashtag 2 1131 S174
 Hashtag 4 1493 S151
 Hashtag 5 1493 S174
-Hashtag 6 1201 S174
-Hashtag 7 1201 S174 - labelled as Hashtag 7 in Excel file but actually Hashtag 8
-
+Hashtag 6 1201 S151
+Hashtag 7 1201 S174 
 
 ### Separate Gene Expression and Antibody Capture
 ```{r}
-# Read in data
-batch2_t1.counts <- Read10X(data.dir = "/t1-data/user/lfelce/10x_Dong050121/count_T1_repeat2/filtered_feature_bc_matrix")
-colnames(batch2_t1.counts) <- gsub(x = colnames(batch2_t1.counts), pattern = "-1", replacement = "")
-
-batch2_t1.hash <- Read10X(data.dir ="/t1-data/user/lfelce/10x_Dong050121/hash_T1_repeat/outs/filtered_feature_bc_matrix")
-colnames(batch2_t1.hash) <- gsub(x = colnames(batch2_t1.hash), pattern = "-1", replacement = "")
-
-# Select cell barcodes detected by both RNA and hashtag, then filter
-joint.barcodes <- intersect(colnames(batch2_t1.counts), colnames(batch2_t1.hash))
-
-# Subset RNA and hashtag counts by joint cell barcodes
-batch2_t1.counts <- batch2_t1.counts[, joint.barcodes]
-batch2_t1.hash <- as.matrix(batch2_t1.hash[,joint.barcodes])
-
-# remove Hashtag3 and Hashtag7 (no cells labelled with this Ab)
-batch2_t1.hash <- batch2_t1.hash[-c(3,7),]
-
-# rename rows to sample names
-rownames(batch2_t1.hash) <- c("1131_CD4_S151", "1131_CD4_S174", 
-                              "1493_CD4_S151", "1493_CD4_S174",
-                              "1201_CD4_S151", "1201_CD4_S174")
-
-# counts per hashtag
-rowSums(batch2_t1.hash)
-rowMeans(batch2_t1.hash)
-
-# Set up Seurat object
-batch2_t1 <- CreateSeuratObject(counts = batch2_t1.counts)
-
-# Normalize RNA data with log normalization
-batch2_t1 <- NormalizeData(batch2_t1)
-
-# Find and scale variable features
-batch2_t1 <- FindVariableFeatures(batch2_t1, selection.method = "mean.var.plot")
-
-batch2_t1 <- ScaleData(batch2_t1, features = VariableFeatures(batch2_t1))
-
-# Add HTO data as a new assay independent from RNA
-batch2_t1[["HTO"]] <- CreateAssayObject(counts = batch2_t1.hash)
-
-# Normalize HTO data, here we use centered log-ratio (CLR) transformation
-batch2_t1 <- NormalizeData(batch2_t1, assay = "HTO", normalization.method = "CLR")
-
-# Demultiplex cells based on hashtag enrichment - use HTODemux() to assign single cells back to sample origins
-
-# If you have a very large dataset we suggest using k_function = 'clara'. This is a k-medoid
-# clustering function for large applications You can also play with additional parameters (see
-# documentation for HTODemux()) to adjust the threshold for classification Here we are using the
-# default settings
-batch2_t1 <- HTODemux(batch2_t1, assay = "HTO", positive.quantile = 0.99)
+# # Read in data
+# t1.counts <- Read10X(data.dir = "/t1-data/user/lfelce/10x_Dong050121/count_T1_repeat2/filtered_feature_bc_matrix")
+# colnames(t1.counts) <- gsub(x = colnames(t1.counts), pattern = "-1", replacement = "")
+# 
+# t1.hash <- Read10X(data.dir ="/t1-data/user/lfelce/10x_Dong050121/citeseqcount_T1/umi_count/", gene.column=1)
+# 
+# # Select cell barcodes detected by both RNA and hashtag, then filter
+# joint.barcodes <- intersect(colnames(t1.counts), colnames(t1.hash))
+# 
+# # Subset RNA and hashtag counts by joint cell barcodes
+# t1.counts <- t1.counts[, joint.barcodes]
+# t1.hash <- as.matrix(t1.hash[,joint.barcodes])
+# 
+# # # remove Hashtag3 and Hashtag7 (no cells labelled with this Ab)
+# # t1.hash <- t1.hash[-c(3,7),]
+# # 
+# # # rename rows to sample names
+# # rownames(t1.hash) <- c("1131_CD4_S151", "1131_CD4_S174", 
+# #                               "1493_CD4_S151", "1493_CD4_S174",
+# #                               "1201_CD4_S151", "1201_CD4_S174")
+# 
+# # counts per hashtag
+# rowSums(t1.hash)
+# rowMeans(t1.hash)
+# 
+# # Set up Seurat object
+# t1 <- CreateSeuratObject(counts = t1.counts)
+# 
+# # Normalize RNA data with log normalization
+# t1 <- NormalizeData(t1)
+# 
+# # Find and scale variable features
+# t1 <- FindVariableFeatures(t1, selection.method = "mean.var.plot")
+# t1 <- ScaleData(t1, features = VariableFeatures(t1))
+# 
+# # Add HTO data as a new assay independent from RNA
+# t1[["HTO"]] <- CreateAssayObject(counts = t1.hash)
+# 
+# # Normalize HTO data, here we use centered log-ratio (CLR) transformation
+# t1 <- NormalizeData(t1, assay = "HTO", normalization.method = "CLR")
+# 
+# # Demultiplex cells based on hashtag enrichment
+# t1 <- MULTIseqDemux(t1, assay = "HTO", quantile = 0.1)
+# 
+# table(t1$MULTI_ID)
 ```
 
-```{r, fig.width=12, fig.height=12}
-# Global classification results
-table(batch2_t1$HTO_classification.global)
-
-# Visualise enrichment for selected hashtags with ridge plots
-# Group cells based on max hashtag signal
-Idents(batch2_t1) <- "HTO_maxID"
-RidgePlot(batch2_t1, assay="HTO", features=rownames(batch2_t1[["HTO"]]), ncol=2)
-```
 
 ```{r, fig.width=6, fig.height=4}
 # Compare number of UMIs for singlets, doublets and negative cells
-Idents(batch2_t1) <- "HTO_classification.global"
-VlnPlot(batch2_t1, features = "nCount_RNA", pt.size = 0.1, log = TRUE)
+# Idents(t1) <- "MULTI_ID"
+# VlnPlot(t1, features = "nCount_RNA", pt.size = 0.1, log = TRUE)
+```
+
+### Combined Gene Expression and Antibody Capture
+```{r, fig.width=7, fig.height=4}
+# Read in data
+t1.counts <- Read10X(data.dir = "/t1-data/user/lfelce/10x_Dong050121/combined_T1_repeat3/outs/filtered_feature_bc_matrix")
+
+# Remove -1 from barcodes
+colnames(t1.counts$`Gene Expression`) <- gsub(x = colnames(t1.counts$`Gene Expression`), pattern = "-1", replacement = "")
+colnames(t1.counts$`Antibody Capture`) <- gsub(x = colnames(t1.counts$`Antibody Capture`), pattern = "-1", replacement = "")
+
+rowSums(as.data.frame(t1.counts$`Antibody Capture`))
+rowMeans(as.data.frame(t1.counts$`Antibody Capture`))
+
+
+# Create Seurat object from Gene Expression
+t1 <- CreateSeuratObject(counts = t1.counts$`Gene Expression`)
+
+# Normalize RNA data with log normalization
+DefaultAssay(t1) <- "RNA"
+t1 <- NormalizeData(t1)
+
+# Find and scale variable features
+t1 <- FindVariableFeatures(t1, selection.method = "mean.var.plot")
+t1 <- ScaleData(t1, features = VariableFeatures(t1))
+
+# Add HTO data as a new assay independent from RNA
+t1[["HTO"]] <- CreateAssayObject(counts = t1.counts$`Antibody Capture`)
+
+# Normalize HTO data, here we use centered log-ratio (CLR) transformation
+t1 <- NormalizeData(t1, assay = "HTO", normalization.method = "CLR")
+
+# HTODemux from Seurat too fussy - use MULTIseqDemux, seems to be less fussy about low HTO counts
+t1 <- MULTIseqDemux(t1, assay = "HTO", quantile = 0.1)
+
+table(t1$MULTI_ID)
+
+Idents(t1) <- "MULTI_ID"
+
+VlnPlot(t1, features = "nCount_RNA", pt.size = 0.1, log = TRUE)
+```
+
+
+```{r, fig.height=5, fig.width=16}
+# Extract the singlets
+t1.singlet <- subset(t1, idents = c("hashtag-1", "hashtag-2", "hashtag-4", "hashtag-5", 
+                                    "hashtag-6", "hashtag-8"))
+# Assign metadata to object
+list1 <- as.data.frame(t1.singlet@meta.data$MULTI_ID)
+colnames(list1) <- "sample"
+
+list1$patient <- ifelse(grepl("hashtag-1", list1$sample), "1131",
+                        ifelse(grepl("hashtag-2", list1$sample), "1131",
+                        ifelse(grepl("hashtag-4", list1$sample), "1493",
+                        ifelse(grepl("hashtag-5", list1$sample), "1493",
+                        ifelse(grepl("hashtag-6", list1$sample), "1201",
+                        ifelse(grepl("hashtag-8", list1$sample), "1201", ""))))))
+
+list1$subset <- "CD4"
+
+list1$epitope <- ifelse(grepl("hashtag-1|hashtag-4|hashtag-6", list1$sample), "S151",
+                        ifelse(grepl("hashtag-2|hashtag-5|hashtag-8", list1$sample),
+                        "S174",""))
+
+t1.singlet@meta.data$"epitope" <- as.factor(list1$epitope)
+t1.singlet@meta.data$"patient" <- as.factor(list1$patient)
+
+Idents(t1.singlet) <- "MULTI_ID"
+
+mito.genes <- grep(pattern = "^MT-", x = rownames(t1.singlet@assays[["RNA"]]), value = TRUE)
+
+percent.mito <- Matrix::colSums(t1.singlet@assays[["RNA"]][mito.genes, ])/Matrix::colSums(t1.singlet@assays[["RNA"]])
+
+t1.singlet <- AddMetaData(object = t1.singlet, metadata = percent.mito, col.name = "percent.mito")
+
+VlnPlot(object = t1.singlet, features = c("nFeature_RNA", "nCount_RNA", "percent.mito"), ncol = 3)
+
+```
+
+```{r, fig.height=4, fig.width=6}
+# can use GenePlot to visualise gene-gene relationships and anything else calculated by object
+FeatureScatter(object=t1.singlet, feature1="nCount_RNA", feature2="nFeature_RNA")
+```
+
+
+```{r}
+# Filter cells
+t1.singlet <- subset(x = t1.singlet, subset = nFeature_RNA > 200 & nFeature_RNA < 4000 & percent.mito >  -Inf & percent.mito < 0.05 )
+
+# Normalise data
+t1.singlet <- NormalizeData(object = t1.singlet, normalization.method = "LogNormalize", scale.factor = 10000)
+
+
+# Select the top 1000 most variable features
+t1.singlet <- FindVariableFeatures(t1.singlet, selection.method = "mean.var.plot", verbose=FALSE)
+
+# Scaling RNA data
+t1.singlet <- ScaleData(t1.singlet, features = VariableFeatures(t1.singlet), verbose=FALSE)
+
+# Run PCA
+t1.singlet <- RunPCA(t1.singlet, features = VariableFeatures(t1.singlet), verbose=FALSE)
+
+# Select top PCs for clustering
+t1.singlet <- FindNeighbors(t1.singlet, reduction = "pca", dims = 1:25, verbose=FALSE)
+t1.singlet <- FindClusters(t1.singlet, resolution = 0.5, verbose = FALSE)
+t1.singlet <- RunUMAP(t1.singlet, dims = 1:25, verbose=FALSE)
+t1.singlet <- RunTSNE(t1.singlet, reduction = "pca", dims = 1:25, verbose=FALSE)
+
+# Projecting singlet identities on UMAP visualization
+tsne <- DimPlot(t1.singlet, reduction="tsne", group.by = "MULTI_ID")
+pca <- DimPlot(t1.singlet, reduction="pca", group.by="MULTI_ID")
+umap <- DimPlot(t1.singlet, reduction="umap", group.by = "MULTI_ID")
+umap_cluster <- DimPlot(t1.singlet, reduction="umap", group.by = "seurat_clusters")
+umap_epitope <- DimPlot(t1.singlet, reduction="umap", group.by = "epitope")
+umap_patient <- DimPlot(t1.singlet, reduction="umap", group.by = "patient")
+```
+
+```{r, fig.width=14, fig.height=12}
+
+grid.arrange(tsne, pca, umap, umap_cluster, umap_epitope, umap_patient, nrow=3)
+
+```
+
+```{r, fig.width=10, fig.height=7}
+DefaultAssay(t1.singlet) <- "RNA"
+
+FeaturePlot(t1.singlet, features=c("PTPRC", "CD44", "GZMB","CD4"))
+```
+
+```{r, fig.width=14, fig.height=12}
+DefaultAssay(t1.singlet) <- "HTO"
+
+FeaturePlot(t1.singlet, features=c("hashtag-1", "hashtag-2", "hashtag-4", "hashtag-5", 
+                                    "hashtag-6", "hashtag-8"))
 ```
 
 
@@ -114,23 +233,74 @@ Hashtag 6 1201 NP16
 Hashtag 8 1004 M24 
 All hashtags mixed up?
 
-### Combined Gene Expression and Antibody Capture
+### Separate Gene Expression and Antibody Capture
 ```{r}
+# # Read in data
+# t2.counts <- Read10X(data.dir = "/t1-data/user/lfelce/10x_Dong050121/count_T2_repeat2/filtered_feature_bc_matrix")
+# colnames(t2.counts) <- gsub(x = colnames(t2.counts), pattern = "-1", replacement = "")
+# 
+# t2.hash <- Read10X(data.dir ="/t1-data/user/lfelce/10x_Dong050121/citeseqcount_T2/umi_count/", gene.column=1)
+# 
+# # Select cell barcodes detected by both RNA and hashtag, then filter
+# joint.barcodes <- intersect(colnames(t2.counts), colnames(t2.hash))
+# 
+# # Subset RNA and hashtag counts by joint cell barcodes
+# t2.counts <- t2.counts[, joint.barcodes]
+# t2.hash <- as.matrix(t2.hash[,joint.barcodes])
+# 
+# # # remove Hashtag3 and Hashtag7 (no cells labelled with this Ab)
+# # t2.hash <- t2.hash[-c(3,7),]
+# # 
+# # # rename rows to sample names
+# # rownames(t2.hash) <- c("1131_CD4_S151", "1131_CD4_S174", 
+# #                               "1493_CD4_S151", "1493_CD4_S174",
+# #                               "1201_CD4_S151", "1201_CD4_S174")
+# 
+# # counts per hashtag
+# rowSums(t2.hash)
+# rowMeans(t2.hash)
+# 
+# # Set up Seurat object
+# t2 <- CreateSeuratObject(counts = t2.counts)
+# 
+# # Normalize RNA data with log normalization
+# t2 <- NormalizeData(t2)
+# 
+# # Find and scale variable features
+# t2 <- FindVariableFeatures(t2, selection.method = "mean.var.plot")
+# t2 <- ScaleData(t2, features = VariableFeatures(t2))
+# 
+# # Add HTO data as a new assay independent from RNA
+# t2[["HTO"]] <- CreateAssayObject(counts = t2.hash)
+# 
+# # Normalize HTO data, here we use centered log-ratio (CLR) transformation
+# t2 <- NormalizeData(t2, assay = "HTO", normalization.method = "CLR")
+# 
+# # Demultiplex cells based on hashtag enrichment
+# t2 <- MULTIseqDemux(t2, assay = "HTO", quantile = 0.1)
+# 
+# table(t2$MULTI_ID)
+```
+
+
+```{r, fig.width=6, fig.height=4}
+# # Compare number of UMIs for singlets, doublets and negative cells
+# Idents(t2) <- "MULTI_ID"
+# VlnPlot(t2, features = "nCount_RNA", pt.size = 0.1, log = TRUE)
+```
+
+
+### Combined Gene Expression and Antibody Capture
+```{r, fig.width=7, fig.height=4}
 # Read in data
-t2.counts <- Read10X(data.dir = "/t1-data/user/lfelce/10x_Dong050121/combined_T2_repeat/outs/filtered_feature_bc_matrix")
+t2.counts <- Read10X(data.dir = "/t1-data/user/lfelce/10x_Dong050121/combined_T2_repeat3/outs/filtered_feature_bc_matrix")
 
 # Remove -1 from barcodes
 colnames(t2.counts$`Gene Expression`) <- gsub(x = colnames(t2.counts$`Gene Expression`), pattern = "-1", replacement = "")
 colnames(t2.counts$`Antibody Capture`) <- gsub(x = colnames(t2.counts$`Antibody Capture`), pattern = "-1", replacement = "")
 
-# Remove Hashtag 1 and 3 from Antibody Capture (no cells)
-# t2.counts$`Antibody Capture` <- t2.counts$`Antibody Capture`[-c(1,3),]
-
-# Rename rows to sample names
-# rownames(t2.counts$`Antibody Capture`) <- c("1131_CD8_NP16", 
-#                                             "1131_CD8_ORF3a-28", 
-#                                             "1502_CD8_NP51",
-#                                             "1201_CD8_NP16", "1004_CD4_M24")
+rowSums(as.data.frame(t2.counts$`Antibody Capture`))
+rowMeans(as.data.frame(t2.counts$`Antibody Capture`))
 
 
 # Create Seurat object from Gene Expression
@@ -151,7 +321,7 @@ t2[["HTO"]] <- CreateAssayObject(counts = t2.counts$`Antibody Capture`)
 t2 <- NormalizeData(t2, assay = "HTO", normalization.method = "CLR")
 
 # HTODemux from Seurat too fussy - use MULTIseqDemux, seems to be less fussy about low HTO counts
-t2 <- MULTIseqDemux(t2, assay = "HTO", quantile = 0.01)
+t2 <- MULTIseqDemux(t2, assay = "HTO", quantile = 0.1)
 
 table(t2$MULTI_ID)
 
@@ -163,28 +333,31 @@ VlnPlot(t2, features = "nCount_RNA", pt.size = 0.1, log = TRUE)
 
 ```{r}
 # Extract the singlets
-t2.singlet <- subset(t2, idents = c("hashtag-1", "hashtag-2", "hashtag-4", "hashtag-5", 
+t2.singlet <- subset(t2, idents = c("hashtag-2", "hashtag-4", "hashtag-5", 
                                     "hashtag-6", "hashtag-7", "hashtag-8"))
 # Assign metadata to object
-list <- as.data.frame(t2.singlet@meta.data$MULTI_ID)
-# colnames(patient_list) <- "sample"
-# 
-# patient_list$patient <- ifelse(grepl("1131", patient_list$sample), "1131",
-#                         ifelse(grepl("1502", patient_list$sample), "1502",
-#                         ifelse(grepl("1201", patient_list$sample), "1201",
-#                         ifelse(grepl("1004", patient_list$sample), "1004", ""))))
-# 
-# patient_list$subset <- ifelse(grepl("CD4", patient_list$sample), "CD4",
-#                                ifelse(grepl("CD8", patient_list$sample), "CD8", ""))
-# 
-# patient_list$epitope <- ifelse(grepl("M24", patient_list$sample), "membrane",
-#                         ifelse(grepl("ORF3a-28", patient_list$sample), "ORF3a",
-#                         ifelse(grepl("NP16", patient_list$sample), "nucleoprotein",
-#                         ifelse(grepl("NP51", patient_list$sample), "nucleoprotein", ""))))
-# 
-# t2.singlet@meta.data$"epitope" <- as.factor(patient_list$epitope)
-# t2.singlet@meta.data$"patient" <- as.factor(patient_list$patient)
-# t2.singlet@meta.data$"t-cell" <- as.factor(patient_list$subset)
+list2 <- as.data.frame(t2.singlet@meta.data$MULTI_ID)
+colnames(list2) <- "sample"
+
+list2$patient <- ifelse(grepl("hashtag-2", list2$sample), "1131",
+                        ifelse(grepl("hashtag-4", list2$sample), "1131",
+                        ifelse(grepl("hashtag-5", list2$sample), "1486",
+                        ifelse(grepl("hashtag-6", list2$sample), "1502",
+                        ifelse(grepl("hashtag-7", list2$sample), "1201",
+                        ifelse(grepl("hashtag-8", list2$sample), "1004", ""))))))
+
+list2$subset <- ifelse(grepl("1004", list2$patient), "CD4","CD8")
+
+list2$epitope <- ifelse(grepl("hashtag-2", list2$sample), "NP16",
+                        ifelse(grepl("hashtag-4", list2$sample), "ORF3a-28",
+                        ifelse(grepl("hashtag-5", list2$sample), "ORF3a-28",
+                        ifelse(grepl("hashtag-6", list2$sample), "NP51",
+                        ifelse(grepl("hashtag-7", list2$sample), "NP16",
+                        ifelse(grepl("hashtag-8", list2$sample), "M24", ""))))))
+
+t2.singlet@meta.data$"epitope" <- as.factor(list2$epitope)
+t2.singlet@meta.data$"patient" <- as.factor(list2$patient)
+t2.singlet@meta.data$"t-cell" <- as.factor(list2$subset)
 
 # Select the top 1000 most variable features
 t2.singlet <- FindVariableFeatures(t2.singlet, selection.method = "mean.var.plot", verbose=FALSE)
@@ -222,10 +395,10 @@ DefaultAssay(t2.singlet) <- "RNA"
 FeaturePlot(t2.singlet, features=c("CD8A", "CD8B", "GZMB","CD4"))
 ```
 
-```{r, fig.width=16, fig.height=10}
+```{r, fig.width=14, fig.height=12}
 DefaultAssay(t2.singlet) <- "HTO"
 
-FeaturePlot(t2.singlet, features=c("hashtag-1", "hashtag-2", "hashtag-4", "hashtag-5", 
+FeaturePlot(t2.singlet, features=c("hashtag-2", "hashtag-4", "hashtag-5", 
                                     "hashtag-6", "hashtag-7", "hashtag-8"))
 ```
 
