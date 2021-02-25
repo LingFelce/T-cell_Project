@@ -331,7 +331,7 @@ VlnPlot(t2, features = "nCount_RNA", pt.size = 0.1, log = TRUE)
 ```
 
 
-```{r}
+```{r, fig.height=5, fig.width=16}
 # Extract the singlets
 t2.singlet <- subset(t2, idents = c("hashtag-2", "hashtag-4", "hashtag-5", 
                                     "hashtag-6", "hashtag-7", "hashtag-8"))
@@ -359,6 +359,30 @@ t2.singlet@meta.data$"epitope" <- as.factor(list2$epitope)
 t2.singlet@meta.data$"patient" <- as.factor(list2$patient)
 t2.singlet@meta.data$"t-cell" <- as.factor(list2$subset)
 
+Idents(t2.singlet) <- "MULTI_ID"
+
+mito.genes <- grep(pattern = "^MT-", x = rownames(t2.singlet@assays[["RNA"]]), value = TRUE)
+
+percent.mito <- Matrix::colSums(t2.singlet@assays[["RNA"]][mito.genes, ])/Matrix::colSums(t2.singlet@assays[["RNA"]])
+
+t2.singlet <- AddMetaData(object = t2.singlet, metadata = percent.mito, col.name = "percent.mito")
+
+VlnPlot(object = t2.singlet, features = c("nFeature_RNA", "nCount_RNA", "percent.mito"), ncol = 3)
+```
+
+```{r, fig.height=4, fig.width=6}
+# can use GenePlot to visualise gene-gene relationships and anything else calculated by object
+FeatureScatter(object=t2.singlet, feature1="nCount_RNA", feature2="nFeature_RNA")
+```
+
+
+```{r}
+# Filter cells
+t2.singlet <- subset(x = t2.singlet, subset = nFeature_RNA > 200 & nFeature_RNA < 3000 & percent.mito >  -Inf & percent.mito < 0.05 )
+
+# Normalise data
+t2.singlet <- NormalizeData(object = t2.singlet, normalization.method = "LogNormalize", scale.factor = 10000)
+
 # Select the top 1000 most variable features
 t2.singlet <- FindVariableFeatures(t2.singlet, selection.method = "mean.var.plot", verbose=FALSE)
 
@@ -377,15 +401,16 @@ t2.singlet <- RunTSNE(t2.singlet, reduction = "pca", dims = 1:30, verbose=FALSE)
 # Projecting singlet identities on UMAP visualization
 tsne <- DimPlot(t2.singlet, reduction="tsne", group.by = "MULTI_ID")
 pca <- DimPlot(t2.singlet, reduction="pca", group.by="MULTI_ID")
+umap <- DimPlot(t2.singlet, reduction="umap", group.by = "MULTI_ID")
 umap_cluster <- DimPlot(t2.singlet, reduction="umap", group.by = "seurat_clusters")
-# umap_tcell <- DimPlot(t2.singlet, reduction="umap", group.by = "t-cell")
-# umap_epitope <- DimPlot(t2.singlet, reduction="umap", group.by = "epitope")
-umap_patient <- DimPlot(t2.singlet, reduction="umap", group.by = "MULTI_ID")
+umap_tcell <- DimPlot(t2.singlet, reduction="umap", group.by = "t-cell")
+umap_epitope <- DimPlot(t2.singlet, reduction="umap", group.by = "epitope")
+umap_patient <- DimPlot(t2.singlet, reduction="umap", group.by = "patient")
 ```
 
-```{r, fig.width=14, fig.height=8}
+```{r, fig.width=14, fig.height=16}
 
-grid.arrange(tsne, pca, umap_cluster, umap_patient, nrow=2)
+grid.arrange(tsne, pca, umap, umap_cluster, umap_patient, umap_epitope, umap_tcell, ncol=2)
 
 ```
 
