@@ -452,23 +452,6 @@ VlnPlot(object = t2.singlet, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R",
                                  "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
         ncol=6, group.by = "seurat_clusters")
 ```
-
-```{r, fig.width=12, fig.height=8}
-list <- as.data.frame(t2.singlet$epitope)
-list <- cbind(list, t2.singlet$patient, t2.singlet$clonotype, t2.singlet$MULTI_ID)
-
-list$NP16 <- ifelse(grepl("clonotype3$|clonotype10$|clonotype26|clonotype93|clonotype5$|clonotype82",list$`t2.singlet$clonotype`), "NP16_shared", "NA")
-
-t2.singlet <- AddMetaData(object = t2.singlet, metadata = list$NP16, col.name = "NP16_shared")
-
-umap_np16 <- DimPlot(t2.singlet, reduction="umap", group.by = "NP16_shared")
-
-grid.arrange(umap_cluster, umap_patient, umap_epitope, umap_np16, ncol=2)
-
-```
-
-
-
 ```{r}
 vdj <- read.csv("/t1-data/user/lfelce/CellRanger_VDJ/10x_Dong050121_TCR/TCR_T2/outs/filtered_contig_annotations.csv")
 vdj$barcode <- gsub(x = vdj$barcode, pattern = "-1", replacement = "")
@@ -499,4 +482,23 @@ VlnPlot(object = t2.clonotype, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R
                                  "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
         ncol=6, group.by = "clonotype")
 ```
+
+
+```{r, fig.width=12, fig.height=8}
+list <- as.data.frame(t2.singlet$epitope)
+list <- cbind(list, t2.singlet$patient, t2.singlet$clonotype, t2.singlet$MULTI_ID)
+
+list$NP16 <- ifelse(grepl("clonotype3$|clonotype10$|clonotype26|clonotype93|clonotype5$|clonotype82",list$`t2.singlet$clonotype`), "NP16_shared", "NA")
+
+t2.singlet <- AddMetaData(object = t2.singlet, metadata = list$NP16, col.name = "NP16_shared")
+
+umap_np16 <- DimPlot(t2.singlet, reduction="umap", group.by = "NP16_shared")
+
+grid.arrange(umap_cluster, umap_patient, umap_epitope, umap_np16, ncol=2)
+
+```
+
+
+
+
 
