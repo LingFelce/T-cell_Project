@@ -89,136 +89,136 @@ Hashtag 7 1201 S174
 
 ### Combined Gene Expression and Antibody Capture
 ```{r, fig.width=7, fig.height=4}
-# Read in data
-t1.counts <- Read10X(data.dir = "/t1-data/user/lfelce/10x_Dong050121/combined_T1_repeat3/outs/filtered_feature_bc_matrix")
-
-# Remove -1 from barcodes
-colnames(t1.counts$`Gene Expression`) <- gsub(x = colnames(t1.counts$`Gene Expression`), pattern = "-1", replacement = "")
-colnames(t1.counts$`Antibody Capture`) <- gsub(x = colnames(t1.counts$`Antibody Capture`), pattern = "-1", replacement = "")
-
-rowSums(as.data.frame(t1.counts$`Antibody Capture`))
-rowMeans(as.data.frame(t1.counts$`Antibody Capture`))
-
-
-# Create Seurat object from Gene Expression
-t1 <- CreateSeuratObject(counts = t1.counts$`Gene Expression`)
-
-# Normalize RNA data with log normalization
-DefaultAssay(t1) <- "RNA"
-t1 <- NormalizeData(t1)
-
-# Find and scale variable features
-t1 <- FindVariableFeatures(t1, selection.method = "mean.var.plot")
-t1 <- ScaleData(t1, features = VariableFeatures(t1))
-
-# Add HTO data as a new assay independent from RNA
-t1[["HTO"]] <- CreateAssayObject(counts = t1.counts$`Antibody Capture`)
-
-# Normalize HTO data, here we use centered log-ratio (CLR) transformation
-t1 <- NormalizeData(t1, assay = "HTO", normalization.method = "CLR")
-
-# HTODemux from Seurat too fussy - use MULTIseqDemux, seems to be less fussy about low HTO counts
-t1 <- MULTIseqDemux(t1, assay = "HTO", quantile = 0.1)
-
-table(t1$MULTI_ID)
-
-Idents(t1) <- "MULTI_ID"
-
-VlnPlot(t1, features = "nCount_RNA", pt.size = 0.1, log = TRUE)
+# # Read in data
+# t1.counts <- Read10X(data.dir = "/t1-data/user/lfelce/10x_Dong050121/combined_T1_repeat3/outs/filtered_feature_bc_matrix")
+# 
+# # Remove -1 from barcodes
+# colnames(t1.counts$`Gene Expression`) <- gsub(x = colnames(t1.counts$`Gene Expression`), pattern = "-1", replacement = "")
+# colnames(t1.counts$`Antibody Capture`) <- gsub(x = colnames(t1.counts$`Antibody Capture`), pattern = "-1", replacement = "")
+# 
+# rowSums(as.data.frame(t1.counts$`Antibody Capture`))
+# rowMeans(as.data.frame(t1.counts$`Antibody Capture`))
+# 
+# 
+# # Create Seurat object from Gene Expression
+# t1 <- CreateSeuratObject(counts = t1.counts$`Gene Expression`)
+# 
+# # Normalize RNA data with log normalization
+# DefaultAssay(t1) <- "RNA"
+# t1 <- NormalizeData(t1)
+# 
+# # Find and scale variable features
+# t1 <- FindVariableFeatures(t1, selection.method = "mean.var.plot")
+# t1 <- ScaleData(t1, features = VariableFeatures(t1))
+# 
+# # Add HTO data as a new assay independent from RNA
+# t1[["HTO"]] <- CreateAssayObject(counts = t1.counts$`Antibody Capture`)
+# 
+# # Normalize HTO data, here we use centered log-ratio (CLR) transformation
+# t1 <- NormalizeData(t1, assay = "HTO", normalization.method = "CLR")
+# 
+# # HTODemux from Seurat too fussy - use MULTIseqDemux, seems to be less fussy about low HTO counts
+# t1 <- MULTIseqDemux(t1, assay = "HTO", quantile = 0.1)
+# 
+# table(t1$MULTI_ID)
+# 
+# Idents(t1) <- "MULTI_ID"
+# 
+# VlnPlot(t1, features = "nCount_RNA", pt.size = 0.1, log = TRUE)
 ```
 
 
 ```{r, fig.height=5, fig.width=16}
-# Extract the singlets
-t1.singlet <- subset(t1, idents = c("hashtag-1", "hashtag-2", "hashtag-4", "hashtag-5", 
-                                    "hashtag-6", "hashtag-8"))
-# Assign metadata to object
-list1 <- as.data.frame(t1.singlet@meta.data$MULTI_ID)
-colnames(list1) <- "sample"
-
-list1$patient <- ifelse(grepl("hashtag-1", list1$sample), "1131",
-                        ifelse(grepl("hashtag-2", list1$sample), "1131",
-                        ifelse(grepl("hashtag-4", list1$sample), "1493",
-                        ifelse(grepl("hashtag-5", list1$sample), "1493",
-                        ifelse(grepl("hashtag-6", list1$sample), "1201",
-                        ifelse(grepl("hashtag-8", list1$sample), "1201", ""))))))
-
-list1$subset <- "CD4"
-
-list1$epitope <- ifelse(grepl("hashtag-1|hashtag-4|hashtag-6", list1$sample), "S151",
-                        ifelse(grepl("hashtag-2|hashtag-5|hashtag-8", list1$sample),
-                        "S174",""))
-
-t1.singlet@meta.data$"epitope" <- as.factor(list1$epitope)
-t1.singlet@meta.data$"patient" <- as.factor(list1$patient)
-
-Idents(t1.singlet) <- "MULTI_ID"
-
-mito.genes <- grep(pattern = "^MT-", x = rownames(t1.singlet@assays[["RNA"]]), value = TRUE)
-
-percent.mito <- Matrix::colSums(t1.singlet@assays[["RNA"]][mito.genes, ])/Matrix::colSums(t1.singlet@assays[["RNA"]])
-
-t1.singlet <- AddMetaData(object = t1.singlet, metadata = percent.mito, col.name = "percent.mito")
-
-VlnPlot(object = t1.singlet, features = c("nFeature_RNA", "nCount_RNA", "percent.mito"), ncol = 3)
+# # Extract the singlets
+# t1.singlet <- subset(t1, idents = c("hashtag-1", "hashtag-2", "hashtag-4", "hashtag-5", 
+#                                     "hashtag-6", "hashtag-8"))
+# # Assign metadata to object
+# list1 <- as.data.frame(t1.singlet@meta.data$MULTI_ID)
+# colnames(list1) <- "sample"
+# 
+# list1$patient <- ifelse(grepl("hashtag-1", list1$sample), "1131",
+#                         ifelse(grepl("hashtag-2", list1$sample), "1131",
+#                         ifelse(grepl("hashtag-4", list1$sample), "1493",
+#                         ifelse(grepl("hashtag-5", list1$sample), "1493",
+#                         ifelse(grepl("hashtag-6", list1$sample), "1201",
+#                         ifelse(grepl("hashtag-8", list1$sample), "1201", ""))))))
+# 
+# list1$subset <- "CD4"
+# 
+# list1$epitope <- ifelse(grepl("hashtag-1|hashtag-4|hashtag-6", list1$sample), "S151",
+#                         ifelse(grepl("hashtag-2|hashtag-5|hashtag-8", list1$sample),
+#                         "S174",""))
+# 
+# t1.singlet@meta.data$"epitope" <- as.factor(list1$epitope)
+# t1.singlet@meta.data$"patient" <- as.factor(list1$patient)
+# 
+# Idents(t1.singlet) <- "MULTI_ID"
+# 
+# mito.genes <- grep(pattern = "^MT-", x = rownames(t1.singlet@assays[["RNA"]]), value = TRUE)
+# 
+# percent.mito <- Matrix::colSums(t1.singlet@assays[["RNA"]][mito.genes, ])/Matrix::colSums(t1.singlet@assays[["RNA"]])
+# 
+# t1.singlet <- AddMetaData(object = t1.singlet, metadata = percent.mito, col.name = "percent.mito")
+# 
+# VlnPlot(object = t1.singlet, features = c("nFeature_RNA", "nCount_RNA", "percent.mito"), ncol = 3)
 
 ```
 
 ```{r, fig.height=4, fig.width=6}
 # can use GenePlot to visualise gene-gene relationships and anything else calculated by object
-FeatureScatter(object=t1.singlet, feature1="nCount_RNA", feature2="nFeature_RNA")
+# FeatureScatter(object=t1.singlet, feature1="nCount_RNA", feature2="nFeature_RNA")
 ```
 
 
 ```{r}
-# Filter cells
-t1.singlet <- subset(x = t1.singlet, subset = nFeature_RNA > 200 & nFeature_RNA < 4000 & percent.mito >  -Inf & percent.mito < 0.05 )
-
-# Normalise data
-t1.singlet <- NormalizeData(object = t1.singlet, normalization.method = "LogNormalize", scale.factor = 10000)
-
-
-# Select the top 1000 most variable features
-t1.singlet <- FindVariableFeatures(t1.singlet, selection.method = "mean.var.plot", verbose=FALSE)
-
-# Scaling RNA data
-t1.singlet <- ScaleData(t1.singlet, features = VariableFeatures(t1.singlet), verbose=FALSE)
-
-# Run PCA
-t1.singlet <- RunPCA(t1.singlet, features = VariableFeatures(t1.singlet), verbose=FALSE)
-
-# Select top PCs for clustering
-t1.singlet <- FindNeighbors(t1.singlet, reduction = "pca", dims = 1:25, verbose=FALSE)
-t1.singlet <- FindClusters(t1.singlet, resolution = 0.5, verbose = FALSE)
-t1.singlet <- RunUMAP(t1.singlet, dims = 1:25, verbose=FALSE)
-t1.singlet <- RunTSNE(t1.singlet, reduction = "pca", dims = 1:25, verbose=FALSE)
-
-# Projecting singlet identities on UMAP visualization
-tsne <- DimPlot(t1.singlet, reduction="tsne", group.by = "MULTI_ID")
-pca <- DimPlot(t1.singlet, reduction="pca", group.by="MULTI_ID")
-umap <- DimPlot(t1.singlet, reduction="umap", group.by = "MULTI_ID")
-umap_cluster <- DimPlot(t1.singlet, reduction="umap", group.by = "seurat_clusters")
-umap_epitope <- DimPlot(t1.singlet, reduction="umap", group.by = "epitope")
-umap_patient <- DimPlot(t1.singlet, reduction="umap", group.by = "patient")
+# # Filter cells
+# t1.singlet <- subset(x = t1.singlet, subset = nFeature_RNA > 200 & nFeature_RNA < 4000 & percent.mito >  -Inf & percent.mito < 0.05 )
+# 
+# # Normalise data
+# t1.singlet <- NormalizeData(object = t1.singlet, normalization.method = "LogNormalize", scale.factor = 10000)
+# 
+# 
+# # Select the top 1000 most variable features
+# t1.singlet <- FindVariableFeatures(t1.singlet, selection.method = "mean.var.plot", verbose=FALSE)
+# 
+# # Scaling RNA data
+# t1.singlet <- ScaleData(t1.singlet, features = VariableFeatures(t1.singlet), verbose=FALSE)
+# 
+# # Run PCA
+# t1.singlet <- RunPCA(t1.singlet, features = VariableFeatures(t1.singlet), verbose=FALSE)
+# 
+# # Select top PCs for clustering
+# t1.singlet <- FindNeighbors(t1.singlet, reduction = "pca", dims = 1:25, verbose=FALSE)
+# t1.singlet <- FindClusters(t1.singlet, resolution = 0.5, verbose = FALSE)
+# t1.singlet <- RunUMAP(t1.singlet, dims = 1:25, verbose=FALSE)
+# t1.singlet <- RunTSNE(t1.singlet, reduction = "pca", dims = 1:25, verbose=FALSE)
+# 
+# # Projecting singlet identities on UMAP visualization
+# tsne <- DimPlot(t1.singlet, reduction="tsne", group.by = "MULTI_ID")
+# pca <- DimPlot(t1.singlet, reduction="pca", group.by="MULTI_ID")
+# umap <- DimPlot(t1.singlet, reduction="umap", group.by = "MULTI_ID")
+# umap_cluster <- DimPlot(t1.singlet, reduction="umap", group.by = "seurat_clusters")
+# umap_epitope <- DimPlot(t1.singlet, reduction="umap", group.by = "epitope")
+# umap_patient <- DimPlot(t1.singlet, reduction="umap", group.by = "patient")
 ```
 
 ```{r, fig.width=14, fig.height=12}
 
-grid.arrange(tsne, pca, umap, umap_cluster, umap_epitope, umap_patient, nrow=3)
+# grid.arrange(tsne, pca, umap, umap_cluster, umap_epitope, umap_patient, nrow=3)
 
 ```
 
 ```{r, fig.width=10, fig.height=7}
-DefaultAssay(t1.singlet) <- "RNA"
-
-FeaturePlot(t1.singlet, features=c("PTPRC", "CD44", "GZMB","CD4"))
+# DefaultAssay(t1.singlet) <- "RNA"
+# 
+# FeaturePlot(t1.singlet, features=c("PTPRC", "CD44", "GZMB","CD4"))
 ```
 
 ```{r, fig.width=14, fig.height=12}
-DefaultAssay(t1.singlet) <- "HTO"
-
-FeaturePlot(t1.singlet, features=c("hashtag-1", "hashtag-2", "hashtag-4", "hashtag-5", 
-                                    "hashtag-6", "hashtag-8"))
+# DefaultAssay(t1.singlet) <- "HTO"
+# 
+# FeaturePlot(t1.singlet, features=c("hashtag-1", "hashtag-2", "hashtag-4", "hashtag-5", 
+#                                     "hashtag-6", "hashtag-8"))
 ```
 
 
@@ -406,6 +406,7 @@ umap_cluster <- DimPlot(t2.singlet, reduction="umap", group.by = "seurat_cluster
 umap_tcell <- DimPlot(t2.singlet, reduction="umap", group.by = "t-cell")
 umap_epitope <- DimPlot(t2.singlet, reduction="umap", group.by = "epitope")
 umap_patient <- DimPlot(t2.singlet, reduction="umap", group.by = "patient")
+
 ```
 
 ```{r, fig.width=14, fig.height=16}
@@ -425,5 +426,77 @@ DefaultAssay(t2.singlet) <- "HTO"
 
 FeaturePlot(t2.singlet, features=c("hashtag-2", "hashtag-4", "hashtag-5", 
                                     "hashtag-6", "hashtag-7", "hashtag-8"))
+```
+
+
+```{r, fig.width=18, fig.height=24}
+DefaultAssay(t2.singlet) <- "RNA"
+
+VlnPlot(object = t2.singlet, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
+                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                  "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                  "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
+                                  "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+                                 "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
+        ncol=6, group.by = "epitope")
+```
+
+```{r, fig.width=18, fig.height=24}
+VlnPlot(object = t2.singlet, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
+                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                  "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                  "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
+                                  "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+                                 "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
+        ncol=6, group.by = "seurat_clusters")
+```
+
+```{r, fig.width=12, fig.height=8}
+list <- as.data.frame(t2.singlet$epitope)
+list <- cbind(list, t2.singlet$patient, t2.singlet$clonotype, t2.singlet$MULTI_ID)
+
+list$NP16 <- ifelse(grepl("clonotype3$|clonotype10$|clonotype26|clonotype93|clonotype5$|clonotype82",list$`t2.singlet$clonotype`), "NP16_shared", "NA")
+
+t2.singlet <- AddMetaData(object = t2.singlet, metadata = list$NP16, col.name = "NP16_shared")
+
+umap_np16 <- DimPlot(t2.singlet, reduction="umap", group.by = "NP16_shared")
+
+grid.arrange(umap_cluster, umap_patient, umap_epitope, umap_np16, ncol=2)
+
+```
+
+
+
+```{r}
+vdj <- read.csv("/t1-data/user/lfelce/CellRanger_VDJ/10x_Dong050121_TCR/TCR_T2/outs/filtered_contig_annotations.csv")
+vdj$barcode <- gsub(x = vdj$barcode, pattern = "-1", replacement = "")
+
+barcodes <- as.data.frame(t2.singlet$patient)
+barcodes <- tibble::rownames_to_column(barcodes, "barcode")
+
+tcr <- merge(barcodes, vdj, by="barcode", all.x=TRUE)
+tcr <- tcr[!duplicated(tcr$barcode),]
+
+t2.singlet <- AddMetaData(object = t2.singlet, metadata = tcr$raw_clonotype_id, col.name = "clonotype")
+
+Idents(t2.singlet) <- "clonotype"
+
+t2.clonotype <- subset(t2.singlet, idents = c("clonotype3", "clonotype10", "clonotype26",
+                                              "clonotype5", "clonotype82"))
+```
+
+```{r, fig.width=18, fig.height=24}
+DefaultAssay(t2.clonotype) <- "RNA"
+
+VlnPlot(object = t2.clonotype, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
+                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                  "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                  "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
+                                  "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+                                 "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
+        ncol=6, group.by = "clonotype")
 ```
 
