@@ -25,366 +25,10 @@ library(stringdist)
 TCR Repertoire Diversity looking at CDR3 sequences for alpha and beta chains separately, using MiXCR output from SmartSeq2 scRNA-Seq, and calculating diversity using Shannon diversity index (tcR package)
 https://cran.r-project.org/web/packages/tcR/vignettes/tcrvignette.html
 
-## Single cell TCRs
-### CD8 NP16
-```{r, text=FALSE, include=FALSE}
-# # load in data and create mixcr_a and mixcr_b object
-# setwd('/t1-data/user/lfelce/TCR_analysis/cd8_np16_new/')
-# 
-# # create list of file names
-# tra_list <- list.files(path = ".", recursive = TRUE,
-#                        pattern = "\\TRA.txt$",
-#                        full.names = TRUE)
-# tra_list <- tra_list %>% str_replace("./*", "")
-# 
-# trb_list <- list.files(path = ".", recursive = TRUE,
-#                        pattern = "\\TRB.txt$",
-#                        full.names = TRUE)
-# trb_list <- trb_list %>% str_replace("./*", "")
-# 
-# 
-# # parse in files with tcR
-# mixcr_a <- parse.file.list(tra_list, "mixcr")
-# mixcr_b <- parse.file.list(trb_list, "mixcr")
-# 
-# # sort alphabetically
-# mixcr_a <- mixcr_a[order(names(mixcr_a))]
-# mixcr_b <- mixcr_b[order(names(mixcr_b))]
-# 
-# # create list of cell numbers and cell names
-# # different lengths so same cell will be different number in a or b
-# mixcr_a_names <- as.data.frame(names(mixcr_a))
-# mixcr_b_names <- as.data.frame(names(mixcr_b))
-# 
-# mixcr_a_names <-tibble::rownames_to_column(mixcr_a_names, "cell_number")
-# mixcr_b_names <- tibble::rownames_to_column(mixcr_b_names, "cell_number")
-# 
-# # rename columns
-# colnames(mixcr_a_names) <- c("cell_number", "cell_name")
-# colnames(mixcr_b_names) <- c("cell_number", "cell_name")
-# 
-# # convert mixcr lists to dataframe with Read count, proportion, CDR3 sequence and V and J gene info
-# # removed bulk samples for now
-# # keep cells with 1 or 2 alphas
-# # keep cells with 1 beta
-# # merge alpha and beta and keep cells that express only 1 alpha or only 1 beta
-# 
-# # mixcr_a
-# datalist = list()
-# for (i in (1:length(mixcr_a))) {
-#   dat <- data.frame(c(mixcr_a[[i]][3], mixcr_a[[i]][4], mixcr_a[[i]][6],mixcr_a[[i]][7], mixcr_a[[i]][8]))
-#   dat$i <- i # keep track of which iteration produced it
-#   datalist[[i]] <- dat # add it to list
-# }
-# # combine columns for each cell and filter to keep cells with 1 or 2 alphas
-# big_data = do.call(rbind, datalist)
-# tra <- big_data %>% group_by(i) %>% filter(n() <= 2)
-# colnames(tra) <- c("clone_count", "clone_fraction", "CDR3_alpha", "TRAV", "TRAJ", "cell_number")
-# tra <- merge(tra, mixcr_a_names, by="cell_number")
-# 
-# 
-# # mixcr_b
-# datalist = list()
-# for (i in (1:length(mixcr_b))) {
-#   dat <- data.frame(c(mixcr_b[[i]][3], mixcr_b[[i]][4], mixcr_b[[i]][6], mixcr_b[[i]][7], mixcr_b[[i]][8]))
-#   dat$i <- i # keep track of which iteration produced it
-#   datalist[[i]] <- dat # add it to list
-# }
-# # combine columns for each cell
-# big_data = do.call(rbind, datalist)
-# trb <- big_data %>% group_by(i) %>% filter(n() <= 2)
-# colnames(trb) <- c("clone_count", "clone_fraction","CDR3_beta", "TRBV", "TRBJ", "cell_number")
-# trb <- merge(trb, mixcr_b_names, by="cell_number")
-# 
-# 
-# # combine TRA and TRB dataframes - some cells will have only 1 alpha or 1 beta, so keep all rows
-# cd8_np16 <- merge(tra,trb, by="cell_name", all= TRUE)
-# 
-# cd8_np16 <- mutate(cd8_np16, alpha=paste(TRAV, TRAJ, sep="_"))
-# 
-# cd8_np16 <- mutate(cd8_np16, beta=paste(TRBV, TRBJ, sep="_"))
-# 
-# tra <- mutate(tra, alpha=paste(TRAV, TRAJ, sep="_"))
-# 
-# trb <- mutate(trb, beta=paste(TRBV, TRBJ, sep="_"))
-```
-### Shannon diversity box plots for CDR3 alpha and beta
-```{r, fig.height=10, fig.width=16, text=FALSE}
-# # alpha
-# # calculate diversity
-# div <- as.data.frame(repDiversity(.data = mixcr_a, .method = "entropy", .quant = "read.count"))
-# 
-# div_a <- tibble::rownames_to_column(div, "cell_name")
-# colnames(div_a ) <- c("cell_name", "diversity_index")
-# 
-# # add patient info and timepoint
-# div_a$patient <- ifelse(grepl("005", div_a$cell_name), "005",
-#                           ifelse(grepl("1131-TP-1",div_a$cell_name), "1131-TP-1",
-#                           ifelse(grepl("1131-TP-2", div_a$cell_name), "1131-TP-2",
-#                           ifelse(grepl("1153", div_a$cell_name), "1153",
-#                           ifelse(grepl("1201", div_a$cell_name), "1201", "")))))
-# 
-# div_a$severity <- ifelse(grepl("005", div_a$cell_name), "mild",
-#                           ifelse(grepl("1131-TP-1",div_a$cell_name), "severe",
-#                           ifelse(grepl("1131-TP-2", div_a$cell_name), "severe",
-#                           ifelse(grepl("1153", div_a$cell_name), "severe",
-#                           ifelse(grepl("1201", div_a$cell_name), "mild", "")))))
-# 
-# div_a$timepoint <- ifelse(grepl("1131-TP-1", div_a$patient), "acute",
-#                             ifelse(grepl("005|1131-TP-2|1153|1201", div_a$patient), "convalescent",""))
-# 
-# # merge with TCR info
-# div_a <- merge(div_a, tra, by="cell_name")
-# 
-# # add TCR status
-# div_a$TCR <- ifelse(grepl("TRAV21_TRAJ37|TRAV17_TRAJ22|TRAV13-1_TRAJ11|TRAV21_TRAJ30|TRAV13-1_TRAJ4", div_a$alpha), "shared",
-#              ifelse(grepl("TRAV13-2_TRAJ12|TRAV26-1_TRAJ4|TRAV26-1_TRAJ40", div_a$alpha), "acute only",
-#              ifelse(!grepl("TRAV21_TRAJ37|TRAV17_TRAJ22|TRAV13-1_TRAJ11|TRAV21_TRAJ30|TRAV13-1_TRAJ4|TRAV13-2_TRAJ12|TRAV26-1_TRAJ4|TRAV26-1_TRAJ40", div_a$alpha), "convalescent only", "")))
-# 
-# 
-# # beta
-# div <- as.data.frame(repDiversity(.data = mixcr_b, .method = "entropy", .quant = "read.count"))
-# 
-# div_b <- tibble::rownames_to_column(div, "cell_name")
-# colnames(div_b ) <- c("cell_name", "diversity_index")
-# 
-# div_b$patient <- ifelse(grepl("005", div_b$cell_name), "005",
-#                  ifelse(grepl("1131-TP-1",div_b$cell_name), "1131-TP-1",
-#                  ifelse(grepl("1131-TP-2", div_b$cell_name), "1131-TP-2",
-#                  ifelse(grepl("1153", div_b$cell_name), "1153",
-#                  ifelse(grepl("1201", div_b$cell_name), "1201", "")))))
-# 
-# div_b$severity <- ifelse(grepl("005", div_b$cell_name), "mild",
-#                  ifelse(grepl("1131-TP-1",div_b$cell_name), "severe",
-#                  ifelse(grepl("1131-TP-2", div_b$cell_name), "severe",
-#                  ifelse(grepl("1153", div_b$cell_name), "severe",
-#                  ifelse(grepl("1201", div_b$cell_name), "mild", "")))))
-# 
-# div_b$timepoint <- ifelse(grepl("1131-TP-1", div_b$patient), "acute", "convalescent")
-# 
-# # merge with TCR info
-# div_b <- merge(div_b, trb, by="cell_name")
-# 
-# # add TCR status
-# div_b$TCR <- ifelse(grepl("TRBV27_TRBJ2-4|TRBV28_TRBJ1-1|TRBV5-1_TRBJ2-1", div_b$beta), "shared",
-#              ifelse(grepl("TRBV29-1_TRBJ2-1", div_b$beta), "acute only",
-#              ifelse(!grepl("TRBV27_TRBJ2-4|TRBV28_TRBJ1-1|TRBV5-1_TRBJ2-1|TRBV29-1_TRBJ2-1", div_b$beta), "convalescent only", "")))
-# # 
-# # 
-# # # export files
-# # setwd('/t1-data/user/lfelce/TCR_analysis/diversity/')
-# # write.csv(div_a, "cd8_np16_div_a.csv")
-# # write.csv(div_b, "cd8_np16_div_b.csv")
-# # 
-# a1 <- ggplot(div_a, aes(x=patient, y=diversity_index, color=TCR)) +
-#   geom_jitter(width=0.25) +
-#   labs(title="Diversity of CD8 NP16 CDR3 alpha",x="Patient", y = "Shannon diversity index")
-# 
-# a2 <- ggplot(div_a, aes(x=timepoint, y=diversity_index, color=TCR)) +
-#   geom_jitter(width=0.25)+
-#   labs(title="Diversity of CD8 NP16 CDR3 alpha",x="Timepoint", y = "Shannon diversity index")
-# 
-# a3 <- ggplot(div_a, aes(x=severity, y=diversity_index, color=TCR)) +
-#   geom_jitter(width=0.25)+
-#   labs(title="Diversity of CD8 NP16 CDR3 alpha",x="Severity", y = "Shannon diversity index")
-# 
-# b1 <- ggplot(div_b, aes(x=patient, y=diversity_index, color=TCR)) +
-#   geom_jitter(width=0.25)+
-#   labs(title="Diversity of CD8 NP16 CDR3 beta",x="Patient", y = "Shannon diversity index")
-# 
-# b2 <- ggplot(div_b, aes(x=timepoint, y=diversity_index,color=TCR)) +
-#   geom_jitter(width=0.25)+
-#   labs(title="Diversity of CD8 NP16 CDR3 beta",x="Timepoint", y = "Shannon diversity index")
-# 
-# b3 <- ggplot(div_b, aes(x=severity, y=diversity_index, color=TCR)) +
-#   geom_jitter(width=0.25)+
-#   labs(title="Diversity of CD8 NP16 CDR3 beta",x="Severity", y = "Shannon diversity index")
-```
+repDiversity from tcR package not working properly - try using baseR to calculate Shannon Diversity Index https://en.wikipedia.org/wiki/Diversity_index
 
-```{r, fig.height=18, fig.width=16}
-
-# grid.arrange(a1, b1, a2, b2, a3, b3, nrow=3)
-
-```
-```{r, fig.width=12, fig.height=6}
-# Welch 2 sample t-test: (y~x) where y is numeric and x is a binary factor
-# t.test(div_a$diversity_index~div_a$severity)
-# 
-# t.test(div_b$diversity_index~div_b$severity)
-# 
-# q1 <- ggplot(div_a, aes(x=severity, y=diversity_index)) +
-#   geom_boxplot()+
-# labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 alpha",x="Severity", y = "Shannon diversity index")
-# 
-# q2 <- ggplot(div_b, aes(x=severity, y=diversity_index)) +
-#   geom_boxplot()+
-# labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Severity", y = "Shannon diversity index")
-# 
-# grid.arrange(q1, q2, nrow=1)
-
-```
-
-## CD8 ORF3a-28
-```{r, text=FALSE, include=FALSE}
-# load in data and create mixcr_a and mixcr_b object
-# setwd('/t1-data/user/lfelce/TCR_analysis/cd8_orf_new/')
-# 
-# # create list of file names, remove minibulk
-# tra_list <- list.files(path = ".", recursive = TRUE,
-#                        pattern = "\\TRA.txt$", 
-#                        full.names = TRUE)
-# tra_list <- tra_list %>% str_replace("./*", "")
-# tra_list <-tra_list[!str_detect(tra_list,pattern="minibulk")]
-# 
-# trb_list <- list.files(path = ".", recursive = TRUE,
-#                        pattern = "\\TRB.txt$", 
-#                        full.names = TRUE)
-# trb_list <- trb_list %>% str_replace("./*", "")
-# trb_list <-trb_list[!str_detect(trb_list,pattern="minibulk")]
-# 
-# 
-# # parse in files with tcR
-# mixcr_a <- parse.file.list(tra_list, "mixcr")
-# mixcr_b <- parse.file.list(trb_list, "mixcr")
-# 
-# # sort alphabetically
-# mixcr_a <- mixcr_a[order(names(mixcr_a))]
-# mixcr_b <- mixcr_b[order(names(mixcr_b))]
-# 
-# # create list of cell numbers and cell names
-# # different lengths so same cell will be different number in a or b
-# mixcr_a_names <- as.data.frame(names(mixcr_a))
-# mixcr_b_names <- as.data.frame(names(mixcr_b))
-# 
-# mixcr_a_names <-tibble::rownames_to_column(mixcr_a_names, "cell_number")
-# mixcr_b_names <- tibble::rownames_to_column(mixcr_b_names, "cell_number")
-# 
-# # rename columns
-# colnames(mixcr_a_names) <- c("cell_number", "cell_name")
-# colnames(mixcr_b_names) <- c("cell_number", "cell_name")
-# 
-# # convert mixcr lists to dataframe with Read count, proportion, CDR3 sequence and V and J gene info
-# # removed bulk samples for now
-# # keep cells with 1 or 2 alphas
-# # keep cells with 1 or 2 betas
-# # merge alpha and beta and keep cells that express only 1 alpha or only 1 beta
-# 
-# # mixcr_a
-# datalist = list()
-# for (i in (1:length(mixcr_a))) {
-#   dat <- data.frame(c(mixcr_a[[i]][3], mixcr_a[[i]][4], mixcr_a[[i]][6],mixcr_a[[i]][7], mixcr_a[[i]][8]))
-#   dat$i <- i # keep track of which iteration produced it
-#   datalist[[i]] <- dat # add it to list
-# }
-# # combine columns for each cell and filter to keep cells with 1 or 2 alphas
-# big_data = do.call(rbind, datalist)
-# tra <- big_data %>% group_by(i) %>% filter(n() <= 2)
-# colnames(tra) <- c("clone_count", "clone_fraction", "CDR3_alpha", "TRAV", "TRAJ", "cell_number")
-# tra <- merge(tra, mixcr_a_names, by="cell_number")
-# 
-# 
-# # mixcr_b
-# datalist = list()
-# for (i in (1:length(mixcr_b))) {
-#   dat <- data.frame(c(mixcr_b[[i]][3], mixcr_b[[i]][4], mixcr_b[[i]][6], mixcr_b[[i]][7], mixcr_b[[i]][8]))
-#   dat$i <- i # keep track of which iteration produced it
-#   datalist[[i]] <- dat # add it to list
-# }
-# # combine columns for each cell
-# big_data = do.call(rbind, datalist)
-# trb <- big_data %>% group_by(i) %>% filter(n() <= 2)
-# colnames(trb) <- c("clone_count", "clone_fraction","CDR3_beta", "TRBV", "TRBJ", "cell_number")
-# trb <- merge(trb, mixcr_b_names, by="cell_number")
-# 
-# 
-# # combine TRA and TRB dataframes - some cells will have only 1 alpha or 1 beta, so keep all rows
-# cd8_orf3a <- merge(tra,trb, by="cell_name", all= TRUE)
-# 
-# cd8_orf3a <- mutate(cd8_orf3a, alpha=paste(TRAV, TRAJ, sep="_"))
-# 
-# cd8_orf3a <- mutate(cd8_orf3a, beta=paste(TRBV, TRBJ, sep="_"))
-# 
-# tra <- mutate(tra, alpha=paste(TRAV, TRAJ, sep="_"))
-# 
-# trb <- mutate(trb, beta=paste(TRBV, TRBJ, sep="_"))
-```
-### Shannon diversity box plots for CDR3 alpha and beta
-```{r, fig.height=10, fig.width=16, text=FALSE}
-## alpha
-# calculate diversity
-# div <- as.data.frame(repDiversity(.data = mixcr_a, .method = "entropy", .quant = "read.count"))
-# 
-# div_a <- tibble::rownames_to_column(div, "cell_name")
-# colnames(div_a ) <- c("cell_name", "diversity_index")
-# 
-# # add patient info and timepoint
-# div_a$patient <- ifelse(grepl("1105", div_a$cell_name), "1105", 
-#                           ifelse(grepl("1134-TP-2",div_a$cell_name), "1134-TP-2", 
-#                           ifelse(grepl("1525-TP-1", div_a$cell_name), "1525-TP-1", 
-#                           ifelse(grepl("1525-TP-2", div_a$cell_name), "1525-TP-2", ""))))
-# 
-# div_a$timepoint <- ifelse(grepl("1525-TP-1", div_a$patient), "acute", "convalescent")
-# 
-# # merge with TCR info
-# div_a <- merge(div_a, tra, by="cell_name")
-# 
-# # add TCR status
-# div_a$TCR <- ifelse(grepl("TRAV14DV4_TRAJ43|TRAV14DV4_TRAJ52|TRAV14DV4_TRAJ9|TRAV17_TRAJ7|TRAV20_TRAJ35|
-# TRAV24_TRAJ22|TRAV25_TRAJ16|TRAV25_TRAJ47|TRAV35_TRAJ52|TRAV8-6_TRAJ22", div_a$alpha), "shared",
-#              ifelse(grepl("TRAV25_TRAJ15|TRAV26-1_TRAJ28|TRAV12-1_TRAJ38|TRAV14DV4_TRAJ8|TRAV12-2_TRAJ18|TRAV12-3_TRAJ36|TRAV8-4, TRAV8-6_TRAJ22|TRAV25_TRAJ24|TRAV12-2_TRAJ9", div_a$alpha), "acute only",
-#              ifelse(!grepl("TRAV14DV4_TRAJ43|TRAV14DV4_TRAJ52|TRAV14DV4_TRAJ9|TRAV17_TRAJ7|TRAV20_TRAJ35|
-# TRAV24_TRAJ22|TRAV25_TRAJ16|TRAV25_TRAJ47|TRAV35_TRAJ52|TRAV8-6_TRAJ22|TRAV25_TRAJ15|TRAV26-1_TRAJ28|TRAV12-1_TRAJ38|TRAV14DV4_TRAJ8|TRAV12-2_TRAJ18|TRAV12-3_TRAJ36|TRAV8-4, TRAV8-6_TRAJ22|TRAV25_TRAJ24|TRAV12-2_TRAJ9", div_a$alpha), "convalescent only", "")))
-# 
-# p1 <- ggplot(div_a, aes(x=patient, y=diversity_index, color=TCR)) + 
-#   geom_jitter(width=0.25) +
-#   labs(title="Diversity of CD8 ORF3a-28 CDR3 alpha",x="Patient", y = "Shannon diversity index") 
-#   
-# 
-# p2 <- ggplot(div_a, aes(x=timepoint, y=diversity_index, color=TCR)) + 
-#   geom_jitter(width=0.25)+
-#   labs(title="Diversity of CD8 ORF3a-28 CDR3 alpha",x="Timepoint", y = "Shannon diversity index")
-# 
-# 
-# # beta
-# div <- as.data.frame(repDiversity(.data = mixcr_b, .method = "entropy", .quant = "read.count"))
-# 
-# div_b <- tibble::rownames_to_column(div, "cell_name")
-# colnames(div_b ) <- c("cell_name", "diversity_index")
-# 
-# div_b$patient <- ifelse(grepl("1105", div_b$cell_name), "1105", 
-#                           ifelse(grepl("1134-TP-2",div_b$cell_name), "1134-TP-2", 
-#                           ifelse(grepl("1525-TP-1", div_b$cell_name), "1525-TP-1", 
-#                           ifelse(grepl("1525-TP-2", div_b$cell_name), "1525-TP-2", ""))))
-# 
-# div_b$timepoint <- ifelse(grepl("1525-TP-1", div_b$patient), "acute", "convalescent")
-# 
-# # merge with TCR info
-# div_b <- merge(div_b, trb, by="cell_name")
-# 
-# # add TCR status
-# div_b$TCR <- ifelse(grepl("TRBV13_TRBJ1-2|TRBV7-3_TRBJ1-2|TRBV4-2_TRBJ2-1|TRBV5-1_TRBJ2-5|TRBV4-1_TRBJ2-3|TRBV6-6_TRBJ2-7|TRBV27_TRBJ2-7|TRBV4-1_TRBJ2-7|TRBV4-3_TRBJ2-7|TRBV5-1_TRBJ2-7|TRBV2_TRBJ2-2|TRBV27, TRBV28_TRBJ1-6|TRBV4-1, TRBV4-3_TRBJ2-7", div_b$beta), "shared",
-#              ifelse(grepl("TRBV9_TRBJ2-3|TRBV7-3, TRBV7-8, TRBV7-9_TRBJ1-2|TRBV7-9_TRBJ1-6|TRBV28_TRBJ2-7|TRBV7-1, TRBV28_TRBJ2-7|TRBV6-1, TRBV6-5, TRBV6-6_TRBJ2-6|TRBV13_TRBJ2-6", div_b$beta), "acute only",
-#              ifelse(!grepl("TRBV13_TRBJ1-2|TRBV7-3_TRBJ1-2|TRBV4-2_TRBJ2-1|TRBV5-1_TRBJ2-5|TRBV4-1_TRBJ2-3|TRBV6-6_TRBJ2-7|TRBV27_TRBJ2-7|TRBV4-1_TRBJ2-7|TRBV4-3_TRBJ2-7|TRBV5-1_TRBJ2-7|TRBV2_TRBJ2-2|TRBV27, TRBV28_TRBJ1-6|TRBV4-1, TRBV4-3_TRBJ2-7|TRBV9_TRBJ2-3|TRBV7-3, TRBV7-8, TRBV7-9_TRBJ1-2|TRBV7-9_TRBJ1-6|TRBV28_TRBJ2-7|TRBV7-1, TRBV28_TRBJ2-7|TRBV6-1, TRBV6-5, TRBV6-6_TRBJ2-6|TRBV13_TRBJ2-6", div_b$beta), "convalescent only", "")))
-# 
-# p3 <- ggplot(div_b, aes(x=patient, y=diversity_index, color=TCR)) + 
-#   geom_jitter(width=0.25)+
-#   labs(title="Diversity of CD8 ORF3a-28 CDR3 beta",x="Patient", y = "Shannon diversity index")
-# 
-# p4 <- ggplot(div_b, aes(x=timepoint, y=diversity_index,color=TCR)) + 
-#   geom_jitter(width=0.25)+
-#   labs(title="Diversity of CD8 ORF3a-28 CDR3 beta",x="Timepoint", y = "Shannon diversity index")
-# 
-# # export files
-# setwd('/t1-data/user/lfelce/TCR_analysis/diversity/')
-# write.csv(div_a, "cd8_orf3a_div_a.csv")
-# write.csv(div_b, "cd8_orf3a_div_b.csv")
-# 
-# grid.arrange(p1, p2, p3, p4, nrow=2)
-
-```
-
-## CD8 NP16 and ORF3a-28 (combined)
-Only interested in 1 beta
+# CD8 NP16 and ORF3a-28 (combined) - tcR
+Only interested in 1 beta (all cells)
 ```{r, text=FALSE, include=FALSE}
 # # load in data and create mixcr_a and mixcr_b object
 # setwd('/t1-data/user/lfelce/TCR_analysis/cd8_np16_new/')
@@ -665,7 +309,7 @@ Can't really compare mild v severe as both mild cases in NP16?
 ```
 
 
-# NP16 and ORF3a-28 combined only from 1 beta cells
+# NP16 and ORF3a-28 combined only from 1/2 alphas + 1 beta cells (complete single cell data) - baseR
 
 ```{r, text=FALSE, include=FALSE}
 # NP16 data from single cell TCRs - 1 beta cells only (1/2 alphas)
@@ -675,13 +319,6 @@ sc_np16_b <- sc_np16[,c("cell_name", "CDR3_beta", "beta")]
 
 sc_np16_b <- sc_np16_b[!duplicated(sc_np16_b$cell_name),]
 
-sc_np16_b$cell_name <- paste("/t1-data/user/lfelce/TCR_analysis/cd8_np16_new/",sc_np16_b$cell_name, ".clonotypes.TRB.txt", sep="")
-
-np16_list <- as.list(sc_np16_b$cell_name)
-
-
-# parse in files with tcR
-mixcr_b_np16 <- parse.file.list(np16_list, "mixcr")
 
 
 # ORF3a-28 data from single cell TCRs - 1 beta cells only (1/2 alphas)
@@ -691,106 +328,324 @@ sc_orf3a_b <- sc_orf3a[,c("cell_name", "CDR3_beta", "beta")]
 
 sc_orf3a_b <- sc_orf3a_b[!duplicated(sc_orf3a_b$cell_name),]
 
-sc_orf3a_b$cell_name <- paste("/t1-data/user/lfelce/TCR_analysis/cd8_orf_new/",sc_orf3a_b$cell_name, ".clonotypes.TRB.txt", sep="")
-
-orf3a_list <- as.list(sc_orf3a_b$cell_name)
-
-
-# # parse in files with tcR
-# mixcr_b_orf3a <- parse.file.list(orf3a_list, "mixcr")
-# 
-# # combine mixcr files
-# mixcr_b <- c(mixcr_b_np16, mixcr_b_orf3a)
-# 
-# # sort alphabetically
-# mixcr_b <- mixcr_b[order(names(mixcr_b))]
- 
-# # create list of cell numbers and cell names
-# # different lengths so same cell will be different number in a or b
-# mixcr_b_names <- as.data.frame(names(mixcr_b))
-# mixcr_b_names <- tibble::rownames_to_column(mixcr_b_names, "cell_number")
-# 
-# # rename columns
-# colnames(mixcr_b_names) <- c("cell_number", "cell_name")
-# 
-# # mixcr_b
-# datalist = list()
-# for (i in (1:length(mixcr_b))) {
-#   dat <- data.frame(c(mixcr_b[[i]][3], mixcr_b[[i]][4], mixcr_b[[i]][6], mixcr_b[[i]][7], mixcr_b[[i]][8]))
-#   dat$i <- i # keep track of which iteration produced it
-#   datalist[[i]] <- dat # add it to list
-# }
-# # combine columns for each cell
-# # have to have 1 or 2 betas per cell - if only keep cells with 1 beta then diversity index = 0 for all betas!
-# big_data = do.call(rbind, datalist)
-# trb <- big_data %>% group_by(i) %>% filter(n() <= 2)
-# 
-# colnames(trb) <- c("Read.count", "clone_fraction","CDR3_beta", "TRBV", "TRBJ", "cell_number")
-# trb <- merge(trb, mixcr_b_names, by="cell_number")
-# 
-# # tidy up
-# trb <- mutate(trb, beta=paste(TRBV, TRBJ, sep="_"))
-```
-## Shannon diversity index with tcR
-```{r}
-# div <- as.data.frame(repDiversity(.data = mixcr_b, .method = "entropy", .quant = "umi.prop"))
 
 ```
 
-## Similarity matrix
+## Shannon diversity index (base R)
+Email from Benny:
+
+Diversity usually applies to a repertoire, not an individual TCR. It refers to the distribution of frequencies – how MANY different TCRs are there, and how are they distributed. For example are they all at equal number, or are there a few very frequent and others very rare. It is not usually used to measure the sort of diversity you mean, which is how similar are the TCRs. Have a look at this paper, which may be helpful. https://pubmed.ncbi.nlm.nih.gov/32952933/
+
+ There are many different measures of the first type of diversity I mentioned above, depending on how much weight you want to give to the first question (how MANY) or the second (how are they distributed). For example, RICHNESS is simply a measure of how many different TCRs there are as a proportion fo the total number. The other extreme is to measure what proportion of the reprtorie is occupied by the biggest clone.
+
+Two commonly used intermediates between these two are Shannon and Simpson. You don’t really need a package for Shannon – it is simply sum(pi*log(p)) taken over all the TCRs, where p is the proportion of the repertoire occupied by clone i. But you can use vegan v2.4-2by Jari Oksanen which will give you Shannon and Simpson.
+
+NOTE – diversity indices are very dependent on total reprtorie size. The only real way to deal with this is to subsample each reprotire you are comparing to the same number of TCRs. You can try a normalised Shannon (which divides the total by log(N) but its still not perfect.
 
 ```{r}
 
 combined <- rbind(sc_np16_b, sc_orf3a_b)
 
-combined$patient <- ifelse(grepl("005", combined$cell_name), "005",
-                          ifelse(grepl("1131-TP-1",combined$cell_name), "1131-TP-1",
-                          ifelse(grepl("1131-TP-2", combined$cell_name), "1131-TP-2",
-                          ifelse(grepl("1153", combined$cell_name), "1153",
-                          ifelse(grepl("1201", combined$cell_name), "1201",
-                          ifelse(grepl("1105", combined$cell_name), "1105",
-                          ifelse(grepl("1134-TP-2",combined$cell_name), "1134-TP-2",
-                          ifelse(grepl("1525-TP-1", combined$cell_name), "1525-TP-1",
-                          ifelse(grepl("1525-TP-2", combined$cell_name), "1525-TP-2",
+table <- as.data.frame(table(combined$CDR3_beta))
+
+combined2 <- merge(combined, table, by.x="CDR3_beta", by.y="Var1", all.x=TRUE)
+
+combined2$patient <- ifelse(grepl("005", combined2$cell_name), "005",
+                          ifelse(grepl("1131-TP-1",combined2$cell_name), "1131-TP-1",
+                          ifelse(grepl("1131-TP-2", combined2$cell_name), "1131-TP-2",
+                          ifelse(grepl("1153", combined2$cell_name), "1153",
+                          ifelse(grepl("1201", combined2$cell_name), "1201",
+                          ifelse(grepl("1105", combined2$cell_name), "1105",
+                          ifelse(grepl("1134-TP-2",combined2$cell_name), "1134-TP-2",
+                          ifelse(grepl("1525-TP-1", combined2$cell_name), "1525-TP-1",
+                          ifelse(grepl("1525-TP-2", combined2$cell_name), "1525-TP-2",
                                  "")))))))))
 
-combined$severity <- ifelse(grepl("005", combined$cell_name), "mild",
-                          ifelse(grepl("1131-TP-1",combined$cell_name), "severe",
-                          ifelse(grepl("1131-TP-2", combined$cell_name), "severe",
-                          ifelse(grepl("1153", combined$cell_name), "severe",
-                          ifelse(grepl("1201", combined$cell_name), "mild",
-                          ifelse(grepl("1105", combined$cell_name), "severe",
-                          ifelse(grepl("1134-TP-2",combined$cell_name), "severe",
-                          ifelse(grepl("1525-TP-1", combined$cell_name), "severe",
-                          ifelse(grepl("1525-TP-2", combined$cell_name), "severe",
+combined2$severity <- ifelse(grepl("005", combined2$cell_name), "mild",
+                          ifelse(grepl("1131-TP-1",combined2$cell_name), "severe",
+                          ifelse(grepl("1131-TP-2", combined2$cell_name), "severe",
+                          ifelse(grepl("1153", combined2$cell_name), "severe",
+                          ifelse(grepl("1201", combined2$cell_name), "mild",
+                          ifelse(grepl("1105", combined2$cell_name), "severe",
+                          ifelse(grepl("1134-TP-2",combined2$cell_name), "severe",
+                          ifelse(grepl("1525-TP-1", combined2$cell_name), "severe",
+                          ifelse(grepl("1525-TP-2", combined2$cell_name), "severe",
                                  "")))))))))
 
-combined$timepoint <- ifelse(grepl("TP-1", combined$patient), "acute",
-                   ifelse(grepl("005|TP-2|1153|1201|1105", combined$cell_name), "convalescent", ""))
+combined2$timepoint <- ifelse(grepl("TP-1", combined2$patient), "acute",
+                   ifelse(grepl("005|TP-2|1153|1201|1105", combined2$cell_name), "convalescent", ""))
 
-combined$epitope <- ifelse(grepl("NP16|B7_SPR", combined$cell_name), "NP16",
-                 ifelse(grepl("ORF3a-28", combined$cell_name), "ORF3a-28", ""))
-                           
+combined2$epitope <- ifelse(grepl("NP16|B7_SPR", combined2$cell_name), "NP16",
+                 ifelse(grepl("ORF3a-28", combined2$cell_name), "ORF3a-28", ""))
 
 datalist = list()
-for (i in (1:length(combined$cell_name))) {
-  dat <- stringsim(combined$CDR3_beta[i], combined$CDR3_beta, method="lv") 
+for (i in (1:nrow(combined2))) {
+  dat <- combined2$Freq[i]/sum(combined2$Freq)
   datalist[[i]] <- dat # add it to list
 }
+
+proportion <- do.call(rbind, datalist)
+
+combined2$proportion <- proportion
+
+datalist = list()
+for (i in (1:nrow(combined2))) {
+  dat <- -sum(combined2$proportion[i]*(log10(combined2$proportion[i])))
+  datalist[[i]] <- dat # add it to list
+}
+
+diversity <- do.call(rbind, datalist)
+
+combined2$diversity <- diversity
+
+                           
+```
+
+```{r}
+p1 <- ggplot(combined2, aes(x=patient, y=diversity, colour=epitope)) +
+  geom_boxplot(width=0.5) + geom_jitter(width=0.25) +
+  labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Patient", y = "Shannon diversity index")
+
+p2 <- ggplot(combined2, aes(x=epitope, y=diversity, colour=epitope)) +
+  geom_boxplot(width=0.5)+ geom_jitter(width=0.25) +
+  labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Epitope", y = "Shannon diversity index")
+
+# subset NP16 only to look at mild v severe
+
+np16_only <- combined2[!grepl("ORF3a-28", combined2$epitope),]
+
+np16_only$proportion <- NULL
+np16_only$diversity <- NULL
+
+datalist = list()
+for (i in (1:nrow(np16_only))) {
+  dat <- np16_only$Freq[i]/sum(np16_only$Freq)
+  datalist[[i]] <- dat # add it to list
+}
+
+proportion <- do.call(rbind, datalist)
+
+np16_only$proportion <- proportion
+
+datalist = list()
+for (i in (1:nrow(np16_only))) {
+  dat <- -sum(np16_only$proportion[i]*(log10(np16_only$proportion[i])))
+  datalist[[i]] <- dat # add it to list
+}
+
+diversity <- do.call(rbind, datalist)
+
+np16_only$diversity <- diversity
+
+p3 <- ggplot(np16_only, aes(x=severity, y=diversity, colour=severity)) +
+  geom_boxplot(width=0.5)+ geom_jitter(width=0.25) +
+  labs(title="Diversity of CD8+ NP16 CDR3 beta",x="Severity", y = "Shannon diversity index")
+
+
+```
+
+
+#### By patient
+```{r, fig.width=10, fig.height=5}
+p1
+```
+#### By severity and epitope
+
+```{r, fig.width=16, fig.height=7}
+grid.arrange(p2, p3, nrow=1)
+```
+
+
+
+```{r}
+# Welch 2 sample t-test: (y~x) where y is numeric and x is a binary factor
+
+t.test(combined2$diversity~combined2$epitope)
+
+t.test(np16_only$diversity~np16_only$severity)
+
+
+```
+
+# NP16 and ORF3a-28 combined cells with 1 beta only
+```{r, include=FALSE}
+# load in data and create mixcr_b object
+setwd('/t1-data/user/lfelce/TCR_analysis/cd8_np16_new/')
+
+# create list of file names
+trb_list <- list.files(path = ".", recursive = TRUE,
+                        pattern = "\\TRB.txt$", 
+                        full.names = TRUE)
+trb_list <- trb_list %>% str_replace("./*", "")
+ 
+# parse in files with tcR
+mixcr_b_np16 <- parse.file.list(trb_list, "mixcr")
+
+# load in data and create  mixcr_b object
+setwd('/t1-data/user/lfelce/TCR_analysis/cd8_orf_new/')
+
+# create list of file names, remove minibulk
+trb_list <- list.files(path = ".", recursive = TRUE,
+                       pattern = "\\TRB.txt$",
+                       full.names = TRUE)
+trb_list <- trb_list %>% str_replace("./*", "")
+trb_list <-trb_list[!str_detect(trb_list,pattern="minibulk")]
+ 
+# parse in files with tcR
+mixcr_b_orf3a <- parse.file.list(trb_list, "mixcr")
+
+# combine mixcr files
+mixcr_b <- c(mixcr_b_np16, mixcr_b_orf3a)
+ 
+# sort alphabetically
+mixcr_b <- mixcr_b[order(names(mixcr_b))]
+
+# create list of cell numbers and cell names
+# different lengths so same cell will be different number in a or b
+mixcr_b_names <- as.data.frame(names(mixcr_b))
+mixcr_b_names <- tibble::rownames_to_column(mixcr_b_names, "cell_number")
+
+# rename columns
+colnames(mixcr_b_names) <- c("cell_number", "cell_name")
+
+# mixcr_b
+datalist = list()
+for (i in (1:length(mixcr_b))) {
+  dat <- data.frame(c(mixcr_b[[i]][3], mixcr_b[[i]][4], mixcr_b[[i]][6], mixcr_b[[i]][7], mixcr_b[[i]][8]))
+  dat$i <- i # keep track of which iteration produced it
+  datalist[[i]] <- dat # add it to list
+}
+# combine columns for each cell
+# 1 beta cell only
 big_data = do.call(rbind, datalist)
+trb <- big_data %>% group_by(i) %>% filter(n() == 1)
 
-colnames(big_data) <- combined$patient
-rownames(big_data) <- combined$cell_name
+colnames(trb) <- c("clone_count", "clone_fraction","CDR3_beta", "TRBV", "TRBJ", "cell_number")
+trb <- merge(trb, mixcr_b_names, by="cell_number")
 
-annotation <- data.frame(Epitope = combined$epitope, Severity = combined$severity)
+# tidy up
+trb <- mutate(trb, beta=paste(TRBV, TRBJ, sep="_"))
 
-rownames(annotation) <- combined$cell_name
+table <- as.data.frame(table(trb$CDR3_beta))
+
+combined2 <- merge(trb, table, by.x="CDR3_beta", by.y="Var1", all.x=TRUE)
+
+combined2$patient <- ifelse(grepl("005", combined2$cell_name), "005",
+                          ifelse(grepl("1131-TP-1",combined2$cell_name), "1131-TP-1",
+                          ifelse(grepl("1131-TP-2", combined2$cell_name), "1131-TP-2",
+                          ifelse(grepl("1153", combined2$cell_name), "1153",
+                          ifelse(grepl("1201", combined2$cell_name), "1201",
+                          ifelse(grepl("1105", combined2$cell_name), "1105",
+                          ifelse(grepl("1134-TP-2",combined2$cell_name), "1134-TP-2",
+                          ifelse(grepl("1525-TP-1", combined2$cell_name), "1525-TP-1",
+                          ifelse(grepl("1525-TP-2", combined2$cell_name), "1525-TP-2",
+                                 "")))))))))
+
+combined2$severity <- ifelse(grepl("005", combined2$cell_name), "mild",
+                          ifelse(grepl("1131-TP-1",combined2$cell_name), "severe",
+                          ifelse(grepl("1131-TP-2", combined2$cell_name), "severe",
+                          ifelse(grepl("1153", combined2$cell_name), "severe",
+                          ifelse(grepl("1201", combined2$cell_name), "mild",
+                          ifelse(grepl("1105", combined2$cell_name), "severe",
+                          ifelse(grepl("1134-TP-2",combined2$cell_name), "severe",
+                          ifelse(grepl("1525-TP-1", combined2$cell_name), "severe",
+                          ifelse(grepl("1525-TP-2", combined2$cell_name), "severe",
+                                 "")))))))))
+
+combined2$timepoint <- ifelse(grepl("TP-1", combined2$patient), "acute",
+                   ifelse(grepl("005|TP-2|1153|1201|1105", combined2$cell_name), "convalescent", ""))
+
+combined2$epitope <- ifelse(grepl("NP16|B7_SPR", combined2$cell_name), "NP16",
+                 ifelse(grepl("ORF3a-28", combined2$cell_name), "ORF3a-28", ""))
+
+datalist = list()
+for (i in (1:nrow(combined2))) {
+  dat <- combined2$Freq[i]/sum(table$Freq)
+  datalist[[i]] <- dat # add it to list
+}
+
+proportion <- do.call(rbind, datalist)
+
+combined2$proportion <- proportion
+
+datalist = list()
+for (i in (1:nrow(combined2))) {
+  dat <- -sum(combined2$proportion[i]*(log10(combined2$proportion[i])))
+  datalist[[i]] <- dat # add it to list
+}
+
+diversity <- do.call(rbind, datalist)
+
+combined2$diversity <- diversity
+
+                           
+```
+
+```{r}
+p1 <- ggplot(combined2, aes(x=patient, y=diversity, colour=epitope)) +
+  geom_boxplot(width=0.5) + geom_jitter(width=0.25) +
+  labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Patient", y = "Shannon diversity index")
+
+p2 <- ggplot(combined2, aes(x=epitope, y=diversity, colour=epitope)) +
+  geom_boxplot(width=0.5)+ geom_jitter(width=0.25) +
+  labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Epitope", y = "Shannon diversity index")
+
+# subset NP16 only to look at mild v severe
+
+np16_only <- combined2[!grepl("ORF3a-28", combined2$epitope),]
+
+np16_only$proportion <- NULL
+np16_only$diversity <- NULL
+
+datalist = list()
+for (i in (1:nrow(np16_only))) {
+  dat <- np16_only$Freq[i]/sum(combined2$epitope=="NP16")
+  datalist[[i]] <- dat # add it to list
+}
+
+proportion <- do.call(rbind, datalist)
+
+np16_only$proportion <- proportion
+
+datalist = list()
+for (i in (1:nrow(np16_only))) {
+  dat <- -sum(np16_only$proportion[i]*(log10(np16_only$proportion[i])))
+  datalist[[i]] <- dat # add it to list
+}
+
+diversity <- do.call(rbind, datalist)
+
+np16_only$diversity <- diversity
+
+p3 <- ggplot(np16_only, aes(x=severity, y=diversity, colour=severity)) +
+  geom_boxplot(width=0.5)+ geom_jitter(width=0.25) +
+  labs(title="Diversity of CD8+ NP16 CDR3 beta",x="Severity", y = "Shannon diversity index")
+
 
 ```
 
-```{r,, fig.width=20, fig.height=15}
 
-pheatmap(big_data, show_rownames=FALSE, annotation_row = annotation)
+#### By patient
+```{r, fig.width=10, fig.height=5}
+p1
+```
+#### By severity and epitope
+
+```{r, fig.width=16, fig.height=7}
+grid.arrange(p2, p3, nrow=1)
+```
+
+
+
+```{r}
+# Welch 2 sample t-test: (y~x) where y is numeric and x is a binary factor
+
+t.test(combined2$diversity~combined2$epitope)
+
+t.test(np16_only$diversity~np16_only$severity)
+
 
 ```
+```
+
 
