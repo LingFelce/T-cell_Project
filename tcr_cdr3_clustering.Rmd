@@ -306,88 +306,75 @@ title(main="Expanded CDR3s from CD8+ ORF3a beta", cex.main=1, font.main=1)
 #mtext(paste0(nam," (thr = ",thc," c.thr = ",c.thr,")"), outer = TRUE, cex = 1)
 ```
 
-## Pairwise similarity matrix using stringdist
-
+## Distance matrix using stringdist
+Hierarchal clustering from distance matrix (dendrogram)
 ### CD8 NP16 beta
+
 ```{r}
-datalist = list()
-for (i in (1:length(np16$cell_name))) {
-  dat <- stringsim(np16$CDR3_beta[i], np16$CDR3_beta, method="lv") 
-  datalist[[i]] <- dat # add it to list
-}
-big_data = do.call(rbind, datalist)
+# generate distance matrix
 
-```
+d <- stringdistmatrix(np16$CDR3_beta, np16$CDR3_beta)
+rownames(d) <- np16$cell_name
+colnames(d) <- np16$patient
+cl <- hclust(as.dist(d))
 
-### Hierarchal clustering from pairwise similarity matrix (dendrogram)
-```{r}
-# take pairwise similarity matrix
-df <- big_data
-rownames(df) <- np16$cell_name
-colnames(df) <- np16$patient
+dend <- as.dendrogram(cl)
 
-# scale, calculate distance (Euclidean) and perform hierarchal clustering
-df <- scale(df)
-d <- dist(df)
-hc <- hclust(d,method="complete")
-
-dend <- as.dendrogram(hc)
-
+library(colorspace)
 patient <- as.factor(np16$patient)
+
 n_patient <- length(unique(patient))
-cols_5 <- colorspace::rainbow_hcl(n_patient, c = 70, l  = 50)
+cols_5 <- colorspace::rainbow_hcl(n_patient)
 col_patient <- cols_5[patient]
 
-labels_colors(dend) <- col_patient[order.dendrogram(dend)]
-labels(dend) <- colnames(df)
-dend <- set(dend, "labels_cex", 2)
+labels_colors(dend) <- col_patient
+labels(dend) <- colnames(d)
+
 
 ```
 
-```{r, fig.width=40, fig.height=15}
-plot(dend, main = "CD8+ NP16 CDR3 beta clustering")
-legend("topleft", legend = levels(patient), fill = cols_5)
+```{r}
+par(mar = c(8,1,1,0.1))
+dend %>% 
+    set("labels_cex",0.5) %>% 
+    color_branches(dend, k=10) %>%
+    plot(main = "CD8+ NP16 CDR3 beta clustering")
+legend("topright", legend = levels(patient), fill = cols_5)
 
 ```
+
+
+
 
 ### CD8 ORF3a beta
 ```{r}
-datalist = list()
-for (i in (1:length(orf3a$cell_name))) {
-  dat <- stringsim(orf3a$CDR3_beta[i], orf3a$CDR3_beta, method="lv") 
-  datalist[[i]] <- dat # add it to list
-}
-big_data = do.call(rbind, datalist)
+# generate distance matrix
+d <- stringdistmatrix(orf3a$CDR3_beta, orf3a$CDR3_beta)
+rownames(d) <- orf3a$cell_name
+colnames(d) <- orf3a$patient
+cl <- hclust(as.dist(d))
 
-```
+dend <- as.dendrogram(cl)
 
-### Hierarchal clustering from pairwise similarity matrix (dendrogram)
-```{r}
-# take pairwise similarity matrix
-df <- big_data
-rownames(df) <- orf3a$cell_name
-colnames(df) <- orf3a$patient
-
-# scale, calculate distance (Euclidean) and perform hierarchal clustering
-df <- scale(df)
-d <- dist(df)
-hc <- hclust(d,method="complete")
-
-dend <- as.dendrogram(hc)
-
+library(colorspace)
 patient <- as.factor(orf3a$patient)
+
 n_patient <- length(unique(patient))
-cols_4 <- colorspace::rainbow_hcl(n_patient, c = 70, l  = 50)
+cols_4 <- colorspace::rainbow_hcl(n_patient)
 col_patient <- cols_4[patient]
 
-labels_colors(dend) <- col_patient[order.dendrogram(dend)]
-labels(dend) <- colnames(df)
-dend <- set(dend, "labels_cex", 2)
+labels_colors(dend) <- col_patient
+labels(dend) <- colnames(d)
+
 
 ```
 
-```{r, fig.width=40, fig.height=15}
-plot(dend, main = "CD8+ ORF3a CDR3 beta clustering")
-legend("topleft", legend = levels(patient), fill = cols_4)
+```{r}
+par(mar = c(8,1,1,0.1))
+dend %>% 
+    set("labels_cex",0.5) %>% 
+    color_branches(dend, k=4) %>%
+    plot(main = "CD8+ ORF3a-28 CDR3 beta clustering")
+legend("topright", legend = levels(patient), fill = cols_4)
 
 ```
