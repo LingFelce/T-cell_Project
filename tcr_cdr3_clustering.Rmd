@@ -377,3 +377,37 @@ dend %>%
 legend("topright", legend = levels(patient), fill = cols_5, cex=2)
 
 ```
+
+### Combined
+```{r}
+# generate distance matrix
+d <- stringdistmatrix(combined2$CDR3_beta, combined2$CDR3_beta, method="lv")
+
+rownames(d) <- combined2$cell_name
+colnames(d) <- combined2$patient
+
+cl <- hclust(as.dist(d))
+dend <- as.dendrogram(cl)
+
+library(colorspace)
+
+epitope <- as.factor(combined2$epitope)
+n_epitope <- length(unique(epitope))
+cols_2 <- colorspace::rainbow_hcl(n_epitope)
+col_epitope <- cols_2[epitope]
+labels_colors(dend) <- col_epitope
+labels(dend) <- colnames(d)
+```
+
+```{r, fig.width=40, fig.height=8}
+# par(mar = c(10,1,1,0.1))
+dend %>% 
+    set("labels_cex",1.5) %>% 
+    color_branches(dend, k=4) %>%
+    plot(main = "CD8+ NP16 and ORF3a-28 CDR3 beta clustering", cex.main=3)
+legend("topright", legend = levels(epitope), fill = cols_2, cex=2)
+```
+
+
+```
+
