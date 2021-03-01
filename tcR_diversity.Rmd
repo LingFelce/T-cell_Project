@@ -17,8 +17,6 @@ library(cowplot)
 library(tidyverse)
 library(gridExtra)
 library(ggplot2)
-library(pheatmap)
-library(stringdist)
 
 ```
 
@@ -312,21 +310,21 @@ Can't really compare mild v severe as both mild cases in NP16?
 # NP16 and ORF3a-28 combined only from 1/2 alphas + 1 beta cells (complete single cell data) - baseR
 
 ```{r, text=FALSE, include=FALSE}
-# NP16 data from single cell TCRs - 1 beta cells only (1/2 alphas)
-sc_np16 <- read.csv("/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/cd8_np16_complete_sc_tcr.csv")
-
-sc_np16_b <- sc_np16[,c("cell_name", "CDR3_beta", "beta")]
-
-sc_np16_b <- sc_np16_b[!duplicated(sc_np16_b$cell_name),]
-
-
-
-# ORF3a-28 data from single cell TCRs - 1 beta cells only (1/2 alphas)
-sc_orf3a <- read.csv("/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/cd8_orf3a-28_complete_sc_tcr.csv")
-
-sc_orf3a_b <- sc_orf3a[,c("cell_name", "CDR3_beta", "beta")]
-
-sc_orf3a_b <- sc_orf3a_b[!duplicated(sc_orf3a_b$cell_name),]
+# # NP16 data from single cell TCRs - 1 beta cells only (1/2 alphas)
+# sc_np16 <- read.csv("/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/cd8_np16_complete_sc_tcr.csv")
+# 
+# sc_np16_b <- sc_np16[,c("cell_name", "CDR3_beta", "beta")]
+# 
+# sc_np16_b <- sc_np16_b[!duplicated(sc_np16_b$cell_name),]
+# 
+# 
+# 
+# # ORF3a-28 data from single cell TCRs - 1 beta cells only (1/2 alphas)
+# sc_orf3a <- read.csv("/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/cd8_orf3a-28_complete_sc_tcr.csv")
+# 
+# sc_orf3a_b <- sc_orf3a[,c("cell_name", "CDR3_beta", "beta")]
+# 
+# sc_orf3a_b <- sc_orf3a_b[!duplicated(sc_orf3a_b$cell_name),]
 
 
 ```
@@ -344,102 +342,102 @@ NOTE – diversity indices are very dependent on total reprtorie size. The only 
 
 ```{r}
 
-combined <- rbind(sc_np16_b, sc_orf3a_b)
-
-table <- as.data.frame(table(combined$CDR3_beta))
-
-combined2 <- merge(combined, table, by.x="CDR3_beta", by.y="Var1", all.x=TRUE)
-
-combined2$patient <- ifelse(grepl("005", combined2$cell_name), "005",
-                          ifelse(grepl("1131-TP-1",combined2$cell_name), "1131-TP-1",
-                          ifelse(grepl("1131-TP-2", combined2$cell_name), "1131-TP-2",
-                          ifelse(grepl("1153", combined2$cell_name), "1153",
-                          ifelse(grepl("1201", combined2$cell_name), "1201",
-                          ifelse(grepl("1105", combined2$cell_name), "1105",
-                          ifelse(grepl("1134-TP-2",combined2$cell_name), "1134-TP-2",
-                          ifelse(grepl("1525-TP-1", combined2$cell_name), "1525-TP-1",
-                          ifelse(grepl("1525-TP-2", combined2$cell_name), "1525-TP-2",
-                                 "")))))))))
-
-combined2$severity <- ifelse(grepl("005", combined2$cell_name), "mild",
-                          ifelse(grepl("1131-TP-1",combined2$cell_name), "severe",
-                          ifelse(grepl("1131-TP-2", combined2$cell_name), "severe",
-                          ifelse(grepl("1153", combined2$cell_name), "severe",
-                          ifelse(grepl("1201", combined2$cell_name), "mild",
-                          ifelse(grepl("1105", combined2$cell_name), "severe",
-                          ifelse(grepl("1134-TP-2",combined2$cell_name), "severe",
-                          ifelse(grepl("1525-TP-1", combined2$cell_name), "severe",
-                          ifelse(grepl("1525-TP-2", combined2$cell_name), "severe",
-                                 "")))))))))
-
-combined2$timepoint <- ifelse(grepl("TP-1", combined2$patient), "acute",
-                   ifelse(grepl("005|TP-2|1153|1201|1105", combined2$cell_name), "convalescent", ""))
-
-combined2$epitope <- ifelse(grepl("NP16|B7_SPR", combined2$cell_name), "NP16",
-                 ifelse(grepl("ORF3a-28", combined2$cell_name), "ORF3a-28", ""))
-
-datalist = list()
-for (i in (1:nrow(combined2))) {
-  dat <- combined2$Freq[i]/sum(combined2$Freq)
-  datalist[[i]] <- dat # add it to list
-}
-
-proportion <- do.call(rbind, datalist)
-
-combined2$proportion <- proportion
-
-datalist = list()
-for (i in (1:nrow(combined2))) {
-  dat <- -sum(combined2$proportion[i]*(log10(combined2$proportion[i])))
-  datalist[[i]] <- dat # add it to list
-}
-
-diversity <- do.call(rbind, datalist)
-
-combined2$diversity <- diversity
+# combined <- rbind(sc_np16_b, sc_orf3a_b)
+# 
+# table <- as.data.frame(table(combined$CDR3_beta))
+# 
+# combined2 <- merge(combined, table, by.x="CDR3_beta", by.y="Var1", all.x=TRUE)
+# 
+# combined2$patient <- ifelse(grepl("005", combined2$cell_name), "005",
+#                           ifelse(grepl("1131-TP-1",combined2$cell_name), "1131-TP-1",
+#                           ifelse(grepl("1131-TP-2", combined2$cell_name), "1131-TP-2",
+#                           ifelse(grepl("1153", combined2$cell_name), "1153",
+#                           ifelse(grepl("1201", combined2$cell_name), "1201",
+#                           ifelse(grepl("1105", combined2$cell_name), "1105",
+#                           ifelse(grepl("1134-TP-2",combined2$cell_name), "1134-TP-2",
+#                           ifelse(grepl("1525-TP-1", combined2$cell_name), "1525-TP-1",
+#                           ifelse(grepl("1525-TP-2", combined2$cell_name), "1525-TP-2",
+#                                  "")))))))))
+# 
+# combined2$severity <- ifelse(grepl("005", combined2$cell_name), "mild",
+#                           ifelse(grepl("1131-TP-1",combined2$cell_name), "severe",
+#                           ifelse(grepl("1131-TP-2", combined2$cell_name), "severe",
+#                           ifelse(grepl("1153", combined2$cell_name), "severe",
+#                           ifelse(grepl("1201", combined2$cell_name), "mild",
+#                           ifelse(grepl("1105", combined2$cell_name), "severe",
+#                           ifelse(grepl("1134-TP-2",combined2$cell_name), "severe",
+#                           ifelse(grepl("1525-TP-1", combined2$cell_name), "severe",
+#                           ifelse(grepl("1525-TP-2", combined2$cell_name), "severe",
+#                                  "")))))))))
+# 
+# combined2$timepoint <- ifelse(grepl("TP-1", combined2$patient), "acute",
+#                    ifelse(grepl("005|TP-2|1153|1201|1105", combined2$cell_name), "convalescent", ""))
+# 
+# combined2$epitope <- ifelse(grepl("NP16|B7_SPR", combined2$cell_name), "NP16",
+#                  ifelse(grepl("ORF3a-28", combined2$cell_name), "ORF3a-28", ""))
+# 
+# datalist = list()
+# for (i in (1:nrow(combined2))) {
+#   dat <- combined2$Freq[i]/sum(combined2$Freq)
+#   datalist[[i]] <- dat # add it to list
+# }
+# 
+# proportion <- do.call(rbind, datalist)
+# 
+# combined2$proportion <- proportion
+# 
+# datalist = list()
+# for (i in (1:nrow(combined2))) {
+#   dat <- -sum(combined2$proportion[i]*(log10(combined2$proportion[i])))
+#   datalist[[i]] <- dat # add it to list
+# }
+# 
+# diversity <- do.call(rbind, datalist)
+# 
+# combined2$diversity <- diversity
 
                            
 ```
 
 ```{r}
-p1 <- ggplot(combined2, aes(x=patient, y=diversity, colour=epitope)) +
-  geom_boxplot(width=0.5) + geom_jitter(width=0.25) +
-  labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Patient", y = "Shannon diversity index")
-
-p2 <- ggplot(combined2, aes(x=epitope, y=diversity, colour=epitope)) +
-  geom_boxplot(width=0.5)+ geom_jitter(width=0.25) +
-  labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Epitope", y = "Shannon diversity index")
-
-# subset NP16 only to look at mild v severe
-
-np16_only <- combined2[!grepl("ORF3a-28", combined2$epitope),]
-
-np16_only$proportion <- NULL
-np16_only$diversity <- NULL
-
-datalist = list()
-for (i in (1:nrow(np16_only))) {
-  dat <- np16_only$Freq[i]/sum(np16_only$Freq)
-  datalist[[i]] <- dat # add it to list
-}
-
-proportion <- do.call(rbind, datalist)
-
-np16_only$proportion <- proportion
-
-datalist = list()
-for (i in (1:nrow(np16_only))) {
-  dat <- -sum(np16_only$proportion[i]*(log10(np16_only$proportion[i])))
-  datalist[[i]] <- dat # add it to list
-}
-
-diversity <- do.call(rbind, datalist)
-
-np16_only$diversity <- diversity
-
-p3 <- ggplot(np16_only, aes(x=severity, y=diversity, colour=severity)) +
-  geom_boxplot(width=0.5)+ geom_jitter(width=0.25) +
-  labs(title="Diversity of CD8+ NP16 CDR3 beta",x="Severity", y = "Shannon diversity index")
+# p1 <- ggplot(combined2, aes(x=patient, y=diversity, colour=epitope)) +
+#   geom_boxplot(width=0.5) + geom_jitter(width=0.25) +
+#   labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Patient", y = "Shannon diversity index")
+# 
+# p2 <- ggplot(combined2, aes(x=epitope, y=diversity, colour=epitope)) +
+#   geom_boxplot(width=0.5)+ geom_jitter(width=0.25) +
+#   labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Epitope", y = "Shannon diversity index")
+# 
+# # subset NP16 only to look at mild v severe
+# 
+# np16_only <- combined2[!grepl("ORF3a-28", combined2$epitope),]
+# 
+# np16_only$proportion <- NULL
+# np16_only$diversity <- NULL
+# 
+# datalist = list()
+# for (i in (1:nrow(np16_only))) {
+#   dat <- np16_only$Freq[i]/sum(np16_only$Freq)
+#   datalist[[i]] <- dat # add it to list
+# }
+# 
+# proportion <- do.call(rbind, datalist)
+# 
+# np16_only$proportion <- proportion
+# 
+# datalist = list()
+# for (i in (1:nrow(np16_only))) {
+#   dat <- -sum(np16_only$proportion[i]*(log10(np16_only$proportion[i])))
+#   datalist[[i]] <- dat # add it to list
+# }
+# 
+# diversity <- do.call(rbind, datalist)
+# 
+# np16_only$diversity <- diversity
+# 
+# p3 <- ggplot(np16_only, aes(x=severity, y=diversity, colour=severity)) +
+#   geom_boxplot(width=0.5)+ geom_jitter(width=0.25) +
+#   labs(title="Diversity of CD8+ NP16 CDR3 beta",x="Severity", y = "Shannon diversity index")
 
 
 ```
@@ -447,37 +445,39 @@ p3 <- ggplot(np16_only, aes(x=severity, y=diversity, colour=severity)) +
 
 #### By patient
 ```{r, fig.width=10, fig.height=5}
-p1
+# p1
 ```
 #### By severity and epitope
 
 ```{r, fig.width=16, fig.height=7}
-grid.arrange(p2, p3, nrow=1)
+# grid.arrange(p2, p3, nrow=1)
 ```
 
 
 
 ```{r}
-# Welch 2 sample t-test: (y~x) where y is numeric and x is a binary factor
-
-t.test(combined2$diversity~combined2$epitope)
-
-t.test(np16_only$diversity~np16_only$severity)
+# # Welch 2 sample t-test: (y~x) where y is numeric and x is a binary factor
+# 
+# t.test(combined2$diversity~combined2$epitope)
+# 
+# t.test(np16_only$diversity~np16_only$severity)
 
 
 ```
 
 # NP16 and ORF3a-28 combined cells with 1 beta only
+TCr diversity looking at each repertoire separately (NP16 and ORF3a-28) to see which repertoire has more unique sequences and how often they occur - looking at each CDR3 beta sequence to see what proportion they occur (frequency/total number of cells) CDR3 beta sequence with higher proportion = higher diversity index
+
 ```{r, include=FALSE}
 # load in data and create mixcr_b object
 setwd('/t1-data/user/lfelce/TCR_analysis/cd8_np16_new/')
 
 # create list of file names
 trb_list <- list.files(path = ".", recursive = TRUE,
-                        pattern = "\\TRB.txt$", 
+                        pattern = "\\TRB.txt$",
                         full.names = TRUE)
 trb_list <- trb_list %>% str_replace("./*", "")
- 
+
 # parse in files with tcR
 mixcr_b_np16 <- parse.file.list(trb_list, "mixcr")
 
@@ -490,13 +490,13 @@ trb_list <- list.files(path = ".", recursive = TRUE,
                        full.names = TRUE)
 trb_list <- trb_list %>% str_replace("./*", "")
 trb_list <-trb_list[!str_detect(trb_list,pattern="minibulk")]
- 
+
 # parse in files with tcR
 mixcr_b_orf3a <- parse.file.list(trb_list, "mixcr")
 
 # combine mixcr files
 mixcr_b <- c(mixcr_b_np16, mixcr_b_orf3a)
- 
+
 # sort alphabetically
 mixcr_b <- mixcr_b[order(names(mixcr_b))]
 
@@ -558,66 +558,78 @@ combined2$timepoint <- ifelse(grepl("TP-1", combined2$patient), "acute",
 combined2$epitope <- ifelse(grepl("NP16|B7_SPR", combined2$cell_name), "NP16",
                  ifelse(grepl("ORF3a-28", combined2$cell_name), "ORF3a-28", ""))
 
-datalist = list()
-for (i in (1:nrow(combined2))) {
-  dat <- combined2$Freq[i]/sum(table$Freq)
-  datalist[[i]] <- dat # add it to list
-}
-
-proportion <- do.call(rbind, datalist)
-
-combined2$proportion <- proportion
-
-datalist = list()
-for (i in (1:nrow(combined2))) {
-  dat <- -sum(combined2$proportion[i]*(log10(combined2$proportion[i])))
-  datalist[[i]] <- dat # add it to list
-}
-
-diversity <- do.call(rbind, datalist)
-
-combined2$diversity <- diversity
-
-                           
-```
-
-```{r}
-p1 <- ggplot(combined2, aes(x=patient, y=diversity, colour=epitope)) +
-  geom_boxplot(width=0.5) + geom_jitter(width=0.25) +
-  labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Patient", y = "Shannon diversity index")
-
-p2 <- ggplot(combined2, aes(x=epitope, y=diversity, colour=epitope)) +
-  geom_boxplot(width=0.5)+ geom_jitter(width=0.25) +
-  labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Epitope", y = "Shannon diversity index")
 
 # subset NP16 only to look at mild v severe
 
-np16_only <- combined2[!grepl("ORF3a-28", combined2$epitope),]
+np16 <- combined2[!grepl("ORF3a-28", combined2$epitope),]
 
-np16_only$proportion <- NULL
-np16_only$diversity <- NULL
+np16$proportion <- NULL
+np16$diversity <- NULL
 
 datalist = list()
-for (i in (1:nrow(np16_only))) {
-  dat <- np16_only$Freq[i]/sum(combined2$epitope=="NP16")
+for (i in (1:nrow(np16))) {
+  dat <- np16$Freq[i]/nrow(np16)
   datalist[[i]] <- dat # add it to list
 }
 
 proportion <- do.call(rbind, datalist)
 
-np16_only$proportion <- proportion
+np16$proportion <- proportion
 
 datalist = list()
-for (i in (1:nrow(np16_only))) {
-  dat <- -sum(np16_only$proportion[i]*(log10(np16_only$proportion[i])))
+for (i in (1:nrow(np16))) {
+  dat <- -sum(np16$proportion[i]*(log10(np16$proportion[i])))
   datalist[[i]] <- dat # add it to list
 }
 
 diversity <- do.call(rbind, datalist)
 
-np16_only$diversity <- diversity
+np16$diversity <- diversity
 
-p3 <- ggplot(np16_only, aes(x=severity, y=diversity, colour=severity)) +
+# subset ORF3a-28 only to look at mild v severe
+
+orf3a <- combined2[!grepl("NP16", combined2$epitope),]
+
+orf3a$proportion <- NULL
+orf3a$diversity <- NULL
+
+datalist = list()
+for (i in (1:nrow(orf3a))) {
+  dat <- orf3a$Freq[i]/nrow(orf3a)
+  datalist[[i]] <- dat # add it to list
+}
+
+proportion <- do.call(rbind, datalist)
+
+orf3a$proportion <- proportion
+
+datalist = list()
+for (i in (1:nrow(orf3a))) {
+  dat <- -sum(orf3a$proportion[i]*(log10(orf3a$proportion[i])))
+  datalist[[i]] <- dat # add it to list
+}
+
+diversity <- do.call(rbind, datalist)
+
+orf3a$diversity <- diversity
+
+# combine dataframes for plotting
+combined3 <- rbind(np16, orf3a)
+
+
+```
+
+```{r}
+
+p1 <- ggplot(combined3, aes(x=patient, y=diversity, colour=epitope)) +
+  geom_boxplot(width=0.5) + geom_jitter(width=0.25) +
+  labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Patient", y = "Shannon diversity index")
+
+p2 <- ggplot(combined3, aes(x=epitope, y=diversity, colour=epitope)) +
+  geom_boxplot(width=0.5)+ geom_jitter(width=0.25) +
+  labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Epitope", y = "Shannon diversity index")
+
+p3 <- ggplot(np16, aes(x=severity, y=diversity, colour=severity)) +
   geom_boxplot(width=0.5)+ geom_jitter(width=0.25) +
   labs(title="Diversity of CD8+ NP16 CDR3 beta",x="Severity", y = "Shannon diversity index")
 
@@ -640,10 +652,11 @@ grid.arrange(p2, p3, nrow=1)
 ```{r}
 # Welch 2 sample t-test: (y~x) where y is numeric and x is a binary factor
 
-t.test(combined2$diversity~combined2$epitope)
+t.test(combined3$diversity~combined3$epitope)
 
-t.test(np16_only$diversity~np16_only$severity)
+t.test(np16$diversity~np16$severity)
 
+# write.csv(combined2, "/t1-data/user/lfelce/TCR_analysis/diversity/cd8_np16_orf3a-28_combined_shannon.csv")
 
 ```
 ```
