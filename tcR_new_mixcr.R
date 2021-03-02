@@ -275,40 +275,21 @@ for (i in 1:length(list)) {
 #------------- CD4 S34 and M24 -------------------------
 
 setwd('/t1-data/user/lfelce/TCR_analysis/cd4_new/')
-listFiles = list.files()
+tra_list <- list.files(path = ".", recursive = TRUE,
+                       pattern = "\\TRA.txt$", 
+                       full.names = TRUE)
+tra_list <- tra_list %>% str_replace("./*", "")
+tra_list <-tra_list[!str_detect(tra_list,pattern="minibulk")]
 
-# revise the structure of input files
-for(i in 1:length(listFiles))
-{
-  DT = fread(listFiles[i])
-  write.table(DT,listFiles[i],quote = F, row.names = F, sep = '\t')
-}
-
-library(stringr)
-
-# read in TRA names and convert to list
-tra_names <- fread('/t1-data/user/lfelce/TCR_analysis/cd4_tra_names.txt', stringsAsFactors = F, header=F)
-
-tra_names <- as.list(as.data.frame(t(tra_names)))
-
-# remove ./ at start of name and replace with file path
-tra_names <- tra_names %>% str_replace("./*", "")
-
-tra_names <- paste("/t1-data/user/lfelce/TCR_analysis/cd4_new/", tra_names, sep="")
-
-# read in TRB names and convert to list
-trb_names <- fread('/t1-data/user/lfelce/TCR_analysis/cd4_trb_names.txt', stringsAsFactors = F, header=F)
-
-trb_names <- as.list(as.data.frame(t(trb_names)))
-
-# remove ./ at start of name and replace with file path
-trb_names <- trb_names %>% str_replace("./*", "")
-
-trb_names <- paste("/t1-data/user/lfelce/TCR_analysis/cd4_new/", trb_names, sep="")
+trb_list <- list.files(path = ".", recursive = TRUE,
+                       pattern = "\\TRB.txt$", 
+                       full.names = TRUE)
+trb_list <- trb_list %>% str_replace("./*", "")
+trb_list <-trb_list[!str_detect(trb_list,pattern="minibulk")]
 
 # parse mixcr files
-mixcr_a <- parse.file.list(tra_names, "mixcr")
-mixcr_b <- parse.file.list(trb_names, "mixcr")
+mixcr_a <- parse.file.list(tra_list, "mixcr")
+mixcr_b <- parse.file.list(trb_list, "mixcr")
 
 # sort alphabetically
 mixcr_a <- mixcr_a[order(names(mixcr_a))]
@@ -326,35 +307,34 @@ mixcr_b_names <- tibble::rownames_to_column(mixcr_b_names, "cell_number")
 colnames(mixcr_a_names) <- c("cell_number", "cell_name")
 colnames(mixcr_b_names) <- c("cell_number", "cell_name")
 
-# convert mixcr lists to dataframe with just V.gene and J.gene info
-
 # mixcr_a
 datalist = list()
-for (i in (1:(length(mixcr_a)))) {
-  dat <- data.frame(c(mixcr_a[[i]][7], mixcr_a[[i]][8]))
+for (i in (1:length(mixcr_a))) {
+  dat <- data.frame(c(mixcr_a[[i]][3], mixcr_a[[i]][4], mixcr_a[[i]][6],mixcr_a[[i]][7], mixcr_a[[i]][8]))
   dat$i <- i # keep track of which iteration produced it
   datalist[[i]] <- dat # add it to list
 }
-# combine columns for each cell, select only cells with only 2 rows (dual alpha)
+# combine columns for each cell and filter to keep cells with 1 or 2 alphas
 big_data = do.call(rbind, datalist)
 tra <- big_data %>% group_by(i) %>% filter(n() <= 2)
-colnames(tra) <- c("TRAV", "TRAJ", "cell_number")
+colnames(tra) <- c("clone_count", "clone_fraction", "CDR3_alpha", "TRAV", "TRAJ", "cell_number")
 tra <- merge(tra, mixcr_a_names, by="cell_number")
+
 
 # mixcr_b
 datalist = list()
-for (i in (1:(length(mixcr_b)))) {
-  dat <- data.frame(c(mixcr_b[[i]][7], mixcr_b[[i]][8]))
+for (i in (1:length(mixcr_b))) {
+  dat <- data.frame(c(mixcr_b[[i]][3], mixcr_b[[i]][4], mixcr_b[[i]][6], mixcr_b[[i]][7], mixcr_b[[i]][8]))
   dat$i <- i # keep track of which iteration produced it
   datalist[[i]] <- dat # add it to list
 }
-# combine columns for each cell, select only cells with only 1 row (single beta)
+# combine columns for each cell
 big_data = do.call(rbind, datalist)
 trb <- big_data %>% group_by(i) %>% filter(n() == 1)
-colnames(trb) <- c("TRBV", "TRBJ", "cell_number")
+colnames(trb) <- c("clone_count", "clone_fraction","CDR3_beta", "TRBV", "TRBJ", "cell_number")
 trb <- merge(trb, mixcr_b_names, by="cell_number")
 
-# combine TRA and TRB dataframes  
+# combine TRA and TRB dataframes
 cd4 <- merge(tra,trb, by="cell_name")
 
 cd4 <- mutate(cd4, alpha=paste(TRAV, TRAJ, sep="_"))
@@ -363,7 +343,7 @@ cd4 <- mutate(cd4, beta=paste(TRBV, TRBJ, sep="_"))
 
 setwd('/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/')
 
-write.csv(cd4, "cd4_sc_tcr.csv")
+write.csv(cd4, "cd4_complete_sc_tcr.csv")
 
 
 # tabulate to get dominant alpha-beta pairing
