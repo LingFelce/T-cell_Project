@@ -833,29 +833,58 @@ orf3a <- merge(orf3a, div_orf3a, by="CDR3_beta", all.x=TRUE)
 # combine for plotting
 combined3 <- rbind(np16, orf3a)
 
+combined3$tcr <- ifelse(grepl("TRBV5-1_TRBJ2-1|TRBV28_TRBJ1-1|TRBV27_TRBJ2-4|TRBV2_TRBJ2-2|TRBV13_TRBJ1-2|TRBV4-2_TRBJ2-1|TRBV4-1_TRBJ2-3|TRBV5-1_TRBJ2-7|TRBV6-6_TRBJ2-7|TRBV5-1_TRBJ2-5",combined3$beta), "shared", ifelse(grepl("TRBV29-1_TRBJ2-1|TRBV9_TRBJ2-3|TRBV7-9_TRBJ1-6|TRBV7-1, TRBV28_TRBJ2-7", combined3$beta), "acute only", ifelse(!grepl("TRBV5-1_TRBJ2-1|TRBV28_TRBJ1-1|TRBV27_TRBJ2-4|TRBV2_TRBJ2-2|TRBV13_TRBJ1-2|TRBV4-2_TRBJ2-1|TRBV4-1_TRBJ2-3|TRBV5-1_TRBJ2-7|TRBV6-6_TRBJ2-7|TRBV5-1_TRBJ2-5|TRBV29-1_TRBJ2-1|TRBV9_TRBJ2-3|TRBV7-9_TRBJ1-6|TRBV7-1, TRBV28_TRBJ2-7", combined3$beta), "convalescent only", "")))
+
+np16_2 <- combined3[!grepl("ORF3a-28", combined3$epitope),]
+
 ```
 
 ```{r}
 p1 <- ggplot(combined3, aes(x=patient, y=diversity, colour=epitope)) +
   geom_boxplot(width=0.5) + geom_jitter(width=0.25) +
   labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Patient", y = "Shannon diversity index")
-p2 <- ggplot(combined3, aes(x=epitope, y=diversity, colour=epitope)) +
+
+p2 <- ggplot(combined3, aes(x=patient, y=diversity, colour=tcr)) +
+  geom_jitter(width=0.25) +
+  labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Patient", y = "Shannon diversity index")
+
+
+p3 <- ggplot(combined3, aes(x=epitope, y=diversity, colour=epitope)) +
   geom_boxplot(width=0.5)+ geom_jitter(width=0.25) +
   labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Epitope", y = "Shannon diversity index")
-p3 <- ggplot(np16, aes(x=severity, y=diversity, colour=severity)) +
+
+p4 <- ggplot(combined3, aes(x=epitope, y=diversity, colour=tcr)) + 
+  geom_jitter(width=0.25) +
+  labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Epitope", y = "Shannon diversity index")
+
+
+p5 <- ggplot(np16_2, aes(x=severity, y=diversity, colour=severity)) +
   geom_boxplot(width=0.5)+ geom_jitter(width=0.25) +
   labs(title="Diversity of CD8+ NP16 CDR3 beta",x="Severity", y = "Shannon diversity index")
+
+p6 <- ggplot(np16_2, aes(x=severity, y=diversity, colour=tcr)) +
+  geom_jitter(width=0.25) +
+  labs(title="Diversity of CD8+ NP16 CDR3 beta",x="Severity", y = "Shannon diversity index")
+
+
+p7 <- ggplot(combined3, aes(x=timepoint, y=diversity, colour=timepoint)) +
+  geom_boxplot(width=0.5)+ geom_jitter(width=0.25) +
+  labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Timepoint", y = "Shannon diversity index")
+
+p8 <- ggplot(np16_2, aes(x=timepoint, y=diversity, colour=tcr)) +
+  geom_jitter(width=0.25) +
+  labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Timepoint", y = "Shannon diversity index")
 ```
 
 
 ## By patient
-```{r, fig.width=10, fig.height=5}
-p1
+```{r, fig.width=12, fig.height=12}
+grid.arrange(p1, p2, nrow=2)
 ```
 ## By severity and epitope
 
-```{r, fig.width=16, fig.height=7}
-grid.arrange(p2, p3, nrow=1)
+```{r, fig.width=15, fig.height=20}
+grid.arrange(p3, p4, p7, p8, p5, p6, nrow=3)
 ```
 
 
@@ -863,6 +892,9 @@ grid.arrange(p2, p3, nrow=1)
 ```{r}
 # Welch 2 sample t-test: (y~x) where y is numeric and x is a binary factor
 t.test(combined3$diversity~combined3$epitope)
+
+t.test(combined3$diversity~combined3$timepoint)
+
 t.test(np16$diversity~np16$severity)
 
 write.csv(combined3, "/t1-data/user/lfelce/TCR_analysis/diversity/cd8_np16_orf3a-28_combined_shannon.csv")
