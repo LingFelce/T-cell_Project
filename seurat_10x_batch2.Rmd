@@ -398,14 +398,54 @@ t2.singlet <- RunPCA(t2.singlet, features = VariableFeatures(t2.singlet), verbos
 
 # Check PCs
 ElbowPlot(t2.singlet)
+
+# Andrew's script
+
+## where is the elbow for the principal components?
+# Determine percent of variation associated with each PC
+pct <- t2.singlet[["pca"]]@stdev / sum(t2.singlet[["pca"]]@stdev) * 100
+
+# Calculate cumulative percents for each PC
+cumu <- cumsum(pct)
+
+# Determine which PC exhibits cumulative percent greater than 90% and % variation associated with the PC as less than 5
+co1 <- which(cumu > 90 & pct < 5)[1]
+
+message("Principal component which exhibits cumulative precent variation >90% AND % variation associated with the PC <5:")
+print(co1)
+
+# Determine the difference between variation of PC and subsequent PC
+co2 <- sort(which((pct[1:length(pct) - 1] - pct[2:length(pct)]) > 0.1), decreasing = T)[1] + 1
+
+# last point where change of % of variation is more than 0.1%.
+message("Principal component where the % change in variation between consecutive PCs is <0.1%: ")
+print(co2)
+
+# Minimum of the two calculation
+pcs <- min(co1, co2)
+
+# Create a dataframe with values
+plot_df <- data.frame(pct = pct, cumu = cumu, rank = 1:length(pct))
+
+# Elbow plot to visualize
+elbowplot_decision <- ggplot(plot_df, aes(cumu, pct, label = rank, color = rank > pcs)) +
+  geom_text(size = 7.5) +
+  geom_vline(xintercept = 90, color = "grey") +
+  geom_hline(yintercept = min(pct[pct > 0.05]), color = "grey") +
+  theme_bw()
+
+```
+
+```{r, fig.height=5, fig.width=12}
+elbowplot_decision
 ```
 
 ```{r}
 # Select top PCs for clustering
-t2.singlet <- FindNeighbors(t2.singlet, reduction = "pca", dims = 1:30, verbose=FALSE)
+t2.singlet <- FindNeighbors(t2.singlet, reduction = "pca", dims = 1:7, verbose=FALSE)
 t2.singlet <- FindClusters(t2.singlet, resolution = 0.5, verbose = FALSE)
-t2.singlet <- RunUMAP(t2.singlet, dims = 1:30, verbose=FALSE)
-t2.singlet <- RunTSNE(t2.singlet, reduction = "pca", dims = 1:30, verbose=FALSE)
+t2.singlet <- RunUMAP(t2.singlet, dims = 1:7, verbose=FALSE)
+t2.singlet <- RunTSNE(t2.singlet, reduction = "pca", dims = 1:7, verbose=FALSE)
 
 # Projecting singlet identities on UMAP visualization
 tsne <- DimPlot(t2.singlet, reduction="tsne", group.by = "MULTI_ID")
@@ -561,7 +601,7 @@ grid.arrange(umap_patient, umap_patient2, umap_epitope, umap_epitope2,
              umap_tcell, umap_tcell2, ncol=2)
 
 ```
-#### Subset known demultiplex cells
+#### Subset known demultiplexed cells
 ```{r}
 Idents(t2.singlet) <- "epitope2"
 table(Idents(t2.singlet))
@@ -575,11 +615,53 @@ t2.known <- ScaleData(t2.known, features = VariableFeatures(t2.known), verbose=F
 # Run PCA
 t2.known <- RunPCA(t2.known, features = VariableFeatures(t2.known), verbose=FALSE)
 
+# Andrew's script
+
+## where is the elbow for the principal components?
+# Determine percent of variation associated with each PC
+pct <- t2.known[["pca"]]@stdev / sum(t2.known[["pca"]]@stdev) * 100
+
+# Calculate cumulative percents for each PC
+cumu <- cumsum(pct)
+
+# Determine which PC exhibits cumulative percent greater than 90% and % variation associated with the PC as less than 5
+co1 <- which(cumu > 90 & pct < 5)[1]
+
+message("Principal component which exhibits cumulative precent variation >90% AND % variation associated with the PC <5:")
+print(co1)
+
+# Determine the difference between variation of PC and subsequent PC
+co2 <- sort(which((pct[1:length(pct) - 1] - pct[2:length(pct)]) > 0.1), decreasing = T)[1] + 1
+
+# last point where change of % of variation is more than 0.1%.
+message("Principal component where the % change in variation between consecutive PCs is <0.1%: ")
+print(co2)
+
+# Minimum of the two calculation
+pcs <- min(co1, co2)
+
+# Create a dataframe with values
+plot_df <- data.frame(pct = pct, cumu = cumu, rank = 1:length(pct))
+
+# Elbow plot to visualize
+elbowplot_decision <- ggplot(plot_df, aes(cumu, pct, label = rank, color = rank > pcs)) +
+  geom_text(size = 7.5) +
+  geom_vline(xintercept = 90, color = "grey") +
+  geom_hline(yintercept = min(pct[pct > 0.05]), color = "grey") +
+  theme_bw()
+
+```
+
+```{r, fig.height=5, fig.width=12}
+elbowplot_decision
+```
+
+```{r}
 # Select top PCs for clustering
-t2.known <- FindNeighbors(t2.known, reduction = "pca", dims = 1:25, verbose=FALSE)
+t2.known <- FindNeighbors(t2.known, reduction = "pca", dims = 1:5, verbose=FALSE)
 t2.known <- FindClusters(t2.known, resolution = 0.5, verbose = FALSE)
-t2.known <- RunUMAP(t2.known, dims = 1:25, verbose=FALSE)
-t2.known <- RunTSNE(t2.known, reduction = "pca", dims = 1:25, verbose=FALSE)
+t2.known <- RunUMAP(t2.known, dims = 1:5, verbose=FALSE)
+t2.known <- RunTSNE(t2.known, reduction = "pca", dims = 1:5, verbose=FALSE)
 
 # Projecting singlet identities on UMAP visualization
 tsne <- DimPlot(t2.known, reduction="tsne", group.by = "epitope2")
@@ -627,9 +709,9 @@ VlnPlot(object = t2.known, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "
 ## Save
 
 ```{r}
-saveRDS(t2.singlet, "batch2_t2_seurat.rds")
-
-saveRDS(t2.known, "batch2_t2_known_seurat.rds")
+# saveRDS(t2.singlet, "batch2_t2_seurat.rds")
+# 
+# saveRDS(t2.known, "batch2_t2_known_seurat.rds")
 ```
 
 
