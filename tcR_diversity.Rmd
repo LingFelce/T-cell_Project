@@ -871,7 +871,7 @@ p7 <- ggplot(combined3, aes(x=timepoint, y=diversity, colour=timepoint)) +
   geom_boxplot(width=0.5)+ geom_jitter(width=0.25) +
   labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Timepoint", y = "Shannon diversity index")
 
-p8 <- ggplot(np16_2, aes(x=timepoint, y=diversity, colour=tcr)) +
+p8 <- ggplot(combined3, aes(x=timepoint, y=diversity, colour=tcr)) +
   geom_jitter(width=0.25) +
   labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Timepoint", y = "Shannon diversity index")
 ```
