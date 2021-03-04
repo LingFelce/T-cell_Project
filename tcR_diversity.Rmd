@@ -898,7 +898,7 @@ Separately for NP16 and ORF3a-28 then combine for plotting
 ```
 
 # NP16 and ORF3a-28 single beta cell using Isar's diversity code - REPEAT
-Each repertoire is single patient, remove non-expanded TCR clones
+Each repertoire is single patient, keep all clones (even non-expanded)
 
 ## Diversity functions
 ```{r}
@@ -1014,10 +1014,7 @@ trb <- mutate(trb, beta=paste(TRBV, TRBJ, sep="_"))
 table <- as.data.frame(table(trb$CDR3_beta))
 
 # combine frequency with other info
-combined <- merge(trb, table, by.x="CDR3_beta", by.y="Var1", all.x=TRUE)
-
-# remove rows where TCR frequency is 1
-combined2 <- combined[!(combined$Freq==1),]
+combined2 <- merge(trb, table, by.x="CDR3_beta", by.y="Var1", all.x=TRUE)
 
 # add metadata
 combined2$patient <- ifelse(grepl("005", combined2$cell_name), "005",
@@ -1108,21 +1105,37 @@ div_1525TP2 <- tibble::rownames_to_column(div_1525TP2, "CDR3_beta")
 colnames(div_1525TP2) <- c("CDR3_beta", "diversity")
 
 p005 <- merge(p005, div_005, by="CDR3_beta", all.x=TRUE)
+p005 <- p005[!duplicated(p005$CDR3_beta),]
+
 p1131TP1 <- merge(p1131TP1, div_1131TP1, by="CDR3_beta", all.x=TRUE)
+p1131TP1 <- p1131TP1[!duplicated(p1131TP1$CDR3_beta),]
+
 p1131TP2 <- merge(p1131TP2, div_1131TP2, by="CDR3_beta", all.x=TRUE)
+p1131TP2 <- p1131TP2[!duplicated(p1131TP2$CDR3_beta),]
+
 p1153 <- merge(p1153, div_1153, by="CDR3_beta", all.x=TRUE)
+p1153 <- p1153[!duplicated(p1153$CDR3_beta),]
+
 p1201 <- merge(p1201, div_1201, by="CDR3_beta", all.x=TRUE)
+p1201 <- p1201[!duplicated(p1201$CDR3_beta),]
+
 p1105 <- merge(p1105, div_1105, by="CDR3_beta", all.x=TRUE)
+p1105 <- p1105[!duplicated(p1105$CDR3_beta),]
+
 p1134 <- merge(p1134, div_1134, by="CDR3_beta", all.x=TRUE)
+p1134 <- p1134[!duplicated(p1134$CDR3_beta),]
+
 p1525TP1 <- merge(p1525TP1, div_1525TP1, by="CDR3_beta", all.x=TRUE)
+p1525TP1 <- p1525TP1[!duplicated(p1525TP1$CDR3_beta),]
+
 p1525TP2 <- merge(p1525TP2, div_1525TP2, by="CDR3_beta", all.x=TRUE)
+p1525TP2 <- p1525TP2[!duplicated(p1525TP2$CDR3_beta),]
 
 
 # combine for plotting
 combined3 <- rbind(p005, p1131TP1, p1131TP2, p1153, p1201, p1105, p1134, p1525TP1, p1525TP2)
 
-combined3$tcr <- ifelse(grepl("TRBV28_TRBJ1-1|TRBV27_TRBJ2-4|TRBV2_TRBJ2-2|TRBV13_TRBJ1-2|
-TRBV5-1_TRBJ2-5|TRBV4-1_TRBJ2-3|TRBV6-6_TRBJ2-7",combined3$beta), "shared", "convalescent only")
+combined3$tcr <- ifelse(grepl("TRBV5-1_TRBJ2-1|TRBV28_TRBJ1-1|TRBV27_TRBJ2-4|TRBV2_TRBJ2-2|TRBV13_TRBJ1-2|TRBV4-2_TRBJ2-1|TRBV4-1_TRBJ2-3|TRBV5-1_TRBJ2-7|TRBV6-6_TRBJ2-7|TRBV5-1_TRBJ2-5",combined3$beta), "shared", ifelse(grepl("TRBV29-1_TRBJ2-1|TRBV9_TRBJ2-3|TRBV7-9_TRBJ1-6|TRBV7-1, TRBV28_TRBJ2-7", combined3$beta), "acute only", ifelse(!grepl("TRBV5-1_TRBJ2-1|TRBV28_TRBJ1-1|TRBV27_TRBJ2-4|TRBV2_TRBJ2-2|TRBV13_TRBJ1-2|TRBV4-2_TRBJ2-1|TRBV4-1_TRBJ2-3|TRBV5-1_TRBJ2-7|TRBV6-6_TRBJ2-7|TRBV5-1_TRBJ2-5|TRBV29-1_TRBJ2-1|TRBV9_TRBJ2-3|TRBV7-9_TRBJ1-6|TRBV7-1, TRBV28_TRBJ2-7", combined3$beta), "convalescent only", "")))
 
 np16_2 <- combined3[!grepl("ORF3a-28", combined3$epitope),]
 
@@ -1162,7 +1175,7 @@ grid.arrange(p1, p2, nrow=2)
 ```
 ## By severity and epitope
 
-```{r, fig.width=18, fig.height=6}
+```{r, fig.width=20, fig.height=8}
 grid.arrange(p3, p5, p4, nrow=1)
 ```
 
