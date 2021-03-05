@@ -12,10 +12,10 @@ library(kernlab)
 library(igraph)
 library(stringdist)
 library(tidyverse)
-library(pheatmap)
 library(dendextend)
 ```
 
+TCR similarity/dissimilarity by hierarchical clustering of CDR3 sequences
 
 ## Read in all data (1 beta cells)
 ```{r, include=FALSE}
@@ -320,6 +320,15 @@ cl <- hclust(as.dist(d))
 
 dend <- as.dendrogram(cl)
 
+correct_labels <- cl$labels[cl$order]
+correct_labels <- as.data.frame(correct_labels)
+correct_labels$patient <- ifelse(grepl("005", correct_labels$correct_labels), "005",
+                          ifelse(grepl("1131-TP-1",correct_labels$correct_labels), "1131-TP-1",
+                          ifelse(grepl("1131-TP-2", correct_labels$correct_labels), "1131-TP-2",
+                          ifelse(grepl("1153", correct_labels$correct_labels), "1153",
+                          ifelse(grepl("1201", correct_labels$correct_labels), "1201","")))))
+labels(dend) <- correct_labels$patient  
+
 library(colorspace)
 patient <- as.factor(np16$patient)
 
@@ -327,8 +336,7 @@ n_patient <- length(unique(patient))
 cols_5 <- colorspace::rainbow_hcl(n_patient)
 col_patient <- cols_5[patient]
 
-labels_colors(dend) <- col_patient
-labels(dend) <- colnames(d)
+labels_colors(dend) <- col_patient[order.dendrogram(dend)]
 
 
 ```
@@ -346,13 +354,20 @@ legend("topright", legend = levels(patient), fill = cols_5, cex=2)
 
 ### CD8 ORF3a beta
 ```{r}
-# generate distance matrix
 d <- stringdistmatrix(orf3a$CDR3_beta, orf3a$CDR3_beta, method="lv")
 rownames(d) <- orf3a$cell_name
 colnames(d) <- orf3a$patient
 cl <- hclust(as.dist(d))
 
 dend <- as.dendrogram(cl)
+
+correct_labels <- cl$labels[cl$order]
+correct_labels <- as.data.frame(correct_labels)
+correct_labels$patient <- ifelse(grepl("1105", correct_labels$correct_labels), "1105",
+                          ifelse(grepl("1134",correct_labels$correct_labels), "1134",
+                          ifelse(grepl("1525-TP-1", correct_labels$correct_labels), "1525-TP-1",
+                          ifelse(grepl("1525-TP-2", correct_labels$correct_labels), "1525-TP-2",""))))
+labels(dend) <- correct_labels$patient  
 
 library(colorspace)
 patient <- as.factor(orf3a$patient)
@@ -361,8 +376,7 @@ n_patient <- length(unique(patient))
 cols_4 <- colorspace::rainbow_hcl(n_patient)
 col_patient <- cols_4[patient]
 
-labels_colors(dend) <- col_patient
-labels(dend) <- colnames(d)
+labels_colors(dend) <- col_patient[order.dendrogram(dend)]
 
 
 ```
@@ -374,7 +388,7 @@ dend %>%
     set("labels_cex",1.5) %>% 
     color_branches(dend, k=4) %>%
     plot(main = "CD8+ ORF3a-28 CDR3 beta clustering", cex.main=2)
-legend("topright", legend = levels(patient), fill = cols_5, cex=2)
+legend("topright", legend = levels(patient), fill = cols_4, cex=2)
 
 ```
 
@@ -382,21 +396,26 @@ legend("topright", legend = levels(patient), fill = cols_5, cex=2)
 ```{r}
 # generate distance matrix
 d <- stringdistmatrix(combined2$CDR3_beta, combined2$CDR3_beta, method="lv")
-
 rownames(d) <- combined2$cell_name
 colnames(d) <- combined2$patient
-
 cl <- hclust(as.dist(d))
+
 dend <- as.dendrogram(cl)
 
-library(colorspace)
+correct_labels <- cl$labels[cl$order]
+correct_labels <- as.data.frame(correct_labels)
+correct_labels$epitope <- ifelse(grepl("NP16|B7_SPR", correct_labels$correct_labels), "NP16",
+                          ifelse(grepl("ORF3a",correct_labels$correct_labels), "ORF3a-28",""))
+labels(dend) <- correct_labels$epitope  
 
+library(colorspace)
 epitope <- as.factor(combined2$epitope)
+
 n_epitope <- length(unique(epitope))
 cols_2 <- colorspace::rainbow_hcl(n_epitope)
 col_epitope <- cols_2[epitope]
-labels_colors(dend) <- col_epitope
-labels(dend) <- colnames(d)
+
+labels_colors(dend) <- col_epitope[order.dendrogram(dend)]
 ```
 
 ```{r, fig.width=40, fig.height=8}
