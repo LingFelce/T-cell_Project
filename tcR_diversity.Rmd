@@ -192,12 +192,14 @@ np16 <- combined2[!grepl("ORF3a-28", combined2$epitope),]
 ```
 ## Boxplots
 ```{r}
+# have to add outlier.shape=NA otherwise ggplot2 adds an extra dot for ORF3a-28!
+
 p1 <- ggplot(combined2, aes(x=epitope, y=diversity, colour=epitope)) +
-  geom_boxplot(width=0.5) + geom_jitter(width=0.25) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
   labs(title="Diversity of CD8+ NP16 & ORF3a-28 CDR3 beta",x="Patient", y = "Shannon diversity index") + theme_light()
 
 p2 <- ggplot(np16, aes(x=severity, y=diversity, colour=severity)) +
-  geom_jitter(width=0.25) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
   labs(title="Diversity of CD8+ NP16  CDR3 beta",x="Severity", y = "Shannon diversity index") + theme_light()
 
 ```
