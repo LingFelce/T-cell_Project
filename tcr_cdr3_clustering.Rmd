@@ -61,250 +61,67 @@ big_data = do.call(rbind, datalist)
 trb <- big_data %>% group_by(i) %>% filter(n() == 1)
 colnames(trb) <- c("clone_count", "clone_fraction","CDR3_beta", "TRBV", "TRBJ", "cell_number")
 trb <- merge(trb, mixcr_b_names, by="cell_number")
+
 # tidy up
 trb <- mutate(trb, beta=paste(TRBV, TRBJ, sep="_"))
-table <- as.data.frame(table(trb$CDR3_beta))
-combined2 <- merge(trb, table, by.x="CDR3_beta", by.y="Var1", all.x=TRUE)
-combined2$patient <- ifelse(grepl("005", combined2$cell_name), "005",
-                          ifelse(grepl("1131-TP-1",combined2$cell_name), "1131-TP-1",
-                          ifelse(grepl("1131-TP-2", combined2$cell_name), "1131-TP-2",
-                          ifelse(grepl("1153", combined2$cell_name), "1153",
-                          ifelse(grepl("1201", combined2$cell_name), "1201",
-                          ifelse(grepl("1105", combined2$cell_name), "1105",
-                          ifelse(grepl("1134-TP-2",combined2$cell_name), "1134-TP-2",
-                          ifelse(grepl("1525-TP-1", combined2$cell_name), "1525-TP-1",
-                          ifelse(grepl("1525-TP-2", combined2$cell_name), "1525-TP-2",
-                                 "")))))))))
-combined2$severity <- ifelse(grepl("005", combined2$cell_name), "mild",
-                          ifelse(grepl("1131-TP-1",combined2$cell_name), "severe",
-                          ifelse(grepl("1131-TP-2", combined2$cell_name), "severe",
-                          ifelse(grepl("1153", combined2$cell_name), "severe",
-                          ifelse(grepl("1201", combined2$cell_name), "mild",
-                          ifelse(grepl("1105", combined2$cell_name), "severe",
-                          ifelse(grepl("1134-TP-2",combined2$cell_name), "severe",
-                          ifelse(grepl("1525-TP-1", combined2$cell_name), "severe",
-                          ifelse(grepl("1525-TP-2", combined2$cell_name), "severe",
-                                 "")))))))))
-combined2$timepoint <- ifelse(grepl("TP-1", combined2$patient), "acute",
-                   ifelse(grepl("005|TP-2|1153|1201|1105", combined2$cell_name), "convalescent", ""))
-combined2$epitope <- ifelse(grepl("NP16|B7_SPR", combined2$cell_name), "NP16",
-                 ifelse(grepl("ORF3a-28", combined2$cell_name), "ORF3a-28", ""))
+
+trb$epitope <- ifelse(grepl("NP16|B7_SPR", trb$cell_name), "NP16",
+                 ifelse(grepl("ORF3a-28", trb$cell_name), "ORF3a-28", ""))
 
 
 # subset epitopes
-np16 <- combined2[!grepl("ORF3a-28", combined2$epitope),]
+np16_sc <- trb[!grepl("ORF3a-28", trb$epitope),]
+np16_sc <- np16_sc[,c("cell_name", "CDR3_beta", "beta")]
 
-orf3a <- combined2[!grepl("NP16", combined2$epitope),]
+orf3a_sc <- trb[!grepl("NP16", trb$epitope),]
+orf3a_sc <- orf3a_sc[,c("cell_name", "CDR3_beta", "beta")]
 
+# clones
+np16_clones <- read.csv("/t1-data/user/lfelce/TCR_analysis/tcr_clones_results/cd8_np16_tcr_clones.csv", header=TRUE)
+np16_clones <- np16_clones[!duplicated(np16_clones$CloneName),]
+np16_clones <- np16_clones[,c("CloneName", "CDR3_aa.y", "beta")]
+colnames(np16_clones) <- c("cell_name", "CDR3_beta", "beta")
+
+orf3a_clones <- read.csv("/t1-data/user/lfelce/TCR_analysis/tcr_clones_results/cd8_orf3a-28_tcr_clones.csv", header=TRUE)
+orf3a_clones <- orf3a_clones[!duplicated(orf3a_clones$CloneName),]
+orf3a_clones <- orf3a_clones[,c("CloneName", "CDR3_aa.y", "beta")]
+colnames(orf3a_clones) <- c("cell_name", "CDR3_beta", "beta")
+
+# combine clones and single cell info
+np16 <- rbind(np16_sc, np16_clones)
+
+orf3a <- rbind(orf3a_sc, orf3a_clones)
+
+# add  metadata
+np16$patient <- ifelse(grepl("005", np16$cell_name), "005",
+                          ifelse(grepl("1131-TP-1",np16$cell_name), "1131-TP-1",
+                          ifelse(grepl("1131-TP-2|1131-CL", np16$cell_name), "1131-TP-2",
+                          ifelse(grepl("1153", np16$cell_name), "1153",
+                          ifelse(grepl("1201", np16$cell_name), "1201","")))))
+
+np16$severity <- ifelse(grepl("005", np16$cell_name), "mild",
+                          ifelse(grepl("1131-TP-1", np16$cell_name), "severe",
+                          ifelse(grepl("1131-TP-2|1131-CL", np16$cell_name), "severe",
+                          ifelse(grepl("1153", np16$cell_name), "severe",
+                          ifelse(grepl("1201", np16$cell_name), "mild","")))))
+
+np16$cell_type <- ifelse(grepl("CL", np16$cell_name), "clone", "single cell")
+
+
+orf3a$patient <- ifelse(grepl("1105", orf3a$cell_name), "1105",
+                          ifelse(grepl("1134-TP1", orf3a$cell_name), "1134-TP-1",
+                          ifelse(grepl("1134-TP-2|1134-TP2", orf3a$cell_name), "1134-TP-2",
+                          ifelse(grepl("1525-TP-1|1525-TP1", orf3a$cell_name), "1525-TP-1",
+                          ifelse(grepl("1525-TP-2|1525-TP2", orf3a$cell_name), "1525-TP-2","")))))
+
+orf3a$severity <- "severe"
+
+orf3a$cell_type <- ifelse(grepl("CL", orf3a$cell_name), "clone", "single cell")
+
+orf3a <- orf3a[-199,]
 
 ```
 
-## CDR3 clustering (Benny's code)
-This script creates and plots networks of TCRs which share sequence similarity as measured by the string kernel, looking for similar triplets. Code from Benny Chain (UCL)
-
-### CD8 NP16 beta
-```{r, fig.height=6, fig.width=6}
-# this script requires two sets of input; a set of  expanded (>2) CDR3 sequences (each CDR3 should only occur once) in the set of TCRs to be analysed, 
-# in a variable called CDR_exp; and all the CDR3s (each CDR3 should only occur once) from the same set, in a variable called CDR_all.    
-
-# should be character list not dataframe
-CDR_exp <- np16 %>% group_by(CDR3_beta) %>% filter(n() >= 2)
-CDR_exp <- unique(CDR_exp$CDR3_beta)
-
-CDR_all <- unique(np16$CDR3_beta)
-
-#nc<-c()
-#network_sum<-c()
-
-# initialize the string kernel, which measures the pairwise distance between string vectors, and outputs a kernel matrix 
-# containing the string distance between each CDR3 in set 1 and each CDR3 in set 2.  
-sk <- stringdot(type="spectrum", length=3, normalized=TRUE)
-
-# calculate string distance between expanded clones and rest
-km_CDR <- kernelMatrix(sk,CDR_exp,CDR_all)
-
-# remove all the CDR3s which are remotely connected to any of the inputs
-colmax <- apply(km_CDR,2,max)
-# optionally plot a histogram of distances
-# hist(colmax)
-
-# chose top 1500 TCRS and discard the rest. This is an arbitrary cutoff, which retains all the similar TCRs
-# but does not produce too large a distance matrix 
-l_colmax <- min(1500,length(colmax))
-rem <- order(colmax,decreasing = TRUE)[1:l_colmax]
-
-# now work out full kernel  matrix for the remaining 1500 CDRs
-km_CDR_all<-kernelMatrix(sk,CDR_all[rem],CDR_all[rem])
-
-#replace those > 0.98 with 0; this removes any identical pairs of CDR3s. 
-ones <- which(km_CDR_all>0.98)
-km_CDR_all[ones]<-0
-
-# optionally plot a histogram of distances again to check 
-# hist(km_CDR_all)
-
-# convert the distance matrix into an adjacentcy  matrix; any two TCRs which are closer than 
-# an arbitrary threshold th, are given a distance value of 1.  Any which are less than th, are given a distance of 0.
-# the size of the threshold is arbitrary, and needs to be set so a suitable control set of CDR3s  give few clusters.
-
-thc <- 0.5
-connect <- (km_CDR_all >= thc)
-km_CDR_adj <- km_CDR_all
-km_CDR_adj[which(connect)] <- 1
-km_CDR_adj[which(!connect)] <- 0
-
-# nc is the number of non-zero entries in the set; i.e. number of edges     
-nc <- length(which(km_CDR_adj>0))/2
-
-# hist(km_CDR_adj)
-# convert the adjacency  matrix into a graph using igraph
-km_graph<-graph.adjacency(km_CDR_adj, mode="undirected",weighted = TRUE,add.colnames=NULL,diag=FALSE)
-summary(km_graph)
-
-# names of vertices are names of CDR3s
-V(km_graph)$name<-CDR_all[rem]
-
-# remove isolated nodes; new smaller graph is called km_graph_s
-isolates <- function(g){return(which(igraph::degree(g)==0))}
-km_graph_s<-delete.vertices(km_graph,isolates(km_graph))
-summary(km_graph_s)
-
-#define which vertices are also exp clones
-inter <- match(CDR_exp,V(km_graph_s)$name)
-exp_v <- inter[which(!is.na(inter))]
-
-names_g<-V(km_graph_s)$name
-
-# collect summary data from the graph
-# number of vertices
-n_nodes1 <- length(V(km_graph_s))
-
-# size of each cluster
-cluster_size <- clusters(km_graph_s)$csize
-
-# number of clusters
-noclusters <- clusters(km_graph_s)$no
-
-# degree of each vertix 
-degree <- igraph::degree(km_graph_s,V(km_graph_s))
-degree_dist <- degree.distribution(km_graph_s)
-
-# which node(vertex)  is in which cluster 
-membership <- clusters(km_graph_s)$membership
-
-# capture network layout so can plot reproducibly
-coords.exp <- layout.kamada.kawai(km_graph_s)
-
-# Create the plot
-plot(km_graph_s, vertex.label=NA,layout=coords.exp,edge.width=1,vertex.color="black",edge.color="grey",vertex.size=4)
-title(main="Expanded CDR3s from CD8+ NP16 CDR3 beta", cex.main=1, font.main=1)
-
-#can add text to plot using mtext
-#mtext(paste0(nam," (thr = ",thc," c.thr = ",c.thr,")"), outer = TRUE, cex = 1)
-```
-
-
-### CD8 ORF3a beta
-```{r, fig.height=6, fig.width=6}
-
-# this script requires two sets of input; a set of  expanded CDR3 sequences (each CDR3 should only occur once) in the set of TCRs to be analysed, 
-# in a variable called CDR_exp; and all the CDR3s (each CDR3 should only occur once) from the same set, in a variable called CDR_all.    
-
-# should be character list not dataframe
-CDR_exp <- orf3a %>% group_by(CDR3_beta) %>% filter(n() >= 2)
-CDR_exp <- unique(CDR_exp$CDR3_beta)
-
-CDR_all <- unique(orf3a$CDR3_beta)
-
-#nc<-c()
-#network_sum<-c()
-
-# initialize the string kernel, which measures the pairwise distance between string vectors, and outputs a kernel matrix 
-# containing the string distance between each CDR3 in set 1 and each CDR3 in set 2.  
-sk <- stringdot(type="spectrum", length=3, normalized=TRUE)
-
-# calculate string distance between expanded clones and rest
-km_CDR <- kernelMatrix(sk,CDR_exp,CDR_all)
-
-# remove all the CDR3s which are remotely connected to any of the inputs
-colmax <- apply(km_CDR,2,max)
-# optionally plot a histogram of distances
-# hist(colmax)
-
-# chose top 1500 TCRS and discard the rest. This is an arbitrary cutoff, which retains all the similar TCRs
-# but does not produce too large a distance matrix 
-l_colmax <- min(1500,length(colmax))
-rem <- order(colmax,decreasing = TRUE)[1:l_colmax]
-
-# now work out full kernel  matrix for the remaining 1500 CDRs
-km_CDR_all<-kernelMatrix(sk,CDR_all[rem],CDR_all[rem])
-
-#replace those > 0.98 with 0; this removes any identical pairs of CDR3s. 
-ones <- which(km_CDR_all>0.98)
-km_CDR_all[ones]<-0
-
-# optionally plot a histogram of distances again to check 
-# hist(km_CDR_all)
-
-# convert the distance matrix into an adjacentcy  matrix; any two TCRs which are closer than 
-# an arbitrary threshold th, are given a distance value of 1.  Any which are less than th, are given a distance of 0.
-# the size of the threshold is arbitrary, and needs to be set so a suitable control set of CDR3s  give few clusters.
-
-thc <- 0.5
-connect <- (km_CDR_all >= thc)
-km_CDR_adj <- km_CDR_all
-km_CDR_adj[which(connect)] <- 1
-km_CDR_adj[which(!connect)] <- 0
-
-# nc is the number of non-zero entries in the set; i.e. number of edges     
-nc <- length(which(km_CDR_adj>0))/2
-
-# hist(km_CDR_adj)
-# convert the adjacency  matrix into a graph using igraph
-km_graph<-graph.adjacency(km_CDR_adj, mode="undirected",weighted = TRUE,add.colnames=NULL,diag=FALSE)
-summary(km_graph)
-
-# names of vertices are names of CDR3s
-V(km_graph)$name<-CDR_all[rem]
-
-# remove isolated nodes; new smaller graph is called km_graph_s
-isolates <- function(g){return(which(igraph::degree(g)==0))}
-km_graph_s<-delete.vertices(km_graph,isolates(km_graph))
-summary(km_graph_s)
-
-#define which vertices are also exp clones
-inter <- match(CDR_exp,V(km_graph_s)$name)
-exp_v <- inter[which(!is.na(inter))]
-
-names_g<-V(km_graph_s)$name
-
-# collect summary data from the graph
-# number of vertices
-n_nodes1 <- length(V(km_graph_s))
-
-# size of each cluster
-cluster_size <- clusters(km_graph_s)$csize
-
-# number of clusters
-noclusters <- clusters(km_graph_s)$no
-
-# degree of each vertix 
-degree <- igraph::degree(km_graph_s,V(km_graph_s))
-degree_dist <- degree.distribution(km_graph_s)
-
-# which node(vertex)  is in which cluster 
-membership <- clusters(km_graph_s)$membership
-
-# capture network layout so can plot reproducibly
-coords.exp <- layout.kamada.kawai(km_graph_s)
-
-# Create the plot
-plot(km_graph_s, vertex.label=NA,layout=coords.exp,edge.width=1,vertex.color="black",edge.color="grey",vertex.size=4)
-title(main="Expanded CDR3s from CD8+ ORF3a beta", cex.main=1, font.main=1)
-
-#can add text to plot using mtext
-#mtext(paste0(nam," (thr = ",thc," c.thr = ",c.thr,")"), outer = TRUE, cex = 1)
-```
 
 ## Distance matrix using stringdist
 Hierarchal clustering from distance matrix (dendrogram)
@@ -312,7 +129,6 @@ Hierarchal clustering from distance matrix (dendrogram)
 
 ```{r}
 # generate distance matrix
-
 d <- stringdistmatrix(np16$CDR3_beta, np16$CDR3_beta, method="lv")
 rownames(d) <- np16$cell_name
 colnames(d) <- np16$patient
@@ -324,30 +140,32 @@ correct_labels <- cl$labels[cl$order]
 correct_labels <- as.data.frame(correct_labels)
 correct_labels$patient <- ifelse(grepl("005", correct_labels$correct_labels), "005",
                           ifelse(grepl("1131-TP-1",correct_labels$correct_labels), "1131-TP-1",
-                          ifelse(grepl("1131-TP-2", correct_labels$correct_labels), "1131-TP-2",
+                          ifelse(grepl("1131-TP-2|1131-CL", correct_labels$correct_labels), "1131-TP-2",
                           ifelse(grepl("1153", correct_labels$correct_labels), "1153",
                           ifelse(grepl("1201", correct_labels$correct_labels), "1201","")))))
 labels(dend) <- correct_labels$patient  
 
 library(colorspace)
-patient <- as.factor(np16$patient)
+cell_type <- as.factor(np16$cell_type)
 
-n_patient <- length(unique(patient))
-cols_5 <- colorspace::rainbow_hcl(n_patient)
-col_patient <- cols_5[patient]
+n_cell_type <- length(unique(cell_type))
+cols_2 <- colorspace::rainbow_hcl(n_cell_type)
+col_cell_type <- cols_2[cell_type]
 
-labels_colors(dend) <- col_patient[order.dendrogram(dend)]
+labels_colors(dend) <- col_cell_type[order.dendrogram(dend)]
 
+# for saving dendrogram info later (csv)
+cells <- correct_labels
 
 ```
 
-```{r, fig.width=35, fig.height=10}
-# par(mar = c(8,1,1,0.1))
+```{r, fig.width=40, fig.height=7}
+# par(mar = c(1,10,1,10))
 dend %>% 
-    set("labels_cex",1.5) %>% 
+    set("labels_cex",1) %>% 
     color_branches(dend, k=10) %>%
     plot(main = "CD8+ NP16 CDR3 beta clustering", cex.main=2)
-legend("topright", legend = levels(patient), fill = cols_5, cex=2)
+legend("topright", legend = levels(cell_type), fill = cols_2, cex=2)
 
 ```
 
@@ -364,77 +182,292 @@ dend <- as.dendrogram(cl)
 correct_labels <- cl$labels[cl$order]
 correct_labels <- as.data.frame(correct_labels)
 correct_labels$patient <- ifelse(grepl("1105", correct_labels$correct_labels), "1105",
-                          ifelse(grepl("1134",correct_labels$correct_labels), "1134",
-                          ifelse(grepl("1525-TP-1", correct_labels$correct_labels), "1525-TP-1",
-                          ifelse(grepl("1525-TP-2", correct_labels$correct_labels), "1525-TP-2",""))))
+                          ifelse(grepl("1134-TP1",correct_labels$correct_labels), "1134-TP-1",       
+                          ifelse(grepl("1134-TP-2|1134-TP2",correct_labels$correct_labels), "1134-TP-2",
+                          ifelse(grepl("1525-TP-1|1525-TP1", correct_labels$correct_labels), "1525-TP-1",
+                          ifelse(grepl("1525-TP-2|1525-TP2", correct_labels$correct_labels), "1525-TP-2","")))))
 labels(dend) <- correct_labels$patient  
 
 library(colorspace)
-patient <- as.factor(orf3a$patient)
+cell_type <- as.factor(orf3a$cell_type)
 
-n_patient <- length(unique(patient))
-cols_4 <- colorspace::rainbow_hcl(n_patient)
-col_patient <- cols_4[patient]
+n_cell_type <- length(unique(cell_type))
+cols_2 <- colorspace::rainbow_hcl(n_cell_type)
+col_cell_type <- cols_2[cell_type]
 
-labels_colors(dend) <- col_patient[order.dendrogram(dend)]
+labels_colors(dend) <- col_cell_type[order.dendrogram(dend)]
 
+# for saving later
+cells <- rbind(cells, correct_labels)
 
 ```
 
-```{r, fig.width=30, fig.height=10}
+```{r, fig.width=35, fig.height=7}
 # par(mar = c(10,1,1,0.1))
 
 dend %>% 
-    set("labels_cex",1.5) %>% 
-    color_branches(dend, k=4) %>%
+    set("labels_cex",1) %>% 
+    color_branches(dend, k=6) %>%
     plot(main = "CD8+ ORF3a-28 CDR3 beta clustering", cex.main=2)
-legend("topright", legend = levels(patient), fill = cols_4, cex=2)
+legend("topright", legend = levels(cell_type), fill = cols_2, cex=2)
 
 ```
+
+Export cell/clone order to CSV
+```{r}
+write.csv(cells, "/t1-data/user/lfelce/TCR_analysis/diversity/cd8_np16_orf3a_sc_clones_dendrograms.csv")
+```
+
 
 ### Combined
 ```{r}
-# generate distance matrix
-d <- stringdistmatrix(combined2$CDR3_beta, combined2$CDR3_beta, method="lv")
-rownames(d) <- combined2$cell_name
-colnames(d) <- combined2$patient
-cl <- hclust(as.dist(d))
-
-dend <- as.dendrogram(cl)
-
-correct_labels <- cl$labels[cl$order]
-correct_labels <- as.data.frame(correct_labels)
-correct_labels$patient <- ifelse(grepl("005", correct_labels$correct_labels), "005",
-                          ifelse(grepl("1131-TP-1",correct_labels$correct_labels), "1131-TP-1",
-                          ifelse(grepl("1131-TP-2", correct_labels$correct_labels), "1131-TP-2",
-                          ifelse(grepl("1153", correct_labels$correct_labels), "1153",
-                          ifelse(grepl("1201", correct_labels$correct_labels), "1201",
-                          ifelse(grepl("1105", correct_labels$correct_labels), "1105",
-                          ifelse(grepl("1134-TP-2",correct_labels$correct_labels), "1134-TP-2",
-                          ifelse(grepl("1525-TP-1", correct_labels$correct_labels), "1525-TP-1",
-                          ifelse(grepl("1525-TP-2", correct_labels$correct_labels), "1525-TP-2",
-                                 "")))))))))
-labels(dend) <- correct_labels$patient
-
-library(colorspace)
-epitope <- as.factor(combined2$epitope)
-
-n_epitope <- length(unique(epitope))
-cols_2 <- colorspace::rainbow_hcl(n_epitope)
-col_epitope <- cols_2[epitope]
-
-labels_colors(dend) <- col_epitope[order.dendrogram(dend)]
+# # generate distance matrix
+# d <- stringdistmatrix(combined2$CDR3_beta, combined2$CDR3_beta, method="lv")
+# rownames(d) <- combined2$cell_name
+# colnames(d) <- combined2$patient
+# cl <- hclust(as.dist(d))
+# 
+# dend <- as.dendrogram(cl)
+# 
+# correct_labels <- cl$labels[cl$order]
+# correct_labels <- as.data.frame(correct_labels)
+# correct_labels$patient <- ifelse(grepl("005", correct_labels$correct_labels), "005",
+#                           ifelse(grepl("1131-TP-1",correct_labels$correct_labels), "1131-TP-1",
+#                           ifelse(grepl("1131-TP-2", correct_labels$correct_labels), "1131-TP-2",
+#                           ifelse(grepl("1153", correct_labels$correct_labels), "1153",
+#                           ifelse(grepl("1201", correct_labels$correct_labels), "1201",
+#                           ifelse(grepl("1105", correct_labels$correct_labels), "1105",
+#                           ifelse(grepl("1134-TP-2",correct_labels$correct_labels), "1134-TP-2",
+#                           ifelse(grepl("1525-TP-1", correct_labels$correct_labels), "1525-TP-1",
+#                           ifelse(grepl("1525-TP-2", correct_labels$correct_labels), "1525-TP-2",
+#                                  "")))))))))
+# labels(dend) <- correct_labels$patient
+# 
+# library(colorspace)
+# epitope <- as.factor(combined2$epitope)
+# 
+# n_epitope <- length(unique(epitope))
+# cols_2 <- colorspace::rainbow_hcl(n_epitope)
+# col_epitope <- cols_2[epitope]
+# 
+# labels_colors(dend) <- col_epitope[order.dendrogram(dend)]
 ```
 
 ```{r, fig.width=40, fig.height=8} 
-# par(mar = c(10,1,1,0.1))
-dend %>% 
-    set("labels_cex",1.5) %>% 
-    color_branches(dend, k=4) %>%
-    plot(main = "CD8+ NP16 and ORF3a-28 CDR3 beta clustering", cex.main=3)
-legend("topright", legend = levels(epitope), fill = cols_2, cex=2)
+# # par(mar = c(10,1,1,0.1))
+# dend %>% 
+#     set("labels_cex",1.5) %>% 
+#     color_branches(dend, k=4) %>%
+#     plot(main = "CD8+ NP16 and ORF3a-28 CDR3 beta clustering", cex.main=3)
+# legend("topright", legend = levels(epitope), fill = cols_2, cex=2)
 ```
 
 
+## CDR3 clustering (Benny's code)
+This script creates and plots networks of TCRs which share sequence similarity as measured by the string kernel, looking for similar triplets. Code from Benny Chain (UCL)
+
+### CD8 NP16 beta
+```{r, fig.height=6, fig.width=6}
+# # this script requires two sets of input; a set of  expanded (>2) CDR3 sequences (each CDR3 should only occur once) in the set of TCRs to be analysed, 
+# # in a variable called CDR_exp; and all the CDR3s (each CDR3 should only occur once) from the same set, in a variable called CDR_all.    
+# 
+# # should be character list not dataframe
+# CDR_exp <- np16 %>% group_by(CDR3_beta) %>% filter(n() >= 2)
+# CDR_exp <- unique(CDR_exp$CDR3_beta)
+# 
+# CDR_all <- unique(np16$CDR3_beta)
+# 
+# #nc<-c()
+# #network_sum<-c()
+# 
+# # initialize the string kernel, which measures the pairwise distance between string vectors, and outputs a kernel matrix 
+# # containing the string distance between each CDR3 in set 1 and each CDR3 in set 2.  
+# sk <- stringdot(type="spectrum", length=3, normalized=TRUE)
+# 
+# # calculate string distance between expanded clones and rest
+# km_CDR <- kernelMatrix(sk,CDR_exp,CDR_all)
+# 
+# # remove all the CDR3s which are remotely connected to any of the inputs
+# colmax <- apply(km_CDR,2,max)
+# # optionally plot a histogram of distances
+# # hist(colmax)
+# 
+# # chose top 1500 TCRS and discard the rest. This is an arbitrary cutoff, which retains all the similar TCRs
+# # but does not produce too large a distance matrix 
+# l_colmax <- min(1500,length(colmax))
+# rem <- order(colmax,decreasing = TRUE)[1:l_colmax]
+# 
+# # now work out full kernel  matrix for the remaining 1500 CDRs
+# km_CDR_all<-kernelMatrix(sk,CDR_all[rem],CDR_all[rem])
+# 
+# #replace those > 0.98 with 0; this removes any identical pairs of CDR3s. 
+# ones <- which(km_CDR_all>0.98)
+# km_CDR_all[ones]<-0
+# 
+# # optionally plot a histogram of distances again to check 
+# # hist(km_CDR_all)
+# 
+# # convert the distance matrix into an adjacentcy  matrix; any two TCRs which are closer than 
+# # an arbitrary threshold th, are given a distance value of 1.  Any which are less than th, are given a distance of 0.
+# # the size of the threshold is arbitrary, and needs to be set so a suitable control set of CDR3s  give few clusters.
+# 
+# thc <- 0.5
+# connect <- (km_CDR_all >= thc)
+# km_CDR_adj <- km_CDR_all
+# km_CDR_adj[which(connect)] <- 1
+# km_CDR_adj[which(!connect)] <- 0
+# 
+# # nc is the number of non-zero entries in the set; i.e. number of edges     
+# nc <- length(which(km_CDR_adj>0))/2
+# 
+# # hist(km_CDR_adj)
+# # convert the adjacency  matrix into a graph using igraph
+# km_graph<-graph.adjacency(km_CDR_adj, mode="undirected",weighted = TRUE,add.colnames=NULL,diag=FALSE)
+# summary(km_graph)
+# 
+# # names of vertices are names of CDR3s
+# V(km_graph)$name<-CDR_all[rem]
+# 
+# # remove isolated nodes; new smaller graph is called km_graph_s
+# isolates <- function(g){return(which(igraph::degree(g)==0))}
+# km_graph_s<-delete.vertices(km_graph,isolates(km_graph))
+# summary(km_graph_s)
+# 
+# #define which vertices are also exp clones
+# inter <- match(CDR_exp,V(km_graph_s)$name)
+# exp_v <- inter[which(!is.na(inter))]
+# 
+# names_g<-V(km_graph_s)$name
+# 
+# # collect summary data from the graph
+# # number of vertices
+# n_nodes1 <- length(V(km_graph_s))
+# 
+# # size of each cluster
+# cluster_size <- clusters(km_graph_s)$csize
+# 
+# # number of clusters
+# noclusters <- clusters(km_graph_s)$no
+# 
+# # degree of each vertix 
+# degree <- igraph::degree(km_graph_s,V(km_graph_s))
+# degree_dist <- degree.distribution(km_graph_s)
+# 
+# # which node(vertex)  is in which cluster 
+# membership <- clusters(km_graph_s)$membership
+# 
+# # capture network layout so can plot reproducibly
+# coords.exp <- layout.kamada.kawai(km_graph_s)
+# 
+# # Create the plot
+# plot(km_graph_s, vertex.label=NA,layout=coords.exp,edge.width=1,vertex.color="black",edge.color="grey",vertex.size=4)
+# title(main="Expanded CDR3s from CD8+ NP16 CDR3 beta", cex.main=1, font.main=1)
+# 
+# #can add text to plot using mtext
+# #mtext(paste0(nam," (thr = ",thc," c.thr = ",c.thr,")"), outer = TRUE, cex = 1)
 ```
+
+
+### CD8 ORF3a beta
+```{r, fig.height=6, fig.width=6}
+
+# # this script requires two sets of input; a set of  expanded CDR3 sequences (each CDR3 should only occur once) in the set of TCRs to be analysed, 
+# # in a variable called CDR_exp; and all the CDR3s (each CDR3 should only occur once) from the same set, in a variable called CDR_all.    
+# 
+# # should be character list not dataframe
+# CDR_exp <- orf3a %>% group_by(CDR3_beta) %>% filter(n() >= 2)
+# CDR_exp <- unique(CDR_exp$CDR3_beta)
+# 
+# CDR_all <- unique(orf3a$CDR3_beta)
+# 
+# #nc<-c()
+# #network_sum<-c()
+# 
+# # initialize the string kernel, which measures the pairwise distance between string vectors, and outputs a kernel matrix 
+# # containing the string distance between each CDR3 in set 1 and each CDR3 in set 2.  
+# sk <- stringdot(type="spectrum", length=3, normalized=TRUE)
+# 
+# # calculate string distance between expanded clones and rest
+# km_CDR <- kernelMatrix(sk,CDR_exp,CDR_all)
+# 
+# # remove all the CDR3s which are remotely connected to any of the inputs
+# colmax <- apply(km_CDR,2,max)
+# # optionally plot a histogram of distances
+# # hist(colmax)
+# 
+# # chose top 1500 TCRS and discard the rest. This is an arbitrary cutoff, which retains all the similar TCRs
+# # but does not produce too large a distance matrix 
+# l_colmax <- min(1500,length(colmax))
+# rem <- order(colmax,decreasing = TRUE)[1:l_colmax]
+# 
+# # now work out full kernel  matrix for the remaining 1500 CDRs
+# km_CDR_all<-kernelMatrix(sk,CDR_all[rem],CDR_all[rem])
+# 
+# #replace those > 0.98 with 0; this removes any identical pairs of CDR3s. 
+# ones <- which(km_CDR_all>0.98)
+# km_CDR_all[ones]<-0
+# 
+# # optionally plot a histogram of distances again to check 
+# # hist(km_CDR_all)
+# 
+# # convert the distance matrix into an adjacentcy  matrix; any two TCRs which are closer than 
+# # an arbitrary threshold th, are given a distance value of 1.  Any which are less than th, are given a distance of 0.
+# # the size of the threshold is arbitrary, and needs to be set so a suitable control set of CDR3s  give few clusters.
+# 
+# thc <- 0.5
+# connect <- (km_CDR_all >= thc)
+# km_CDR_adj <- km_CDR_all
+# km_CDR_adj[which(connect)] <- 1
+# km_CDR_adj[which(!connect)] <- 0
+# 
+# # nc is the number of non-zero entries in the set; i.e. number of edges     
+# nc <- length(which(km_CDR_adj>0))/2
+# 
+# # hist(km_CDR_adj)
+# # convert the adjacency  matrix into a graph using igraph
+# km_graph<-graph.adjacency(km_CDR_adj, mode="undirected",weighted = TRUE,add.colnames=NULL,diag=FALSE)
+# summary(km_graph)
+# 
+# # names of vertices are names of CDR3s
+# V(km_graph)$name<-CDR_all[rem]
+# 
+# # remove isolated nodes; new smaller graph is called km_graph_s
+# isolates <- function(g){return(which(igraph::degree(g)==0))}
+# km_graph_s<-delete.vertices(km_graph,isolates(km_graph))
+# summary(km_graph_s)
+# 
+# #define which vertices are also exp clones
+# inter <- match(CDR_exp,V(km_graph_s)$name)
+# exp_v <- inter[which(!is.na(inter))]
+# 
+# names_g<-V(km_graph_s)$name
+# 
+# # collect summary data from the graph
+# # number of vertices
+# n_nodes1 <- length(V(km_graph_s))
+# 
+# # size of each cluster
+# cluster_size <- clusters(km_graph_s)$csize
+# 
+# # number of clusters
+# noclusters <- clusters(km_graph_s)$no
+# 
+# # degree of each vertix 
+# degree <- igraph::degree(km_graph_s,V(km_graph_s))
+# degree_dist <- degree.distribution(km_graph_s)
+# 
+# # which node(vertex)  is in which cluster 
+# membership <- clusters(km_graph_s)$membership
+# 
+# # capture network layout so can plot reproducibly
+# coords.exp <- layout.kamada.kawai(km_graph_s)
+# 
+# # Create the plot
+# plot(km_graph_s, vertex.label=NA,layout=coords.exp,edge.width=1,vertex.color="black",edge.color="grey",vertex.size=4)
+# title(main="Expanded CDR3s from CD8+ ORF3a beta", cex.main=1, font.main=1)
+# 
+# #can add text to plot using mtext
+# #mtext(paste0(nam," (thr = ",thc," c.thr = ",c.thr,")"), outer = TRUE, cex = 1)
+```
+
 
