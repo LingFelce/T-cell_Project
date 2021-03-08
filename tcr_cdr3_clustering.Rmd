@@ -136,6 +136,7 @@ cl <- hclust(as.dist(d))
 
 dend <- as.dendrogram(cl)
 
+# labels as patient number, colour as cell type
 correct_labels <- cl$labels[cl$order]
 correct_labels <- as.data.frame(correct_labels)
 correct_labels$patient <- ifelse(grepl("005", correct_labels$correct_labels), "005",
@@ -143,7 +144,11 @@ correct_labels$patient <- ifelse(grepl("005", correct_labels$correct_labels), "0
                           ifelse(grepl("1131-TP-2|1131-CL", correct_labels$correct_labels), "1131-TP-2",
                           ifelse(grepl("1153", correct_labels$correct_labels), "1153",
                           ifelse(grepl("1201", correct_labels$correct_labels), "1201","")))))
-labels(dend) <- correct_labels$patient  
+
+correct_labels$cell_type <- ifelse(grepl("CL", correct_labels$correct_labels), "clone", "single cell")
+
+labels(dend) <- correct_labels$patient
+
 
 library(colorspace)
 cell_type <- as.factor(np16$cell_type)
@@ -186,6 +191,8 @@ correct_labels$patient <- ifelse(grepl("1105", correct_labels$correct_labels), "
                           ifelse(grepl("1134-TP-2|1134-TP2",correct_labels$correct_labels), "1134-TP-2",
                           ifelse(grepl("1525-TP-1|1525-TP1", correct_labels$correct_labels), "1525-TP-1",
                           ifelse(grepl("1525-TP-2|1525-TP2", correct_labels$correct_labels), "1525-TP-2","")))))
+correct_labels$cell_type <- ifelse(grepl("CL", correct_labels$correct_labels), "clone", "single cell")
+
 labels(dend) <- correct_labels$patient  
 
 library(colorspace)
