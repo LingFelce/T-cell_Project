@@ -10,19 +10,36 @@ library(scater)
 library(DropletUtils)
 library(scran)
 
+
 ```
 
 ## Analysis of 10x 6 month convalescent Dong050121 tube 2 samples using Single Cell Experiment
-Following this guide http://bioconductor.org/books/release/OSCA/droplet-processing.html
+Following this guide http://bioconductor.org/books/release/OSCA/droplet-processing.html#droplet-processing but leaving out removeAmbience as not provided in older version of DropletUtils currently installed on cluster
 
-### Calling cells from empty droplets
-```{r, fig.width=6, fig.height=4}
+### Read in 10X Genomics data from UMI count matrix
+```{r}
 # read in data and create Single Cell Experiment object
 # have to use raw unfiltered matrix if going to do cell calling from scratch
 # without using CellRanger's cell calling
 t2 <- read10xCounts("/t1-data/user/lfelce/10x_Dong050121/combined_T2_repeat4/outs/raw_feature_bc_matrix", type="sparse")
 
-bcrank <- barcodeRanks(counts(t2))
+# set Antibody Capture (cell hashing) as separate alternative experiment within SingleCellExperiment object
+t2.type <- as.data.frame(rowData(t2))
+
+is.hto <- grepl("Antibody Capture", t2.type$Type)
+
+test <- splitAltExps(t2, ifelse(is.hto, "Antibody Capture", "Gene Expression"))
+
+altExpNames(test)
+
+sce <- test
+
+```
+
+### Computing barcode ranks
+Examine distribution of total counts across barcodes, focusing on those with largest counts
+```{r, fig.height=4, fig.width=5}
+bcrank <- barcodeRanks(counts(sce))
 
 # Only showing unique points for plotting speed.
 uniq <- !duplicated(bcrank$rank)
@@ -36,112 +53,33 @@ legend("bottomleft", legend=c("Inflection", "Knee"),
         col=c("darkgreen", "dodgerblue"), lty=2, cex=1.2)
 
 ```
-Total UMI count for each barcode in dataset, plotted against its rank (in decreasing order of total counts). Inferred locations of inflection and knee points are also shown.
+Knee and inflection points mark transition between two components of total count distribution. Represents difference between empty droplets with little RNA and cell containing droplets with more RNA.
 
-### Testing for empty droplets
-Check if expression profile for each cell barcode is significantly different from ambient RNA pool - can discriminate between well-sequenced empty droplets and droplets derived from cells with litle RNA. Any significant deviation indicates that barcode corresponds to cell-containing droplet. Use FDR 0.1% - no more than 0.1% of called barcodes should be empty droplets on average. 
-```{r, fig.width=6, fig.height=4}
+### Detecting empty droplets
+Empty droplets contain RNA from ambient solution, resulting in non-zero counts after debarcoding. Use emptyDrops to distinguish between emptry droplets and cells by testing each barcode's expression profile for significant deviation from ambient profile
+```{r, fig.height=4, fig.width=6}
 # emptyDrops performs Monte Carlo simulations to compute p-values,
 # so we need to set the seed to obtain reproducible results.
 set.seed(100)
-e.out <- emptyDrops(counts(t2))
+e.out <- emptyDrops(counts(sce))
 
 # See ?emptyDrops for an explanation of why there are NA values.
 summary(e.out$FDR <= 0.001)
 
+# significant true and non-limited true - number of cells not including empty droplets?
 table(Sig=e.out$FDR <= 0.001, Limited=e.out$Limited)
 
-# emptyDrops() assumes barcodes with low total UMI counts are empty droplets
-# look at distribution of p-values for low-total barcode - should have uniform distribution
-# large peaks near 0 indicate barcodes with total counts below lower are not all ambient in origin
-# can decrease lower further to ensure that barcodes corresponding to droplets with very small cell counts are not used to estimate ambient profile
-
+# check distribution of p-values for low-total barcodes - distribution should be close to uniform.
+# large peaks near 0 indicate that barcodes with total counts below value set at limit are not all ambient in origin
+# decrease limit to ensure barcodes corresponding to droplets with very small cells are not used to estimate ambient profile
 set.seed(100)
-limit <- 100   
-all.out <- emptyDrops(counts(t2), lower=limit, test.ambient=TRUE)
+limit <- 20   
+all.out <- emptyDrops(counts(sce), lower=limit, test.ambient=TRUE)
 hist(all.out$PValue[all.out$Total <= limit & all.out$Total > 0],
-    xlab="P-value", main="", col="grey80") 
+    xlab="P-value", main="", col="grey80")
 
-# subset SingleCellExperiment object to only retain detected cells
-t2 <- t2[,which(e.out$FDR <= 0.001)]
-
+# once happy with performance of emptyDrops, subset SingleCellExperiment object to retain only detected cells
+sce <- sce[,which(e.out$FDR <= 0.001)]
 ```
 
-### Filtering on mitochondrial proportion
-Check that not removing subpopulation of metabolically active cells. May want to do alongside emptyDrops() to remove non-empty droplets containing cell fragments or stripped nuclei not caught by mitochdondrial filter.
-```{r, fig.width=6, fig.height=4}
-is.mito <- grep("^MT-", rowData(t2)$Symbol)
-pbmc.qc <- perCellQCMetrics(t2, subsets=list(MT=is.mito))
-discard.mito <- isOutlier(pbmc.qc$subsets_MT_percent, type="higher")
-summary(discard.mito)
-
-plot(pbmc.qc$sum, pbmc.qc$subsets_MT_percent, log="x",
-    xlab="Total count", ylab='Mitochondrial %')
-abline(h=attr(discard.mito, "thresholds")["higher"], col="red")
-# threshold should be set at ~ 10% not 0%?
-```
-
-### Removing ambient contamination
-For routine analyses, there is usually no need to remove the ambient contamination from each library. A consistent level of contamination across the dataset does not introduce much spurious heterogeneity, so dimensionality reduction and clustering on the original (log-)expression matrix remain valid. For genes that are highly abundant in the ambient solution, we can expect some loss of signal due to shrinkage of the log-fold changes between clusters towards zero, but this effect should be negligible for any genes that are so strongly upregulated that they are able to contribute to the ambient solution in the first place. This suggests that ambient removal can generally be omitted from most analyses, though we will describe it here regardless as it can be useful in specific situations.
-
-Effective removal of ambient contamination involves tackling a number of issues. We need to know how much contamination is present in each cell, which usually requires some prior biological knowledge about genes that should not be expressed in the dataset (e.g., mitochondrial genes in single-nuclei datasets, see Section 19.4) or genes with mutually exclusive expression profiles (Young and Behjati 2018). Those same genes must be highly abundant in the ambient solution to have enough counts in each cell for precise estimation of the scale of the contamination. The actual subtraction of the ambient contribution also must be done in a manner that respects the mean-variance relationship of the count data. Unfortunately, these issues are difficult to address for single-cell data due to the imprecision of low counts,
-
-Rather than attempting to remove contamination from individual cells, a more measured approach is to operate on clusters of related cells. The removeAmbience() function from DropletUtils will remove the contamination from the cluster-level profiles and propagate the effect of those changes back to the individual cells. Specifically, given a count matrix for a single sample and its associated ambient profile, removeAmbience() will:
-
-1. Aggregate counts in each cluster to obtain an average profile per cluster.
-
-2. Estimate the contamination proportion in each cluster with maximumAmbience() (see Section 14.4). This has the useful property of not requiring any prior knowledge of control or mutually exclusive expression profiles, albeit at the cost of some statistical rigor.
-
-3. Subtract the estimated contamination from the cluster-level average.
-
-4. Perform quantile-quantile mapping of each individual cell’s counts from the old average to the new subtracted average. This preserves the mean-variance relationship while yielding corrected single-cell profiles.
-```{r}
-# this randomly repeats all of the above ...
-
-# cell detection
-set.seed(100)
-e.out <- emptyDrops(counts(t2))
-t2 <- t2[,which(e.out$FDR <= 0.001)]
-
-# quality control
-stats <- perCellQCMetrics(t2, subsets=list(Mito=which(location=="MT")))
-high.mito <- isOutlier(stats$subsets_Mito_percent, type="higher")
-t2 <- t2[,!high.mito]
-
-# normalisation
-set.seed(1000)
-clusters <- quickCluster(t2)
-t2 <- computeSumFactors(t2, cluster=clusters)
-t2 <- logNormCounts(t2)
-
-# variance modelling
-set.seed(1001)
-dec.t2 <- modelGeneVarByPoisson(t2)
-top.t2 <- getTopHVGs(dec.pbmc, prop=0.1)
-
-# dimensionality reduction
-set.seed(10000)
-t2 <- denoisePCA(t2, subset.row=top.t2, technical=dec.t2)
-
-set.seed(100000)
-t2 <- runTSNE(t2, dimred="PCA")
-
-set.seed(1000000)
-t2 <- runUMAP(t2, dimred="PCA")
-
-# clustering
-g <- buildSNNGraph(t2, k=10, use.dimred = 'PCA')
-clust <- igraph::cluster_walktrap(g)$membership
-colLabels(t2) <- factor(clust)
-
-# Not all genes are reported in the ambient profile from emptyDrops,
-# as genes with counts of zero across all droplets are just removed.
-# So for convenience, we will restrict our analysis to genes with 
-# non-zero counts in at least one droplet (empty or otherwise).
-amb <- metadata(e.out)$ambient[,1]
-stripped <- t2[names(amb),]
-
-out <- removeAmbience(counts(stripped), ambient=amb, groups=colLabels(stripped))
-dim(out)
-```
-
+### Demultiplexing cell hashes
