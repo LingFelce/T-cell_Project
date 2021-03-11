@@ -940,6 +940,12 @@ clust$epitope <- ifelse(grepl("NP16|B7_SPR", clust$correct_labels), "NP16",
   
 clust <- mutate(clust, cluster=paste(epitope, group, sep=" "))
 
+clust$hclust <- ifelse(grepl("NP16 A|NP16 E|NP16 H", clust$cluster),"NP16 High",
+                       ifelse(grepl("NP16 B|NP16 C|NP16 D|NP16 F|NP16 G", clust$cluster),"NP16 Low",
+                              ifelse(grepl("ORF3a-28 A|ORF3a-28 E|ORF3a-28 F", clust$cluster), "ORF3a-28 High",
+                                     ifelse(grepl("ORF3a-28 B|ORF3a-28 C|ORF3a-28 D|ORF3a-28 G|ORF3a-28 H", 
+                                                  clust$cluster), "ORF3a-28 Low", ""))))
+
 list <- as.data.frame(cd8$orig.ident)
 list <- tibble::rownames_to_column(list, "cell_name")
 
@@ -947,7 +953,7 @@ clusters <- merge(list, clust, by.x="cell_name", by.y="correct_labels", all.x=TR
 
 clusters <- clusters[c(1:227, 290:740, 228:289),]
 
-cd8 <- AddMetaData(object = cd8, metadata = clusters$cluster, col.name = "hclust")
+cd8 <- AddMetaData(object = cd8, metadata = clusters$hclust, col.name = "hclust")
 
 p1 <- DimPlot(cd8, reduction = "umap", group.by = "orig.ident")
 p2 <- DimPlot(cd8, reduction = "umap", group.by = "epitope")
@@ -964,37 +970,17 @@ grid.arrange(p1, p2, p3, p4, p5, p6,nrow=3)
 ```
 
 
-## NP16
-```{r, fig.height=24, fig.width=18}
-Idents(cd8) <- "hclust"
-
-np16_cl <- subset(cd8, idents=c("NP16 A", "NP16 B", "NP16 C", "NP16 D", "NP16 E", "NP16 F", "NP16 G", "NP16 H"))
-
-
-Idents(np16_cl) <- "hclust"
-table(Idents(np16_cl))
-
-VlnPlot(object = np16_cl, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
-                                         "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-                                         "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-                                         "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-                                         "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
-                                         "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
-                                         "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
-        ncol=6, group.by = "hclust")
-```
-
-## ORF3a-28
+## Violin plots
 ```{r, fig.height=26, fig.width=18}
 Idents(cd8) <- "hclust"
 
-orf3a_cl <- subset(cd8, idents=c("ORF3a-28 A", "ORF3a-28 B", "ORF3a-28 C", "ORF3a-28 D", "ORF3a-28 E", "ORF3a-28 F", "ORF3a-28 G", "ORF3a-28 H"))
+cl <- subset(cd8, idents=c("NP16 High", "NP16 Low", "ORF3a-28 High", "ORF3a-28 Low"))
 
 
-Idents(orf3a_cl) <- "hclust"
-table(Idents(orf3a_cl))
+Idents(cl) <- "hclust"
+table(Idents(cl))
 
-VlnPlot(object = orf3a_cl, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
+VlnPlot(object = cl, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
                                          "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
                                          "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
                                          "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
@@ -1003,6 +989,7 @@ VlnPlot(object = orf3a_cl, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "
                                          "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
         ncol=6, group.by = "hclust")
 ```
+
 ## Clustering for just T cells with diversity indexes
 ```{r}
 # # Select the top 2000 most variable features
