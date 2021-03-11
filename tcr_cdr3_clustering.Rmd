@@ -13,6 +13,8 @@ library(igraph)
 library(stringdist)
 library(tidyverse)
 library(dendextend)
+library(factoextra)
+
 ```
 
 TCR similarity/dissimilarity by hierarchical clustering of CDR3 sequences
@@ -123,8 +125,8 @@ orf3a <- orf3a[-199,]
 ```
 
 
-## Distance matrix using stringdist
-Hierarchal clustering from distance matrix (dendrogram)
+## Distance matrix using stringdist and hierarchical clustering
+Hierarchical clustering from distance matrix (dendrogram)
 ### CD8 NP16 beta
 
 ```{r}
@@ -132,7 +134,9 @@ Hierarchal clustering from distance matrix (dendrogram)
 d <- stringdistmatrix(np16$CDR3_beta, np16$CDR3_beta, method="lv")
 rownames(d) <- np16$cell_name
 colnames(d) <- np16$patient
-cl <- hclust(as.dist(d))
+
+# hierarchical clustering 
+cl <- hclust(dist(d, method="euclidean"), method="complete")
 
 dend <- as.dendrogram(cl)
 
@@ -180,7 +184,7 @@ legend("topright", legend = levels(cell_type), fill = cols_2, cex=2)
 d <- stringdistmatrix(orf3a$CDR3_beta, orf3a$CDR3_beta, method="lv")
 rownames(d) <- orf3a$cell_name
 colnames(d) <- orf3a$patient
-cl <- hclust(as.dist(d))
+cl <- hclust(dist(d, method="euclidean"), method="complete")
 
 dend <- as.dendrogram(cl)
 
@@ -268,6 +272,66 @@ write.csv(cells, "/t1-data/user/lfelce/TCR_analysis/diversity/cd8_np16_orf3a_sc_
 #     plot(main = "CD8+ NP16 and ORF3a-28 CDR3 beta clustering", cex.main=3)
 # legend("topright", legend = levels(epitope), fill = cols_2, cex=2)
 ```
+
+## K-means clustering
+Not completely unsupervised as have to find and input optimum number of clusters generated. (also won't get a nice dendrogram)
+https://uc-r.github.io/kmeans_clustering
+### CD8 NP16 beta
+```{r, fig.width=5, fig.height=3}
+# generate distance matrix
+d <- stringdistmatrix(np16$CDR3_beta, np16$CDR3_beta, method="lv")
+rownames(d) <- np16$cell_name
+colnames(d) <- np16$patient
+df <- as.matrix(get_dist(d))
+
+# find optimum number of clusters
+# elbow method
+set.seed(123)
+fviz_nbclust(df, kmeans, method = "wss")
+
+# average silhouette method
+set.seed(123)
+fviz_nbclust(df, kmeans, method = "silhouette")
+
+```
+
+
+```{r, fig.height=10, fig.width=10}
+k2 <- kmeans(df, centers = 5, nstart = 25)
+
+fviz_cluster(k2, data = df, labelsize=6)
+
+```
+### CD8 ORF3a-28 beta
+
+```{r, fig.width=5, fig.height=3}
+# generate distance matrix
+d <- stringdistmatrix(orf3a$CDR3_beta, orf3a$CDR3_beta, method="lv")
+rownames(d) <- orf3a$cell_name
+colnames(d) <- orf3a$patient
+df <- as.matrix(get_dist(d))
+
+# find optimum number of clusters
+# elbow method
+set.seed(123)
+fviz_nbclust(df, kmeans, method = "wss")
+
+# average silhouette method
+set.seed(123)
+fviz_nbclust(df, kmeans, method = "silhouette")
+
+```
+
+
+```{r, fig.height=10, fig.width=10}
+k2 <- kmeans(df, centers = 10, nstart = 25)
+
+fviz_cluster(k2, data = df, labelsize=6)
+
+```
+
+
+
 
 
 ## CDR3 clustering (Benny's code)
