@@ -926,39 +926,35 @@ Load each previously saved .rds file - no need to repeat harmony integration, cl
 
 ```
 
-# TCR diversity
+# TCR diversity/similarity
+Previously clustered single cells and clones by unsupervised hierarchical clustering. Look at single cell expression for similar/dissimilar sequences (linked to functional avidity)
 ```{r}
 cd8 <- readRDS("cd8_harmony.rds")
 
-div <- read.csv("/t1-data/user/lfelce/TCR_analysis/diversity/cd8_np16_orf3a-28_combined_shannon.csv")
+np16 <- read.csv("/t1-data/user/lfelce/TCR_analysis/diversity/cd8_np16_hclust_single_cells.csv")
+orf3a <- read.csv("/t1-data/user/lfelce/TCR_analysis/diversity/cd8_orf3a-28_hclust_single_cells.csv")
 
-np16 <- div[!grepl("ORF3a-28", div$epitope),]
-np16$div_group <- cut(np16$diversity, c(-Inf, 1, Inf),
-                     c("Low", "High"))
-
-orf3a <- div[!grepl("NP16", div$epitope),]
-orf3a$div_group <- cut(orf3a$diversity, c(-Inf, 1.5, Inf),
-                     c("Low", "High"))
-
-div2 <- rbind(np16, orf3a)
-
-div2 <- mutate(div2, div_epi_group=paste(epitope, div_group, sep=" "))
+clust <- rbind(np16, orf3a)
+clust$epitope <- ifelse(grepl("NP16|B7_SPR", clust$correct_labels), "NP16", 
+                        ifelse(grepl("ORF3a", clust$correct_labels), "ORF3a-28", ""))
+  
+clust <- mutate(clust, cluster=paste(epitope, group, sep=" "))
 
 list <- as.data.frame(cd8$orig.ident)
 list <- tibble::rownames_to_column(list, "cell_name")
 
-diversity <- merge(list, div2, by="cell_name", all.x=TRUE)
+clusters <- merge(list, clust, by.x="cell_name", by.y="correct_labels", all.x=TRUE)
 
-diversity <- diversity[c(1:227, 290:740, 228:289),]
+clusters <- clusters[c(1:227, 290:740, 228:289),]
 
-cd8 <- AddMetaData(object = cd8, metadata = diversity$div_epi_group, col.name = "diversity")
+cd8 <- AddMetaData(object = cd8, metadata = clusters$cluster, col.name = "hclust")
 
 p1 <- DimPlot(cd8, reduction = "umap", group.by = "orig.ident")
 p2 <- DimPlot(cd8, reduction = "umap", group.by = "epitope")
 p3 <- DimPlot(cd8, reduction = "umap", group.by = "seurat_clusters")
 p4 <- DimPlot(cd8, reduction = "umap", group.by = "timepoint")
 p5 <- DimPlot(cd8, reduction = "umap", group.by = "clin.type")
-p6 <- DimPlot(cd8, reduction = "umap", group.by = "diversity")
+p6 <- DimPlot(cd8, reduction = "umap", group.by = "hclust")
 
 
 ```
@@ -968,23 +964,44 @@ grid.arrange(p1, p2, p3, p4, p5, p6,nrow=3)
 ```
 
 
+## NP16
+```{r, fig.height=24, fig.width=18}
+Idents(cd8) <- "hclust"
+
+np16_cl <- subset(cd8, idents=c("NP16 A", "NP16 B", "NP16 C", "NP16 D", "NP16 E", "NP16 F", "NP16 G", "NP16 H"))
+
+
+Idents(np16_cl) <- "hclust"
+table(Idents(np16_cl))
+
+VlnPlot(object = np16_cl, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
+                                         "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                         "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+                                         "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                         "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
+                                         "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+                                         "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
+        ncol=6, group.by = "hclust")
+```
+
+## ORF3a-28
 ```{r, fig.height=26, fig.width=18}
-Idents(cd8) <- "diversity"
-cd8_diversity <- subset(cd8, idents=c("NP16 Low", "NP16 High",
-                                      "ORF3a-28 Low", "ORF3a-28 High"))
-Idents(cd8_diversity) <- "diversity"
-table(Idents(cd8_diversity))
+Idents(cd8) <- "hclust"
 
-VlnPlot(object = cd8_diversity, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
-                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-                                  "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-                                  "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
-                                  "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
-                                 "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
-        ncol=6, group.by = "diversity")
+orf3a_cl <- subset(cd8, idents=c("ORF3a-28 A", "ORF3a-28 B", "ORF3a-28 C", "ORF3a-28 D", "ORF3a-28 E", "ORF3a-28 F", "ORF3a-28 G", "ORF3a-28 H"))
 
 
+Idents(orf3a_cl) <- "hclust"
+table(Idents(orf3a_cl))
+
+VlnPlot(object = orf3a_cl, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
+                                         "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                         "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+                                         "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                         "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
+                                         "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+                                         "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
+        ncol=6, group.by = "hclust")
 ```
 ## Clustering for just T cells with diversity indexes
 ```{r}
