@@ -990,6 +990,37 @@ VlnPlot(object = cl, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4
         ncol=6, group.by = "hclust")
 ```
 
+```{r, fig.height=12, fig.width=10}
+Idents(cl) <- "hclust"
+
+np16_cl <- subset(cl, idents=c("NP16 High", "NP16 Low"))
+
+Idents(np16_cl) <- "hclust"
+table(Idents(np16_cl))
+
+
+VlnPlot(object = np16_cl, features=c("CCR7", "SELL", "IL7R", "S100A4",
+                                     "CD27", "CD28", "HLA-DRB1","TUBA1B",
+                                     "CXCR3", "SELPLG", "ITGA4", "ITGB2",
+                                     "GZMA", "GZMB", "GZMH", "GZMK"),
+        ncol=4, group.by = "hclust")
+```
+```{r, fig.height=12, fig.width=10}
+Idents(cl) <- "hclust"
+
+orf3a_cl <- subset(cl, idents=c("ORF3a-28 High", "ORF3a-28 Low"))
+
+Idents(orf3a_cl) <- "hclust"
+table(Idents(orf3a_cl))
+
+VlnPlot(object = orf3a_cl, features=c("PTPRC", "CCR7", "SELL", "IL7R", 
+                                      "S100A4", "CD27", "TUBA1B", "PDCD1",
+                                      "IFNG", "CCL4", "ITGA4", "ITGAL",
+                                      "GZMA", "GZMB", "GZMH", "GZMK"),
+        ncol=4, group.by = "hclust")
+```
+
+
 ## Clustering for just T cells with diversity indexes
 ```{r}
 # # Select the top 2000 most variable features
