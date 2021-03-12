@@ -108,6 +108,9 @@ trb <- big_data %>% group_by(i) %>% filter(n() == 1)
 colnames(trb) <- c("clone_count", "clone_fraction","CDR3_beta", "TRBV", "TRBJ", "cell_number")
 trb <- merge(trb, mixcr_b_names, by="cell_number")
 
+# export single beta and 1/2 alpha lists separately
+write.csv(tra, "/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/all_single_dual_alpha_cd8_np16.csv")
+write.csv(trb, "/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/all_single_beta_cd8_np16.csv")
 
 # combine TRA and TRB dataframes
 cd8_np16 <- merge(tra,trb, by="cell_name")
@@ -222,6 +225,10 @@ trb <- big_data %>% group_by(i) %>% filter(n() == 1)
 colnames(trb) <- c("clone_count", "clone_fraction","CDR3_beta", "TRBV", "TRBJ", "cell_number")
 trb <- merge(trb, mixcr_b_names, by="cell_number")
 
+# export single beta and 1/2 alpha lists separately
+write.csv(tra, "/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/all_single_dual_alpha_cd8_orf3a-28.csv")
+write.csv(trb, "/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/all_single_beta_cd8_orf3a-28.csv")
+
 # combine TRA and TRB dataframes
 cd8_orf <- merge(tra,trb, by="cell_name")
 
@@ -333,6 +340,10 @@ big_data = do.call(rbind, datalist)
 trb <- big_data %>% group_by(i) %>% filter(n() == 1)
 colnames(trb) <- c("clone_count", "clone_fraction","CDR3_beta", "TRBV", "TRBJ", "cell_number")
 trb <- merge(trb, mixcr_b_names, by="cell_number")
+
+# export single beta and 1/2 alpha lists separately
+write.csv(tra, "/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/all_single_dual_alpha_cd4_s34_m24.csv")
+write.csv(trb, "/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/all_single_beta_cd4_s34_m24.csv")
 
 # combine TRA and TRB dataframes
 cd4 <- merge(tra,trb, by="cell_name")
