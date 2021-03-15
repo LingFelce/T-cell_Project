@@ -17,6 +17,7 @@ library(data.table)
 library(tidyverse)
 library(harmony)
 library(gridExtra)
+library(stringr)
 ```
 
 # 10x single cell RNA sequencing from SARS-CoV-2 CD4/8 tetramer sorted T cells
@@ -293,7 +294,7 @@ All hashtags mixed up?
 ### Combined Gene Expression and Antibody Capture
 ```{r, fig.width=6, fig.height=4}
 # Read in data
-t2.counts <- Read10X(data.dir = "/t1-data/user/lfelce/10x_Dong050121/combined_T2_repeat3/outs/filtered_feature_bc_matrix")
+t2.counts <- Read10X(data.dir = "/t1-data/user/lfelce/10x_Dong050121/combined_T2_repeat4/outs/filtered_feature_bc_matrix")
 
 # Remove -1 from barcodes
 colnames(t2.counts$`Gene Expression`) <- gsub(x = colnames(t2.counts$`Gene Expression`), pattern = "-1", replacement = "")
@@ -442,10 +443,10 @@ elbowplot_decision
 
 ```{r}
 # Select top PCs for clustering
-t2.singlet <- FindNeighbors(t2.singlet, reduction = "pca", dims = 1:7, verbose=FALSE)
+t2.singlet <- FindNeighbors(t2.singlet, reduction = "pca", dims = 1:30, verbose=FALSE)
 t2.singlet <- FindClusters(t2.singlet, resolution = 0.5, verbose = FALSE)
-t2.singlet <- RunUMAP(t2.singlet, dims = 1:7, verbose=FALSE)
-t2.singlet <- RunTSNE(t2.singlet, reduction = "pca", dims = 1:7, verbose=FALSE)
+t2.singlet <- RunUMAP(t2.singlet, dims = 1:30, verbose=FALSE)
+t2.singlet <- RunTSNE(t2.singlet, reduction = "pca", dims = 1:30, verbose=FALSE)
 
 # Projecting singlet identities on UMAP visualization
 tsne <- DimPlot(t2.singlet, reduction="tsne", group.by = "MULTI_ID")
@@ -601,102 +602,38 @@ grid.arrange(umap_patient, umap_patient2, umap_epitope, umap_epitope2,
              umap_tcell, umap_tcell2, ncol=2)
 
 ```
-#### Subset known demultiplexed cells
-```{r}
-Idents(t2.singlet) <- "epitope2"
-table(Idents(t2.singlet))
-
-t2.known <- subset(t2.singlet, subset= epitope2 !="NA")
-table(Idents(t2.known))
-
-# Scaling RNA data
-t2.known <- ScaleData(t2.known, features = VariableFeatures(t2.known), verbose=FALSE)
-
-# Run PCA
-t2.known <- RunPCA(t2.known, features = VariableFeatures(t2.known), verbose=FALSE)
-
-# Andrew's script
-
-## where is the elbow for the principal components?
-# Determine percent of variation associated with each PC
-pct <- t2.known[["pca"]]@stdev / sum(t2.known[["pca"]]@stdev) * 100
-
-# Calculate cumulative percents for each PC
-cumu <- cumsum(pct)
-
-# Determine which PC exhibits cumulative percent greater than 90% and % variation associated with the PC as less than 5
-co1 <- which(cumu > 90 & pct < 5)[1]
-
-message("Principal component which exhibits cumulative precent variation >90% AND % variation associated with the PC <5:")
-print(co1)
-
-# Determine the difference between variation of PC and subsequent PC
-co2 <- sort(which((pct[1:length(pct) - 1] - pct[2:length(pct)]) > 0.1), decreasing = T)[1] + 1
-
-# last point where change of % of variation is more than 0.1%.
-message("Principal component where the % change in variation between consecutive PCs is <0.1%: ")
-print(co2)
-
-# Minimum of the two calculation
-pcs <- min(co1, co2)
-
-# Create a dataframe with values
-plot_df <- data.frame(pct = pct, cumu = cumu, rank = 1:length(pct))
-
-# Elbow plot to visualize
-elbowplot_decision <- ggplot(plot_df, aes(cumu, pct, label = rank, color = rank > pcs)) +
-  geom_text(size = 7.5) +
-  geom_vline(xintercept = 90, color = "grey") +
-  geom_hline(yintercept = min(pct[pct > 0.05]), color = "grey") +
-  theme_bw()
-
-```
-
-```{r, fig.height=5, fig.width=12}
-elbowplot_decision
-```
+#### Mapping expanded and non-expanded clones
 
 ```{r}
-# Select top PCs for clustering
-t2.known <- FindNeighbors(t2.known, reduction = "pca", dims = 1:5, verbose=FALSE)
-t2.known <- FindClusters(t2.known, resolution = 0.5, verbose = FALSE)
-t2.known <- RunUMAP(t2.known, dims = 1:5, verbose=FALSE)
-t2.known <- RunTSNE(t2.known, reduction = "pca", dims = 1:5, verbose=FALSE)
+clonotypes <- read.csv("/t1-data/user/lfelce/CellRanger_VDJ/10x_Dong050121_TCR/TCR_T2/outs/clonotypes.csv")
+clonotypes_simp <- clonotypes[1:2]
+df <- mutate(clonotypes_simp, expansion = ifelse(clonotypes_simp$frequency > 50, "large", "small"))
 
-# Projecting singlet identities on UMAP visualization
-tsne <- DimPlot(t2.known, reduction="tsne", group.by = "epitope2")
-pca <- DimPlot(t2.known, reduction="pca", group.by="epitope2")
-cluster_umap <- DimPlot(t2.known, reduction="umap", group.by = "seurat_clusters")
-tcell_umap <- DimPlot(t2.known, reduction="umap", group.by = "t.cell2")
-epitope_umap <- DimPlot(t2.known, reduction="umap", group.by = "epitope2")
-patient_umap <- DimPlot(t2.known, reduction="umap", group.by = "patient2")
+list4 <- as.data.frame(t2.singlet$clonotype)
+list4 <- tibble::rownames_to_column(list4, "barcodes")
+list4 <- tibble::rownames_to_column(list4, "order")
 
+list4$order <- str_pad(list4$order, 4, pad = "0")
 
-```
+list4 <- merge(list4, df, by.x="t2.singlet$clonotype", by.y="clonotype_id", all.x=TRUE)
+list4 <- list4[order(list4$order),]
 
-```{r, fig.width=15, fig.height=16}
-
-grid.arrange(tsne, pca, cluster_umap, tcell_umap, epitope_umap, patient_umap, ncol=2)
+t2.singlet <- AddMetaData(object = t2.singlet, metadata = list4$expansion, col.name = "clone_size")
 
 ```
 
-#### Gene expression known epitopes
+```{r, fig.height=8, fig.width=12}
+umap_patient2 <- DimPlot(t2.singlet, reduction="umap", group.by = "patient2")
+umap_epitope2 <- DimPlot(t2.singlet, reduction="umap", group.by = "epitope2")
+umap_tcell2 <- DimPlot(t2.singlet, reduction="umap", group.by = "t.cell2")
+umap_expansion <- DimPlot(t2.singlet, reduction="umap", group.by = "clone_size")
 
+grid.arrange(umap_patient2, umap_epitope2, umap_tcell2, umap_expansion, ncol=2)
+```
 ```{r, fig.width=18, fig.height=24}
-DefaultAssay(t2.known) <- "RNA"
-VlnPlot(object = t2.known, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
-                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-                                  "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-                                  "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
-                                  "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
-                                 "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
-        ncol=6, group.by = "seurat_clusters")
-```
+DefaultAssay(t2.singlet) <- "RNA"
 
-```{r, fig.width=18, fig.height=26}
-DefaultAssay(t2.known) <- "RNA"
-VlnPlot(object = t2.known, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
+VlnPlot(object = t2.singlet, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
                                   "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
@@ -704,6 +641,128 @@ VlnPlot(object = t2.known, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "
                                   "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
                                  "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
         ncol=6, group.by = "epitope2")
+```
+
+```{r, fig.width=18, fig.height=24}
+Idents(t2.singlet) <- "clone_size"
+table(Idents(t2.singlet))
+
+DefaultAssay(t2.singlet) <- "RNA"
+
+VlnPlot(object = t2.singlet, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
+                                  "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                  "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+                                  "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                  "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
+                                  "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+                                 "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
+        ncol=6, group.by = "clone_size")
+```
+
+#### Subset known CD8+ demultiplexed cells
+```{r}
+# Idents(t2.singlet) <- "epitope2"
+# table(Idents(t2.singlet))
+# 
+# t2.known <- subset(t2.singlet, subset= epitope2 !="NA")
+# t2.known <- subset(t2.known, subset= epitope2 !="M24")
+# table(Idents(t2.known))
+# 
+# # Scaling RNA data
+# t2.known <- ScaleData(t2.known, features = VariableFeatures(t2.known), verbose=FALSE)
+# 
+# # Run PCA
+# t2.known <- RunPCA(t2.known, features = VariableFeatures(t2.known), verbose=FALSE)
+# 
+# # Andrew's script
+# 
+# ## where is the elbow for the principal components?
+# # Determine percent of variation associated with each PC
+# pct <- t2.known[["pca"]]@stdev / sum(t2.known[["pca"]]@stdev) * 100
+# 
+# # Calculate cumulative percents for each PC
+# cumu <- cumsum(pct)
+# 
+# # Determine which PC exhibits cumulative percent greater than 90% and % variation associated with the PC as less than 5
+# co1 <- which(cumu > 90 & pct < 5)[1]
+# 
+# message("Principal component which exhibits cumulative precent variation >90% AND % variation associated with the PC <5:")
+# print(co1)
+# 
+# # Determine the difference between variation of PC and subsequent PC
+# co2 <- sort(which((pct[1:length(pct) - 1] - pct[2:length(pct)]) > 0.1), decreasing = T)[1] + 1
+# 
+# # last point where change of % of variation is more than 0.1%.
+# message("Principal component where the % change in variation between consecutive PCs is <0.1%: ")
+# print(co2)
+# 
+# # Minimum of the two calculation
+# pcs <- min(co1, co2)
+# 
+# # Create a dataframe with values
+# plot_df <- data.frame(pct = pct, cumu = cumu, rank = 1:length(pct))
+# 
+# # Elbow plot to visualize
+# elbowplot_decision <- ggplot(plot_df, aes(cumu, pct, label = rank, color = rank > pcs)) +
+#   geom_text(size = 7.5) +
+#   geom_vline(xintercept = 90, color = "grey") +
+#   geom_hline(yintercept = min(pct[pct > 0.05]), color = "grey") +
+#   theme_bw()
+
+```
+
+```{r, fig.height=5, fig.width=12}
+# elbowplot_decision
+```
+
+```{r}
+# Select top PCs for clustering
+# t2.known <- FindNeighbors(t2.known, reduction = "pca", dims = 1:4, verbose=FALSE)
+# t2.known <- FindClusters(t2.known, resolution = 0.5, verbose = FALSE)
+# t2.known <- RunUMAP(t2.known, dims = 1:4, verbose=FALSE)
+# t2.known <- RunTSNE(t2.known, reduction = "pca", dims = 1:4, verbose=FALSE)
+# 
+# # Projecting singlet identities on UMAP visualization
+# tsne <- DimPlot(t2.known, reduction="tsne", group.by = "epitope2")
+# pca <- DimPlot(t2.known, reduction="pca", group.by="epitope2")
+# cluster_umap <- DimPlot(t2.known, reduction="umap", group.by = "seurat_clusters")
+# tcell_umap <- DimPlot(t2.known, reduction="umap", group.by = "t.cell2")
+# epitope_umap <- DimPlot(t2.known, reduction="umap", group.by = "epitope2")
+# patient_umap <- DimPlot(t2.known, reduction="umap", group.by = "patient2")
+
+
+```
+
+```{r, fig.width=15, fig.height=16}
+
+# grid.arrange(tsne, pca, cluster_umap, tcell_umap, epitope_umap, patient_umap, ncol=2)
+
+```
+
+#### Gene expression known epitopes
+
+```{r, fig.width=18, fig.height=24}
+# DefaultAssay(t2.known) <- "RNA"
+# VlnPlot(object = t2.known, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                   "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
+#                                   "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+#                                  "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
+#         ncol=6, group.by = "seurat_clusters")
+```
+
+```{r, fig.width=18, fig.height=26}
+# DefaultAssay(t2.known) <- "RNA"
+# VlnPlot(object = t2.known, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
+#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+#                                   "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+#                                   "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
+#                                   "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+#                                  "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"),
+#         ncol=6, group.by = "epitope2")
 ```
 
 ## Save
