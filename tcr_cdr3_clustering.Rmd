@@ -19,65 +19,65 @@ library(factoextra)
 
 TCR similarity/dissimilarity by hierarchical clustering of CDR3 sequences
 
-## Read in all data (1 beta cells)
+## Read in all data (all beta cells)
 ```{r, include=FALSE}
-# load in data and create mixcr_b object
-setwd('/t1-data/user/lfelce/TCR_analysis/cd8_np16_new/')
-# create list of file names
-trb_list <- list.files(path = ".", recursive = TRUE,
-                        pattern = "\\TRB.txt$",
-                        full.names = TRUE)
-trb_list <- trb_list %>% str_replace("./*", "")
-# parse in files with tcR
-mixcr_b_np16 <- parse.file.list(trb_list, "mixcr")
-# load in data and create  mixcr_b object
-setwd('/t1-data/user/lfelce/TCR_analysis/cd8_orf_new/')
-# create list of file names, remove minibulk
-trb_list <- list.files(path = ".", recursive = TRUE,
-                       pattern = "\\TRB.txt$",
-                       full.names = TRUE)
-trb_list <- trb_list %>% str_replace("./*", "")
-trb_list <-trb_list[!str_detect(trb_list,pattern="minibulk")]
-# parse in files with tcR
-mixcr_b_orf3a <- parse.file.list(trb_list, "mixcr")
-# combine mixcr files
-mixcr_b <- c(mixcr_b_np16, mixcr_b_orf3a)
-# sort alphabetically
-mixcr_b <- mixcr_b[order(names(mixcr_b))]
-# create list of cell numbers and cell names
-# different lengths so same cell will be different number in a or b
-mixcr_b_names <- as.data.frame(names(mixcr_b))
-mixcr_b_names <- tibble::rownames_to_column(mixcr_b_names, "cell_number")
-# rename columns
-colnames(mixcr_b_names) <- c("cell_number", "cell_name")
-# mixcr_b
-datalist = list()
-for (i in (1:length(mixcr_b))) {
-  dat <- data.frame(c(mixcr_b[[i]][3], mixcr_b[[i]][4], mixcr_b[[i]][6], mixcr_b[[i]][7], mixcr_b[[i]][8]))
-  dat$i <- i # keep track of which iteration produced it
-  datalist[[i]] <- dat # add it to list
-}
-# combine columns for each cell
-# 1 beta cell only
-big_data = do.call(rbind, datalist)
-trb <- big_data %>% group_by(i) %>% filter(n() == 1)
-colnames(trb) <- c("clone_count", "clone_fraction","CDR3_beta", "TRBV", "TRBJ", "cell_number")
-trb <- merge(trb, mixcr_b_names, by="cell_number")
-
-# tidy up
-trb <- mutate(trb, beta=paste(TRBV, TRBJ, sep="_"))
-
-trb$epitope <- ifelse(grepl("NP16|B7_SPR", trb$cell_name), "NP16",
-                 ifelse(grepl("ORF3a-28", trb$cell_name), "ORF3a-28", ""))
-
-
-# subset epitopes
-np16_sc <- trb[!grepl("ORF3a-28", trb$epitope),]
-np16_sc <- np16_sc[,c("cell_name", "CDR3_beta", "beta")]
-
-orf3a_sc <- trb[!grepl("NP16", trb$epitope),]
-orf3a_sc <- orf3a_sc[,c("cell_name", "CDR3_beta", "beta")]
-
+# # load in data and create mixcr_b object
+# setwd('/t1-data/user/lfelce/TCR_analysis/cd8_np16_new/')
+# # create list of file names
+# trb_list <- list.files(path = ".", recursive = TRUE,
+#                         pattern = "\\TRB.txt$",
+#                         full.names = TRUE)
+# trb_list <- trb_list %>% str_replace("./*", "")
+# # parse in files with tcR
+# mixcr_b_np16 <- parse.file.list(trb_list, "mixcr")
+# # load in data and create  mixcr_b object
+# setwd('/t1-data/user/lfelce/TCR_analysis/cd8_orf_new/')
+# # create list of file names, remove minibulk
+# trb_list <- list.files(path = ".", recursive = TRUE,
+#                        pattern = "\\TRB.txt$",
+#                        full.names = TRUE)
+# trb_list <- trb_list %>% str_replace("./*", "")
+# trb_list <-trb_list[!str_detect(trb_list,pattern="minibulk")]
+# # parse in files with tcR
+# mixcr_b_orf3a <- parse.file.list(trb_list, "mixcr")
+# # combine mixcr files
+# mixcr_b <- c(mixcr_b_np16, mixcr_b_orf3a)
+# # sort alphabetically
+# mixcr_b <- mixcr_b[order(names(mixcr_b))]
+# # create list of cell numbers and cell names
+# # different lengths so same cell will be different number in a or b
+# mixcr_b_names <- as.data.frame(names(mixcr_b))
+# mixcr_b_names <- tibble::rownames_to_column(mixcr_b_names, "cell_number")
+# # rename columns
+# colnames(mixcr_b_names) <- c("cell_number", "cell_name")
+# # mixcr_b
+# datalist = list()
+# for (i in (1:length(mixcr_b))) {
+#   dat <- data.frame(c(mixcr_b[[i]][3], mixcr_b[[i]][4], mixcr_b[[i]][6], mixcr_b[[i]][7], mixcr_b[[i]][8]))
+#   dat$i <- i # keep track of which iteration produced it
+#   datalist[[i]] <- dat # add it to list
+# }
+# # combine columns for each cell
+# # 1 beta cell only
+# big_data = do.call(rbind, datalist)
+# trb <- big_data %>% group_by(i) %>% filter(n() == 1)
+# colnames(trb) <- c("clone_count", "clone_fraction","CDR3_beta", "TRBV", "TRBJ", "cell_number")
+# trb <- merge(trb, mixcr_b_names, by="cell_number")
+# 
+# # tidy up
+# trb <- mutate(trb, beta=paste(TRBV, TRBJ, sep="_"))
+# 
+# trb$epitope <- ifelse(grepl("NP16|B7_SPR", trb$cell_name), "NP16",
+#                  ifelse(grepl("ORF3a-28", trb$cell_name), "ORF3a-28", ""))
+# 
+# 
+# # subset epitopes
+# np16_sc <- trb[!grepl("ORF3a-28", trb$epitope),]
+# np16_sc <- np16_sc[,c("cell_name", "CDR3_beta", "beta")]
+# 
+# orf3a_sc <- trb[!grepl("NP16", trb$epitope),]
+# orf3a_sc <- orf3a_sc[,c("cell_name", "CDR3_beta", "beta")]
+# 
 # clones
 np16_clones <- read.csv("/t1-data/user/lfelce/TCR_analysis/tcr_clones_results/cd8_np16_tcr_clones.csv", header=TRUE)
 np16_clones <- np16_clones[!duplicated(np16_clones$CloneName),]
@@ -89,10 +89,20 @@ orf3a_clones <- orf3a_clones[!duplicated(orf3a_clones$CloneName),]
 orf3a_clones <- orf3a_clones[,c("CloneName", "CDR3_aa.y", "beta")]
 colnames(orf3a_clones) <- c("cell_name", "CDR3_beta", "beta")
 
-# combine clones and single cell info
-np16 <- rbind(np16_sc, np16_clones)
+# all beta cells
+all_beta <- read.csv("/t1-data/user/lfelce/TCR_analysis/new_mixcr_results/all_beta.csv")
 
-orf3a <- rbind(orf3a_sc, orf3a_clones)
+np16_cells <- all_beta[!grepl("M24|S34|ORF3a-28",all_beta$epitope),]
+np16_cells <- mutate(np16_cells, beta=paste(TRBV, TRBJ, sep="_"))
+np16_cells <- np16_cells[,c("cell_name", "CDR3_beta", "beta")]
+
+orf3a_cells <- all_beta[!grepl("M24|S34|NP16",all_beta$epitope),]
+orf3a_cells <- mutate(orf3a_cells, beta=paste(TRBV, TRBJ, sep="_"))
+orf3a_cells <- orf3a_cells[,c("cell_name", "CDR3_beta", "beta")]
+
+# combine clones and single cell data
+np16 <- rbind(np16_cells, np16_clones)
+orf3a <- rbind(orf3a_cells, orf3a_clones)
 
 # add  metadata
 np16$patient <- ifelse(grepl("005", np16$cell_name), "005",
@@ -120,7 +130,7 @@ orf3a$severity <- "severe"
 
 orf3a$cell_type <- ifelse(grepl("CL", orf3a$cell_name), "clone", "single cell")
 
-orf3a <- orf3a[-199,]
+orf3a <- orf3a[-726,]
 
 ```
 
@@ -171,7 +181,7 @@ cells <- correct_labels
 ```{r, fig.width=40, fig.height=7}
 # par(mar = c(1,10,1,10))
 dend %>% 
-    set("labels_cex",1) %>% 
+    set("labels_cex",0.5) %>% 
     color_branches(dend, k=10) %>%
     plot(main = "CD8+ NP16 CDR3 beta clustering", cex.main=2)
 legend("topright", legend = levels(cell_type), fill = cols_2, cex=2)
@@ -213,11 +223,11 @@ cells <- rbind(cells, correct_labels)
 
 ```
 
-```{r, fig.width=35, fig.height=7}
+```{r, fig.width=40, fig.height=7}
 # par(mar = c(10,1,1,0.1))
 
 dend %>% 
-    set("labels_cex",1) %>% 
+    set("labels_cex",0.5) %>% 
     color_branches(dend, k=6) %>%
     plot(main = "CD8+ ORF3a-28 CDR3 beta clustering", cex.main=2)
 legend("topright", legend = levels(cell_type), fill = cols_2, cex=2)
@@ -226,7 +236,7 @@ legend("topright", legend = levels(cell_type), fill = cols_2, cex=2)
 
 Export cell/clone order to CSV
 ```{r}
-write.csv(cells, "/t1-data/user/lfelce/TCR_analysis/diversity/cd8_np16_orf3a_sc_clones_dendrograms.csv")
+write.csv(cells, "/t1-data/user/lfelce/TCR_analysis/diversity/cd8_np16_orf3a_all_sc_clones_dendrograms.csv")
 ```
 
 
@@ -278,55 +288,55 @@ Not completely unsupervised as have to find and input optimum number of clusters
 https://uc-r.github.io/kmeans_clustering
 ### CD8 NP16 beta
 ```{r, fig.width=5, fig.height=3}
-# generate distance matrix
-d <- stringdistmatrix(np16$CDR3_beta, np16$CDR3_beta, method="lv")
-rownames(d) <- np16$cell_name
-colnames(d) <- np16$patient
-df <- as.matrix(get_dist(d))
-
-# find optimum number of clusters
-# elbow method
-set.seed(123)
-fviz_nbclust(df, kmeans, method = "wss")
-
-# average silhouette method
-set.seed(123)
-fviz_nbclust(df, kmeans, method = "silhouette")
+# # generate distance matrix
+# d <- stringdistmatrix(np16$CDR3_beta, np16$CDR3_beta, method="lv")
+# rownames(d) <- np16$cell_name
+# colnames(d) <- np16$patient
+# df <- as.matrix(get_dist(d))
+# 
+# # find optimum number of clusters
+# # elbow method
+# set.seed(123)
+# fviz_nbclust(df, kmeans, method = "wss")
+# 
+# # average silhouette method
+# set.seed(123)
+# fviz_nbclust(df, kmeans, method = "silhouette")
 
 ```
 
 
 ```{r, fig.height=10, fig.width=10}
-k2 <- kmeans(df, centers = 5, nstart = 25)
-
-fviz_cluster(k2, data = df, labelsize=6)
+# k2 <- kmeans(df, centers = 10, nstart = 25)
+# 
+# fviz_cluster(k2, data = df, labelsize=6)
 
 ```
 ### CD8 ORF3a-28 beta
 
 ```{r, fig.width=5, fig.height=3}
-# generate distance matrix
-d <- stringdistmatrix(orf3a$CDR3_beta, orf3a$CDR3_beta, method="lv")
-rownames(d) <- orf3a$cell_name
-colnames(d) <- orf3a$patient
-df <- as.matrix(get_dist(d))
-
-# find optimum number of clusters
-# elbow method
-set.seed(123)
-fviz_nbclust(df, kmeans, method = "wss")
-
-# average silhouette method
-set.seed(123)
-fviz_nbclust(df, kmeans, method = "silhouette")
+# # generate distance matrix
+# d <- stringdistmatrix(orf3a$CDR3_beta, orf3a$CDR3_beta, method="lv")
+# rownames(d) <- orf3a$cell_name
+# colnames(d) <- orf3a$patient
+# df <- as.matrix(get_dist(d))
+# 
+# # find optimum number of clusters
+# # elbow method
+# set.seed(123)
+# fviz_nbclust(df, kmeans, method = "wss")
+# 
+# # average silhouette method
+# set.seed(123)
+# fviz_nbclust(df, kmeans, method = "silhouette")
 
 ```
 
 
 ```{r, fig.height=10, fig.width=10}
-k2 <- kmeans(df, centers = 10, nstart = 25)
-
-fviz_cluster(k2, data = df, labelsize=6)
+# k2 <- kmeans(df, centers = 10, nstart = 25)
+# 
+# fviz_cluster(k2, data = df, labelsize=6)
 
 ```
 
