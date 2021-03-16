@@ -931,20 +931,18 @@ Previously clustered single cells and clones by unsupervised hierarchical cluste
 ```{r}
 cd8 <- readRDS("cd8_harmony.rds")
 
-np16 <- read.csv("/t1-data/user/lfelce/TCR_analysis/diversity/cd8_np16_hclust_single_cells.csv")
-orf3a <- read.csv("/t1-data/user/lfelce/TCR_analysis/diversity/cd8_orf3a-28_hclust_single_cells.csv")
+clust <- read.csv("/t1-data/user/lfelce/TCR_analysis/diversity/subdendrograms_cd8_np16_orf3a.csv")
 
-clust <- rbind(np16, orf3a)
 clust$epitope <- ifelse(grepl("NP16|B7_SPR", clust$correct_labels), "NP16", 
                         ifelse(grepl("ORF3a", clust$correct_labels), "ORF3a-28", ""))
   
-clust <- mutate(clust, cluster=paste(epitope, group, sep=" "))
+clust <- mutate(clust, cluster=paste(epitope, sub_dendrogram, sep=" "))
 
-clust$hclust <- ifelse(grepl("NP16 A|NP16 E|NP16 H", clust$cluster),"NP16 High",
-                       ifelse(grepl("NP16 B|NP16 C|NP16 D|NP16 F|NP16 G", clust$cluster),"NP16 Low",
-                              ifelse(grepl("ORF3a-28 A|ORF3a-28 E|ORF3a-28 F", clust$cluster), "ORF3a-28 High",
-                                     ifelse(grepl("ORF3a-28 B|ORF3a-28 C|ORF3a-28 D|ORF3a-28 G|ORF3a-28 H", 
-                                                  clust$cluster), "ORF3a-28 Low", ""))))
+clust$hclust <- ifelse(grepl("NP16 2|NP16 3|NP16 4|NP16 7", clust$cluster),"NP16 High",
+                ifelse(grepl("NP16 1|NP16 5|NP16 6|NP16 8", clust$cluster),"NP16 Low",
+                ifelse(grepl("ORF3a-28 1|ORF3a-28 2|ORF3a-28 6", clust$cluster), "ORF3a-28 High",
+                ifelse(grepl("ORF3a-28 3|ORF3a-28 4|ORF3a-28 8", clust$cluster), "ORF3a-28 Low",
+                ifelse(grepl("ORF3a-28 5|ORF3a-28 7", clust$cluster), "ORF3a-28 NA", "")))))
 
 list <- as.data.frame(cd8$orig.ident)
 list <- tibble::rownames_to_column(list, "cell_name")
@@ -990,7 +988,7 @@ VlnPlot(object = cl, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4
         ncol=6, group.by = "hclust")
 ```
 
-```{r, fig.height=12, fig.width=10}
+```{r, fig.height=24, fig.width=16}
 Idents(cl) <- "hclust"
 
 np16_cl <- subset(cl, idents=c("NP16 High", "NP16 Low"))
@@ -999,13 +997,16 @@ Idents(np16_cl) <- "hclust"
 table(Idents(np16_cl))
 
 
-VlnPlot(object = np16_cl, features=c("CCR7", "SELL", "IL7R", "S100A4",
-                                     "CD27", "CD28", "HLA-DRB1","TUBA1B",
-                                     "CXCR3", "SELPLG", "ITGA4", "ITGB2",
-                                     "GZMA", "GZMB", "GZMH", "GZMK"),
-        ncol=4, group.by = "hclust")
+VlnPlot(object = np16_cl, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
+                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                   "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                                 "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                   "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
+                                   "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+                                   "KLRG1",   "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRC2"),
+        ncol=6, group.by = "hclust")
 ```
-```{r, fig.height=12, fig.width=10}
+```{r, fig.height=26, fig.width=16}
 Idents(cl) <- "hclust"
 
 orf3a_cl <- subset(cl, idents=c("ORF3a-28 High", "ORF3a-28 Low"))
@@ -1013,11 +1014,15 @@ orf3a_cl <- subset(cl, idents=c("ORF3a-28 High", "ORF3a-28 Low"))
 Idents(orf3a_cl) <- "hclust"
 table(Idents(orf3a_cl))
 
-VlnPlot(object = orf3a_cl, features=c("PTPRC", "CCR7", "SELL", "IL7R", 
-                                      "S100A4", "CD27", "TUBA1B", "PDCD1",
-                                      "IFNG", "CCL4", "ITGA4", "ITGAL",
-                                      "GZMA", "GZMB", "GZMH", "GZMK"),
-        ncol=4, group.by = "hclust")
+
+VlnPlot(object = orf3a_cl, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
+                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
+                                   "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                                 "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
+                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
+                                   "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
+                                   "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
+                                   "KLRG1",   "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRC2"),
+        ncol=6, group.by = "hclust")
 ```
 
 
