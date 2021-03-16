@@ -292,28 +292,28 @@ The simplest way to run Harmony is to pass the Seurat object and specify which v
 
 Many downstream analyses are performed on low dimensional embeddings, not gene expression. To use the corrected Harmony embeddings rather than PCs, set reduction = 'harmony'. For example, let's perform the UMAP and Nearest Neighbor analyses using the Harmony embeddings.
 ```{r harmony_umap, fig.height=14, fig.width=14}
-cd8 <- readRDS("cd8_harmony.rds")
-
-cd8 <- cd8 %>%
-    RunUMAP(reduction = "harmony", dims = 1:25, verbose=FALSE) %>%
-    FindNeighbors(reduction = "harmony", dims = 1:25, verbose=FALSE) %>%
-    FindClusters(resolution = 0.5, verbose=FALSE) %>%
-    identity()
-
-# list <- as.data.frame(cd8$orig.ident)
-# list$timepoint <- ifelse(grepl("TP-1", list$`cd8$orig.ident`), "acute",
-#                          ifelse(grepl("005|1131-TP-2|1153|1201|1105|1134|1525-TP-2", 
-#                                       list$`cd8$orig.ident`), "convalescent", ""))
+# cd8 <- readRDS("cd8_harmony.rds")
 # 
-# cd8@meta.data$"timepoint" <- as.factor(list$timepoint)
-
-p1 <- DimPlot(cd8, reduction = "umap", group.by = "orig.ident")
-p2 <- DimPlot(cd8, reduction = "umap", group.by = "epitope")
-p3 <- DimPlot(cd8, reduction = "umap", group.by = "seurat_clusters")
-p4 <- DimPlot(cd8, reduction = "umap", group.by = "timepoint")
-p5 <- DimPlot(cd8, reduction = "umap", group.by = "clin.type")
-
-grid.arrange(p1, p2, p3, p4, p5, nrow=3)
+# cd8 <- cd8 %>%
+#     RunUMAP(reduction = "harmony", dims = 1:25, verbose=FALSE) %>%
+#     FindNeighbors(reduction = "harmony", dims = 1:25, verbose=FALSE) %>%
+#     FindClusters(resolution = 0.5, verbose=FALSE) %>%
+#     identity()
+# 
+# # list <- as.data.frame(cd8$orig.ident)
+# # list$timepoint <- ifelse(grepl("TP-1", list$`cd8$orig.ident`), "acute",
+# #                          ifelse(grepl("005|1131-TP-2|1153|1201|1105|1134|1525-TP-2", 
+# #                                       list$`cd8$orig.ident`), "convalescent", ""))
+# # 
+# # cd8@meta.data$"timepoint" <- as.factor(list$timepoint)
+# 
+# p1 <- DimPlot(cd8, reduction = "umap", group.by = "orig.ident")
+# p2 <- DimPlot(cd8, reduction = "umap", group.by = "epitope")
+# p3 <- DimPlot(cd8, reduction = "umap", group.by = "seurat_clusters")
+# p4 <- DimPlot(cd8, reduction = "umap", group.by = "timepoint")
+# p5 <- DimPlot(cd8, reduction = "umap", group.by = "clin.type")
+# 
+# grid.arrange(p1, p2, p3, p4, p5, nrow=3)
  
 # saveRDS(cd8, "cd8_harmony.rds")
 
@@ -569,10 +569,18 @@ Load each previously saved .rds file - no need to repeat harmony integration, cl
 
 ## All 9 CD8+ patients
 ```{r, fig.height=10, fig.width=16}
-# setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
-# cd8 <- readRDS("cd8_harmony.rds")
-# 
-# FeaturePlot(object = cd8, features = c("SELPLG", "ITGA4", "ITGAL", "ITGB2", "CCL4", "CCL5", "CXCR3", "CXCR4"), cols = c("grey", "blue"), reduction = "umap")
+setwd('/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/')
+cd8 <- readRDS("cd8_harmony.rds")
+
+FeaturePlot(object = cd8, features = c("SELPLG", "ITGA4", "ITGAL", "ITGB2", "CCL4", "CCL5", "CXCR3", "CXCR4", "CCR2" ), cols = c("grey", "blue"), reduction = "umap")
+```
+
+```{r, fig.height=10, fig.width=20}
+FeaturePlot(object = cd8, features = c("HAVCR2", "IFNG", "ITGAE", "PDCD1", "CXCL13", "LAYN", "LAG3", "TIGIT", "CTLA4", "ENTPD1"), cols = c("grey", "blue"), reduction = "umap")
+```
+
+```{r, fig.height=14, fig.width=20}
+FeaturePlot(object = cd8, features = c("PRF1", "GZMA", "GZMH", "GZMK", "GZMB", "GNLY", "FGFBP2", "KLRG1", "GZMM", "LYAR", "FCRL6", "NKG7", "KLRD1", "CD74"), cols = c("grey", "blue"), reduction = "umap")
 ```
 
 ## Acute patients
@@ -944,6 +952,8 @@ clust$hclust <- ifelse(grepl("NP16 2|NP16 3|NP16 4|NP16 7", clust$cluster),"NP16
                 ifelse(grepl("ORF3a-28 3|ORF3a-28 4|ORF3a-28 8", clust$cluster), "ORF3a-28 Low",
                 ifelse(grepl("ORF3a-28 5|ORF3a-28 7", clust$cluster), "ORF3a-28 NA", "")))))
 
+clust <- clust[!duplicated(clust$correct_labels),]
+
 list <- as.data.frame(cd8$orig.ident)
 list <- tibble::rownames_to_column(list, "cell_name")
 
@@ -1024,8 +1034,158 @@ VlnPlot(object = orf3a_cl, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "
                                    "KLRG1",   "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRC2"),
         ncol=6, group.by = "hclust")
 ```
+# AddModuleScore
+To enable some statistical testing - takes average expression of gene set and compares to control genes. A higher score means that gene set is more highly expressed than random control genes.
 
+## NP16 vs ORF3a-28
+```{r}
+features_memory <- list(c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4"))
+features_activation <- list(c("CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1", "TUBA1B"))
+features_cytotoxic_ifn <- list(c("GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY","NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1"))
+features_cytokines <- list(c("IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4"))
+features_integrins <- list(c("SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1"))
+features_exhaustion <- list(c("LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4"))
+features_nk <- list(c("KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRB1", "KLRC2"))
 
+cd8 <- AddModuleScore(object = cd8, 
+                      features = features_memory, ctrl = 5,
+                      name = "Features.Memory")
+cd8 <- AddModuleScore(object = cd8, 
+                      features = features_activation, ctrl = 5,
+                      name = "Features.Activation")
+cd8 <- AddModuleScore(object = cd8, 
+                      features = features_cytotoxic_ifn, ctrl = 5,
+                      name = "Features.Cytotoxicity")
+cd8 <- AddModuleScore(object = cd8, 
+                      features = features_cytokines, ctrl = 5,
+                      name = "Features.Cytokines")
+cd8 <- AddModuleScore(object = cd8, 
+                      features = features_integrins, ctrl = 5,
+                      name = "Features.Integrins")
+cd8 <- AddModuleScore(object = cd8, 
+                      features = features_exhaustion, ctrl = 5,
+                      name = "Features.Exhaustion")
+cd8 <- AddModuleScore(object = cd8, 
+                      features = features_nk, ctrl = 5,
+                      name = "Features.NK")
+
+p1 <- ggplot(cd8@meta.data, aes(x=epitope, y=Features.Memory1, colour=epitope)) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
+  labs(title="Memory score",x="Epitope", y = "Memory score") + theme_light()
+
+p2 <- ggplot(cd8@meta.data, aes(x=epitope, y=Features.Activation1, colour=epitope)) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
+  labs(title="Activation score",x="Epitope", y = "Activation score") + theme_light()
+
+p3 <- ggplot(cd8@meta.data, aes(x=epitope, y=Features.Cytotoxicity1, colour=epitope)) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
+  labs(title="Cytotoxicity score",x="Epitope", y = "Cytotoxicity score") + theme_light()
+
+p4 <- ggplot(cd8@meta.data, aes(x=epitope, y=Features.Cytokines1, colour=epitope)) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
+  labs(title="Cytokines score",x="Epitope", y = "Cytokines score") + theme_light()
+
+p5 <- ggplot(cd8@meta.data, aes(x=epitope, y=Features.Integrins1, colour=epitope)) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
+  labs(title="Integrins score",x="Epitope", y = "Integrins score") + theme_light()
+
+p6 <- ggplot(cd8@meta.data, aes(x=epitope, y=Features.Exhaustion1, colour=epitope)) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
+  labs(title="Exhaustion score",x="Epitope", y = "Exhaustion score") + theme_light()
+
+p7 <- ggplot(cd8@meta.data, aes(x=epitope, y=Features.NK1, colour=epitope)) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
+  labs(title="NK cell genes score",x="Epitope", y = "NK cell genes score") + theme_light()
+
+```
+
+```{r, fig.height=10, fig.width=18}
+grid.arrange(p1, p2, p3, p4, p5, p6, p7, nrow=2)
+```
+## NP16 High v NP16 Low Functional Avidity
+
+```{r}
+Idents(cd8) <- "hclust"
+
+np16_cl <- subset(cd8, idents=c("NP16 High", "NP16 Low"))
+
+Idents(np16_cl) <- "hclust"
+table(Idents(np16_cl))
+
+n1 <- ggplot(np16_cl@meta.data, aes(x=hclust, y=Features.Memory1, colour=hclust)) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
+  labs(title="Memory score",x="Functional Avidity", y = "Memory score") + theme_light()
+
+n2 <- ggplot(np16_cl@meta.data, aes(x=hclust, y=Features.Activation1, colour=hclust)) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
+  labs(title="Activation score",x="Functional Avidity", y = "Activation score") + theme_light()
+
+n3 <- ggplot(np16_cl@meta.data, aes(x=hclust, y=Features.Cytotoxicity1, colour=hclust)) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
+  labs(title="Cytotoxicity score",x="Functional Avidity", y = "Cytotoxicity score") + theme_light()
+
+n4 <- ggplot(np16_cl@meta.data, aes(x=hclust, y=Features.Cytokines1, colour=hclust)) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
+  labs(title="Cytokines score",x="Functional Avidity", y = "Cytokines score") + theme_light()
+
+n5 <- ggplot(np16_cl@meta.data, aes(x=hclust, y=Features.Integrins1, colour=hclust)) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
+  labs(title="Integrins score",x="Functional Avidity", y = "Integrins score") + theme_light()
+
+n6 <- ggplot(np16_cl@meta.data, aes(x=hclust, y=Features.Exhaustion1, colour=hclust)) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
+  labs(title="Exhaustion score",x="Functional Avidity", y = "Exhaustion score") + theme_light()
+
+n7 <- ggplot(np16_cl@meta.data, aes(x=hclust, y=Features.NK1, colour=hclust)) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
+  labs(title="NK cell genes score",x="Functional Avidity", y = "NK cell genes score") + theme_light()
+
+```
+```{r, fig.height=10, fig.width=18}
+grid.arrange(n1, n2, n3, n4, n5, n6, n7, nrow=2)
+```
+## NP16 High v NP16 Low Functional Avidity
+
+```{r}
+Idents(cd8) <- "hclust"
+
+orf3a_cl <- subset(cd8, idents=c("ORF3a-28 High", "ORF3a-28 Low"))
+
+Idents(orf3a_cl) <- "hclust"
+table(Idents(orf3a_cl))
+
+n1 <- ggplot(orf3a_cl@meta.data, aes(x=hclust, y=Features.Memory1, colour=hclust)) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
+  labs(title="Memory score",x="Functional Avidity", y = "Memory score") + theme_light()
+
+n2 <- ggplot(orf3a_cl@meta.data, aes(x=hclust, y=Features.Activation1, colour=hclust)) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
+  labs(title="Activation score",x="Functional Avidity", y = "Activation score") + theme_light()
+
+n3 <- ggplot(orf3a_cl@meta.data, aes(x=hclust, y=Features.Cytotoxicity1, colour=hclust)) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
+  labs(title="Cytotoxicity score",x="Functional Avidity", y = "Cytotoxicity score") + theme_light()
+
+n4 <- ggplot(orf3a_cl@meta.data, aes(x=hclust, y=Features.Cytokines1, colour=hclust)) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
+  labs(title="Cytokines score",x="Functional Avidity", y = "Cytokines score") + theme_light()
+
+n5 <- ggplot(orf3a_cl@meta.data, aes(x=hclust, y=Features.Integrins1, colour=hclust)) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
+  labs(title="Integrins score",x="Functional Avidity", y = "Integrins score") + theme_light()
+
+n6 <- ggplot(orf3a_cl@meta.data, aes(x=hclust, y=Features.Exhaustion1, colour=hclust)) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
+  labs(title="Exhaustion score",x="Functional Avidity", y = "Exhaustion score") + theme_light()
+
+n7 <- ggplot(orf3a_cl@meta.data, aes(x=hclust, y=Features.NK1, colour=hclust)) +
+  geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
+  labs(title="NK cell genes score",x="Functional Avidity", y = "NK cell genes score") + theme_light()
+
+```
+```{r, fig.height=10, fig.width=18}
+grid.arrange(n1, n2, n3, n4, n5, n6, n7, nrow=2)
+```
 ## Clustering for just T cells with diversity indexes
 ```{r}
 # # Select the top 2000 most variable features
