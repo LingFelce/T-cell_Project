@@ -743,196 +743,7 @@ FeaturePlot(object = cd8, features = c("PRF1", "GZMA", "GZMH", "GZMK", "GZMB", "
 
 ```
 
-# Adding TCR grouping from clones and single cells
-```{r}
-# cd8 <- readRDS("cd8_harmony.rds")
-# 
-# # cd8$CDR3_group <- NULL
-# 
-# cells <- as.data.frame(cd8$orig.ident)
-# cells <- tibble::rownames_to_column(cells, "cell_name")
-# colnames(cells) <- c("cell_name", "patient")
-# groups <- read.csv("/t1-data/user/lfelce/scRNA-Seq/SmartSeq2_T-cells/cd8_np16_orf3a_sc_groups.csv", header=TRUE)
-# 
-# # add 0 in front of single digit numbers
-# groups$new.group <- str_pad(groups$new.group, 2, side="left", pad="0")
-# 
-# cell_groups <- merge(cells, groups, by.x="cell_name", by.y="name", all.x=TRUE)
-# # cell_groups <- cell_groups[-280,]
-# # cell_groups <- cell_groups[!duplicated(cell_groups$cell_name),]
-# 
-# # re-arrange order so that 1131-TP-1 rows are at bottom
-# cell_groups <- cell_groups[c(1:227, 290:740, 228:289),]
-# 
-# cell_groups$epitope <- ifelse(grepl("005|1131|1153|1201", cell_groups$patient), "NP16",
-#                               ifelse(grepl("1105|1134|1525", cell_groups$patient), "ORF3a-28",""))
-# 
-# cell_groups <- mutate(cell_groups, group=paste(epitope, new.group, sep="_"))
-# 
-# cell_groups$avidity <- ifelse(grepl("NP16_01|NP16_05|NP16_06|NP16_07|NP16_08|NP16_09|NP16_10|NP16_12|NP16_16|NP16_17|NP16_18|NP16_19", cell_groups$group), "NP16 low avidity",
-#                        ifelse(grepl("NP16_02|NP16_03|NP16_04|NP16_13|NP16_14|NP16_15|NP16_20", cell_groups$group), "NP16 high avidity",
-#                        ifelse(grepl("ORF3a-28_01|ORF3a-28_05|ORF3a-28_06|ORF3a-28_08", cell_groups$group), "ORF3a-28 low avidity",
-#                        ifelse(grepl("ORF3a-28_02|ORF3a-28_03|ORF3a-28_04|ORF3a-28_07", cell_groups$group), "ORF3a-28 high avidity",
-#                        ifelse(grepl("NP16_NA|ORF3a-28_NA", cell_groups$group), "NA", "")))))
-# 
-# cd8@meta.data$CDR3_group <- as.factor(cell_groups$group)
-# cd8@meta.data$avidity <- as.factor(cell_groups$avidity)
 
-```
-
-```{r, fig.width=46, fig.height=20}
-# cd8_2 <- subset(cd8, subset = CDR3_group !="NP16_NA")
-# 
-# cd8_2 <- subset(cd8_2, subset = CDR3_group !="ORF3a-28_NA")
-# 
-# cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_09")
-# cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_10")
-# cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_13")
-# cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_14")
-# cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_15")
-# cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_16")
-# cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_17")
-# cd8_2 <- subset(cd8_2, subset = CDR3_group !="NP16_19")
-# 
-# cd8_2 <- subset(cd8_2, subset = CDR3_group !="ORF3a-28_03")
-# cd8_2 <- subset(cd8_2, subset = CDR3_group !="ORF3a-28_04")
-# cd8_2 <- subset(cd8_2, subset = CDR3_group !="ORF3a-28_06")
-# 
-# Idents(cd8_2) <- "CDR3_group"
-# 
-# VlnPlot(object = cd8_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-#                                   "IFNG", "TNF", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                            "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", 
-#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-#                                    "NKG7",  "ISG15", "TUBA1B","HAVCR2", "TIGIT", "CTLA4"),
-#         ncol=6, group.by = "CDR3_group")
-
-```
-
-
-# Subset NP16 from CD8 object
-
-```{r, fig.height=26, fig.width=18}
-# Idents(cd8) <- "epitope"
-# np16 <- subset(cd8, idents="NP16")
-# 
-# # list <- as.data.frame(np16$orig.ident)
-# # list <- tibble::rownames_to_column(list, "cell_name")
-# # list2 <- merge(list, cell_groups, by.x="cell_name", by.y="cell_name", all.x=TRUE)
-# # 
-# # np16@meta.data$avidity <- list2$avidity
-# # np16@meta.data$CDR3_group <- list2$group
-# 
-# Idents(np16) <- "avidity"
-# np16_2 <- subset(np16, idents=c("NP16 low avidity", "NP16 high avidity"))
-# 
-# table(Idents(np16_2))
-# 
-# VlnPlot(object = np16_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
-#                                    "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-#                                    "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-#                                    "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-#                                    "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
-#                                    "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
-#                                    "KLRG1",   "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRC2"),
-#         ncol=6, group.by = "avidity")
-
-```
-
-```{r, fig.height=18, fig.width=16}
-# Idents(np16) <- "clin.type"
-# 
-# VlnPlot(object = np16, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4", 
-#                                   "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-#                                   "IFNG", "TNF", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                            "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", 
-#                                   "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-#                                    "NKG7",  "ISG15", "TUBA1B","HAVCR2", "TIGIT", "CTLA4"),
-#         ncol=6, group.by = "clin.type")
-```
-## Harmony integration of CD8+ NP16
-
-```{r, fig.height=8, fig.width=12}
-# Select the top 1000 most variable features
-# np16 <- FindVariableFeatures(object = np16, mean.function = ExpMean, dispersion.function = LogVMR, x.low.cutoff = 0.0125, x.high.cutoff = 3, y.cutoff = 0.5, nfeatures = 2000)
-# 
-# # Scaling RNA data
-# np16 <- ScaleData(np16)
-# 
-# # Run PCA
-# np16 <- RunPCA(np16, npcs = 30, verbose = FALSE)
-# 
-# # Select top PCs for clustering
-# np16 <- FindNeighbors(np16, reduction = "pca", dims = 1:20, verbose=FALSE)
-# np16 <- FindClusters(np16, resolution = 0.5, verbose = FALSE)
-# np16 <- RunUMAP(np16, dims = 1:20, verbose=FALSE)
-# 
-# p1 <- DimPlot(np16, reduction = "umap", group.by = "orig.ident")
-# p2 <- DimPlot(np16, reduction = "umap", group.by = "clin.type")
-# p3 <- DimPlot(np16, reduction = "umap", group.by = "seurat_clusters")
-# p4 <- DimPlot(np16, reduction = "pca", group.by = "orig.ident")
-# 
-# grid.arrange(p1, p2, p3, p4, nrow=2)
-
-```
-```{r}
-# np16 <- np16 %>%
-#     RunHarmony("orig.ident", plot_convergence = TRUE)
-# 
-# # access Harmony embeddings - show top 5 rows and top 5 columns
-# harmony_embeddings <- Embeddings(np16, 'harmony')
-```
-
-```{r, fig.height=5, fig.width=12}
-# p1 <- DimPlot(object = np16, reduction = "harmony", group.by = "orig.ident")
-# p2 <- VlnPlot(object = np16, features = "harmony_1", group.by = "orig.ident", pt.size = .1)
-# p1 + p2
-```
-```{r, fig.height=5, fig.width=12}
-# p3 <- DimPlot(object = np16, reduction = "pca", group.by="orig.ident")
-# p3 + p1
-```
-
-
-```{r, fig.height=5, fig.width=20}
-# np16 <- np16 %>%
-#     RunUMAP(reduction = "harmony", dims = 1:30) %>%
-#     FindNeighbors(reduction = "harmony", dims = 1:30) %>%
-#     FindClusters(resolution = 0.5) %>%
-#     identity()
-# umap_patient <- DimPlot(np16, reduction = "umap", group.by = "orig.ident")
-# umap_clin <- DimPlot(np16, reduction = "umap", group.by = "clin.type")
-# umap_cluster <- DimPlot(np16, reduction = "umap", group.by = "seurat_clusters")
-# umap_patient + umap_clin + umap_cluster
-```
-
-# Subset ORF3a-28 from CD8 object
-
-```{r, fig.height=32, fig.width=18}
-# Idents(cd8) <- "epitope"
-# orf3a <- subset(cd8, idents="ORF3a-28")
-# # 
-# # list <- as.data.frame(orf3a$orig.ident)
-# # list <- tibble::rownames_to_column(list, "cell_name")
-# # list2 <- merge(list, cell_groups, by.x="cell_name", by.y="cell_name", all.x=TRUE)
-# # 
-# # orf3a@meta.data$avidity <- list2$avidity
-# # orf3a@meta.data$CDR3_group <- list2$group
-# # 
-# Idents(orf3a) <- "avidity"
-# orf3a_2 <- subset(orf3a, idents=c("ORF3a-28 low avidity", "ORF3a-28 high avidity"))
-# 
-# table(Idents(orf3a_2))
-# 
-# VlnPlot(object = orf3a_2, features=c("PTPRC", "CCR7", "SELL", "TCF7", "IL7R", "S100A4",
-#                                    "CD44","CD27", "CD28", "CD69", "CD38","HLA-DRB1",
-#                                    "IFNG", "CCL4", "CCL5", "CCR4", "CXCR3", "CXCR4",                                                   "SELPLG", "ITGA4", "ITGAL", "ITGB2", "ITGAE", "ICAM1",
-#                                    "GZMA", "GZMB", "GZMH", "GZMK", "PRF1", "GNLY",
-#                                    "NKG7", "FASLG", "FAS",  "ISG15", "MX1", "OAS1",
-#                                    "TUBA1B","LAG3","PDCD1", "HAVCR2", "TIGIT", "CTLA4",
-#                                    "KLRG1",   "KLRD1", "FGFBP2", "KLRC1", "KLRC3", "KLRC2"),
-#         ncol=6, group.by = "avidity")
-
-```
 
 # TCR diversity/similarity
 Previously clustered single cells and clones by unsupervised hierarchical clustering. Look at single cell expression for similar/dissimilar sequences (linked to functional avidity)
@@ -1071,31 +882,38 @@ cd8 <- AddModuleScore(object = cd8,
 
 p1 <- ggplot(cd8@meta.data, aes(x=epitope, y=Features.Memory1, colour=epitope)) +
   geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
-  labs(title="Memory score",x="Epitope", y = "Memory score") + theme_light()
+  labs(title="Memory score",x="Epitope", y = "Memory score") + theme_light()+
+  theme(plot.title = element_text(size=20))
 
 p2 <- ggplot(cd8@meta.data, aes(x=epitope, y=Features.Activation1, colour=epitope)) +
   geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
-  labs(title="Activation score",x="Epitope", y = "Activation score") + theme_light()
+  labs(title="Activation score",x="Epitope", y = "Activation score") + theme_light()+
+  theme(plot.title = element_text(size=20))
 
 p3 <- ggplot(cd8@meta.data, aes(x=epitope, y=Features.Cytotoxicity1, colour=epitope)) +
   geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
-  labs(title="Cytotoxicity score",x="Epitope", y = "Cytotoxicity score") + theme_light()
+  labs(title="Cytotoxicity score",x="Epitope", y = "Cytotoxicity score") + theme_light()+
+  theme(plot.title = element_text(size=20))
 
 p4 <- ggplot(cd8@meta.data, aes(x=epitope, y=Features.Cytokines1, colour=epitope)) +
   geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
-  labs(title="Cytokines score",x="Epitope", y = "Cytokines score") + theme_light()
+  labs(title="Cytokines score",x="Epitope", y = "Cytokines score") + theme_light()+
+  theme(plot.title = element_text(size=20))
 
 p5 <- ggplot(cd8@meta.data, aes(x=epitope, y=Features.Integrins1, colour=epitope)) +
   geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
-  labs(title="Integrins score",x="Epitope", y = "Integrins score") + theme_light()
+  labs(title="Integrins score",x="Epitope", y = "Integrins score") + theme_light()+
+  theme(plot.title = element_text(size=20))
 
 p6 <- ggplot(cd8@meta.data, aes(x=epitope, y=Features.Exhaustion1, colour=epitope)) +
   geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
-  labs(title="Exhaustion score",x="Epitope", y = "Exhaustion score") + theme_light()
+  labs(title="Exhaustion score",x="Epitope", y = "Exhaustion score") + theme_light()+
+  theme(plot.title = element_text(size=20))
 
 p7 <- ggplot(cd8@meta.data, aes(x=epitope, y=Features.NK1, colour=epitope)) +
   geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
-  labs(title="NK cell genes score",x="Epitope", y = "NK cell genes score") + theme_light()
+  labs(title="NK cell genes score",x="Epitope", y = "NK cell genes score") + theme_light()+
+  theme(plot.title = element_text(size=20))
 
 ```
 
@@ -1114,37 +932,44 @@ table(Idents(np16_cl))
 
 n1 <- ggplot(np16_cl@meta.data, aes(x=hclust, y=Features.Memory1, colour=hclust)) +
   geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
-  labs(title="Memory score",x="Functional Avidity", y = "Memory score") + theme_light()
+  labs(title="Memory score",x="Functional Avidity", y = "Memory score") + theme_light()+
+  theme(plot.title = element_text(size=20))
 
 n2 <- ggplot(np16_cl@meta.data, aes(x=hclust, y=Features.Activation1, colour=hclust)) +
   geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
-  labs(title="Activation score",x="Functional Avidity", y = "Activation score") + theme_light()
+  labs(title="Activation score",x="Functional Avidity", y = "Activation score") + theme_light()+
+  theme(plot.title = element_text(size=20))
 
 n3 <- ggplot(np16_cl@meta.data, aes(x=hclust, y=Features.Cytotoxicity1, colour=hclust)) +
   geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
-  labs(title="Cytotoxicity score",x="Functional Avidity", y = "Cytotoxicity score") + theme_light()
+  labs(title="Cytotoxicity score",x="Functional Avidity", y = "Cytotoxicity score") + theme_light()+
+  theme(plot.title = element_text(size=20))
 
 n4 <- ggplot(np16_cl@meta.data, aes(x=hclust, y=Features.Cytokines1, colour=hclust)) +
   geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
-  labs(title="Cytokines score",x="Functional Avidity", y = "Cytokines score") + theme_light()
+  labs(title="Cytokines score",x="Functional Avidity", y = "Cytokines score") + theme_light()+
+  theme(plot.title = element_text(size=20))
 
 n5 <- ggplot(np16_cl@meta.data, aes(x=hclust, y=Features.Integrins1, colour=hclust)) +
   geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
-  labs(title="Integrins score",x="Functional Avidity", y = "Integrins score") + theme_light()
+  labs(title="Integrins score",x="Functional Avidity", y = "Integrins score") + theme_light()+
+  theme(plot.title = element_text(size=20))
 
 n6 <- ggplot(np16_cl@meta.data, aes(x=hclust, y=Features.Exhaustion1, colour=hclust)) +
   geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
-  labs(title="Exhaustion score",x="Functional Avidity", y = "Exhaustion score") + theme_light()
+  labs(title="Exhaustion score",x="Functional Avidity", y = "Exhaustion score") + theme_light()+
+  theme(plot.title = element_text(size=20))
 
 n7 <- ggplot(np16_cl@meta.data, aes(x=hclust, y=Features.NK1, colour=hclust)) +
   geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
-  labs(title="NK cell genes score",x="Functional Avidity", y = "NK cell genes score") + theme_light()
+  labs(title="NK cell genes score",x="Functional Avidity", y = "NK cell genes score") + theme_light()+
+  theme(plot.title = element_text(size=20))
 
 ```
 ```{r, fig.height=10, fig.width=18}
 grid.arrange(n1, n2, n3, n4, n5, n6, n7, nrow=2)
 ```
-## NP16 High v NP16 Low Functional Avidity
+## ORF3a-28 High v ORF3a-28 Low Functional Avidity
 
 ```{r}
 Idents(cd8) <- "hclust"
@@ -1154,38 +979,80 @@ orf3a_cl <- subset(cd8, idents=c("ORF3a-28 High", "ORF3a-28 Low"))
 Idents(orf3a_cl) <- "hclust"
 table(Idents(orf3a_cl))
 
-n1 <- ggplot(orf3a_cl@meta.data, aes(x=hclust, y=Features.Memory1, colour=hclust)) +
+o1 <- ggplot(orf3a_cl@meta.data, aes(x=hclust, y=Features.Memory1, colour=hclust)) +
   geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
-  labs(title="Memory score",x="Functional Avidity", y = "Memory score") + theme_light()
+  labs(title="Memory score",x="Functional Avidity", y = "Memory score") + theme_light()+
+  theme(plot.title = element_text(size=20))
 
-n2 <- ggplot(orf3a_cl@meta.data, aes(x=hclust, y=Features.Activation1, colour=hclust)) +
+o2 <- ggplot(orf3a_cl@meta.data, aes(x=hclust, y=Features.Activation1, colour=hclust)) +
   geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
-  labs(title="Activation score",x="Functional Avidity", y = "Activation score") + theme_light()
+  labs(title="Activation score",x="Functional Avidity", y = "Activation score") + theme_light()+
+  theme(plot.title = element_text(size=20))
 
-n3 <- ggplot(orf3a_cl@meta.data, aes(x=hclust, y=Features.Cytotoxicity1, colour=hclust)) +
+o3 <- ggplot(orf3a_cl@meta.data, aes(x=hclust, y=Features.Cytotoxicity1, colour=hclust)) +
   geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
-  labs(title="Cytotoxicity score",x="Functional Avidity", y = "Cytotoxicity score") + theme_light()
+  labs(title="Cytotoxicity score",x="Functional Avidity", y = "Cytotoxicity score") + theme_light()+
+  theme(plot.title = element_text(size=20))
 
-n4 <- ggplot(orf3a_cl@meta.data, aes(x=hclust, y=Features.Cytokines1, colour=hclust)) +
+o4 <- ggplot(orf3a_cl@meta.data, aes(x=hclust, y=Features.Cytokines1, colour=hclust)) +
   geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
-  labs(title="Cytokines score",x="Functional Avidity", y = "Cytokines score") + theme_light()
+  labs(title="Cytokines score",x="Functional Avidity", y = "Cytokines score") + theme_light()+
+  theme(plot.title = element_text(size=20))
 
-n5 <- ggplot(orf3a_cl@meta.data, aes(x=hclust, y=Features.Integrins1, colour=hclust)) +
+o5 <- ggplot(orf3a_cl@meta.data, aes(x=hclust, y=Features.Integrins1, colour=hclust)) +
   geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
-  labs(title="Integrins score",x="Functional Avidity", y = "Integrins score") + theme_light()
+  labs(title="Integrins score",x="Functional Avidity", y = "Integrins score") + theme_light()+
+  theme(plot.title = element_text(size=20))
 
-n6 <- ggplot(orf3a_cl@meta.data, aes(x=hclust, y=Features.Exhaustion1, colour=hclust)) +
+o6 <- ggplot(orf3a_cl@meta.data, aes(x=hclust, y=Features.Exhaustion1, colour=hclust)) +
   geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
-  labs(title="Exhaustion score",x="Functional Avidity", y = "Exhaustion score") + theme_light()
+  labs(title="Exhaustion score",x="Functional Avidity", y = "Exhaustion score") + theme_light()+
+  theme(plot.title = element_text(size=20))
 
-n7 <- ggplot(orf3a_cl@meta.data, aes(x=hclust, y=Features.NK1, colour=hclust)) +
+o7 <- ggplot(orf3a_cl@meta.data, aes(x=hclust, y=Features.NK1, colour=hclust)) +
   geom_boxplot(width=0.5, outlier.shape=NA ) + geom_jitter(width=0.25) +
-  labs(title="NK cell genes score",x="Functional Avidity", y = "NK cell genes score") + theme_light()
+  labs(title="NK cell genes score",x="Functional Avidity", y = "NK cell genes score") + 
+  theme_light() +
+  theme(plot.title = element_text(size=20))
+
 
 ```
-```{r, fig.height=10, fig.width=18}
-grid.arrange(n1, n2, n3, n4, n5, n6, n7, nrow=2)
+
+```{r, fig.height=10, fig.width=20}
+grid.arrange(o1, o2, o3, o4, o5, o6, o7, nrow=2)
 ```
+## Stats
+```{r}
+# independent 2-group Mann-Whitney U Test (non-parametric)
+# where y is numeric and A is A binary factor
+wilcox.test(cd8$Features.Memory1~cd8$epitope)
+wilcox.test(cd8$Features.Activation1~cd8$epitope)
+wilcox.test(cd8$Features.Cytotoxicity1~cd8$epitope)
+wilcox.test(cd8$Features.Cytokines1~cd8$epitope)
+wilcox.test(cd8$Features.Integrins1~cd8$epitope)
+wilcox.test(cd8$Features.Exhaustion1~cd8$epitope)
+wilcox.test(cd8$Features.NK1~cd8$epitope)
+
+wilcox.test(np16_cl$Features.Memory1~np16_cl$hclust)
+wilcox.test(np16_cl$Features.Activation1~np16_cl$hclust)
+wilcox.test(np16_cl$Features.Cytotoxicity1~np16_cl$hclust)
+wilcox.test(np16_cl$Features.Cytokines1~np16_cl$hclust)
+wilcox.test(np16_cl$Features.Integrins1~np16_cl$hclust)
+wilcox.test(np16_cl$Features.Exhaustion1~np16_cl$hclust)
+wilcox.test(np16_cl$Features.NK1~np16_cl$hclust)
+
+wilcox.test(orf3a_cl$Features.Memory1~orf3a_cl$hclust)
+wilcox.test(orf3a_cl$Features.Activation1~orf3a_cl$hclust)
+wilcox.test(orf3a_cl$Features.Cytotoxicity1~orf3a_cl$hclust)
+wilcox.test(orf3a_cl$Features.Cytokines1~orf3a_cl$hclust)
+wilcox.test(orf3a_cl$Features.Integrins1~orf3a_cl$hclust)
+wilcox.test(orf3a_cl$Features.Exhaustion1~orf3a_cl$hclust)
+wilcox.test(orf3a_cl$Features.NK1~orf3a_cl$hclust)
+
+
+```
+
+
 ## Clustering for just T cells with diversity indexes
 ```{r}
 # # Select the top 2000 most variable features
